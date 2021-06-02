@@ -56,14 +56,24 @@ MetropolisHastings_r0 <- function(data, n, x0 = 1, sigma_opt, burn_in = 1000) {
       Y = abs(Y)
     }
     
-    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) #Priors cancel:log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, rate = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], rate = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
+    if (is.na(log_alpha)){
+      print('na value')
+      sprintf("Y: %i", Y)
+    }
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
+      count_accept = count_accept + 1
     } else {
       r0_vec[i] <- r0_vec[i-1]
+      count_reject = count_reject + 1
     }
   }
+  #Final stats
+  sprintf("Total iterations = %i", count_accept + count_reject)
+  accept_rate = count_accept/(count_accept+count_reject)
+  sprintf("Acceptance rate = %i", accept_rate)
   
   r0_vec = r0_vec[burn_in:n]
   r0_vec
@@ -71,12 +81,12 @@ MetropolisHastings_r0 <- function(data, n, x0 = 1, sigma_opt, burn_in = 1000) {
 
 #Apply MCMC
 n = 20000
-sigma_opt = 1 #2.38 #optimal
+sigma = 1 #(2.38^2/dimesnion_paramter)*Posterior or sample variance ~optimal
 data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-r0_mcmc = MetropolisHastings_r0(data, n, sigma_opt)
+r0_mcmc = MetropolisHastings_r0(data, n, sigma)
 
 #Plots
-ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC chain of R0')
+ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC chain of R0, sd of proposal = 1')
 
 #Plot mean
 r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
@@ -138,4 +148,16 @@ hist2$counts <- hist2$counts/sum(hist2$counts)
 plot(hist2, xlab = 'r0', ylab = 'Density of gamma(2, 0.5)', #shape, scale
      main = 'Density of r0 - Analytical Bayesian model')
 
+
+#******************************************************************************
+# Investigate affect of varying the sd in the Standard Normal proposal Distribution
+
+#Apply MCMC
+n = 20000
+sigma = 1 #2.38 #optimal
+data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+r0_mcmc = MetropolisHastings_r0(data, n, sigma)
+
+#Chain 
+ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC chain of R0, proposal sd = 1')
 
