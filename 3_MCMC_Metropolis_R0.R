@@ -157,10 +157,13 @@ MetropolisHastings_r0_vII <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   r0_vec = r0_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(c(r0_vec, accept_rate))
+  return(list(r0_vec, accept_rate))
 }
 
-
+#Apply
+mcmc_params = MetropolisHastings_r0_vII(data, n, sigma)
+r0X = mcmc_params[1]
+r0X = unlist(r0X)
 #*************************************************************************************************
 
 #Investigate range of sd on MCMC solution
@@ -168,7 +171,7 @@ MetropolisHastings_r0_vII <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
 MCMC_range_sd <- function(list_sd, data, n, r0_true){
   
   #Initialise
-  par(mfrow = c(2, 1))
+  #par(mfrow = c(2, 1))
   list_accept_rate <- vector('numeric', length(list_sd))
   i = 1
   
@@ -179,14 +182,20 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
     mcmc_params = MetropolisHastings_r0_vII(data, n, sigma)
     #Extract
     r0_mcmc = mcmc_params[1]
+    #print('length of ro_mcmc =')
+    print(r0_mcmc)
     accept_rate = mcmc_params[2]
     list_accept_rate[i] = accept_rate
+    i = i + 1
     
     #Plots
     
     #i.MCMC chain
-    ts.plot(r0_mcmc, ylab = 'R0', 
+    pdf(paste(i, "_mcmc_chain_sd_", sigma, ".pdf", sep=""), width=6, height=4)
+    plot1 = ts.plot(r0_mcmc, ylab = 'R0', 
             main = paste("MCMC of R0, true R0 = ", r0_true, ", sd of proposal = ", sigma))
+    print(plot1)
+    dev.off()
     
     #ii.Cumulative Mean
     r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
@@ -213,8 +222,8 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
 }
 
 #Apply
-list_sd = c(0.25, 0.5, 0.75) #1, 1.25, 1.5, 2, 2.5, 3
-df_sd_results = MCMC_range_sd(list_sd, data, n, r0_true)
+list_sd = c(0.25) #, 0.5, 0.75) #1, 1.25, 1.5, 2, 2.5, 3
+df_sd_mcmc_results = MCMC_range_sd(list_sd, data, n, r0_true)
 
 
 #Note
@@ -277,9 +286,20 @@ r0_mcmc = MetropolisHastings_r0(data, n, sigma)
 #Chain 
 ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC chain of R0, proposal sd = 1')
 
-
-#Check
+#************************************************************************
+#Checks
 df <- data.frame(
   sd = list_sd,
   acceptance_rate = list_accept_rate[1:3]
 )
+
+#Plots
+a = seq(0.0, 20, by = 0.01)
+b = rgamma(n, 2, 1)
+
+for(i in 1:4) {   
+  pdf(paste("plot", i, ".pdf", sep=""), width=4, height=4)
+  abc <- hist(b)
+  print(abc)
+  dev.off()
+}
