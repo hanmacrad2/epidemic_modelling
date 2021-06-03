@@ -164,6 +164,7 @@ MetropolisHastings_r0_vII <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
 mcmc_params = MetropolisHastings_r0_vII(data, n, sigma)
 r0X = mcmc_params[1]
 r0X = unlist(r0X)
+
 #*************************************************************************************************
 
 #Investigate range of sd on MCMC solution
@@ -182,6 +183,7 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
     mcmc_params = MetropolisHastings_r0_vII(data, n, sigma)
     #Extract
     r0_mcmc = mcmc_params[1]
+    r0_mcmc = unlist(r0_mcmc)
     #print('length of ro_mcmc =')
     print(r0_mcmc)
     accept_rate = mcmc_params[2]
@@ -222,7 +224,7 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
 }
 
 #Apply
-list_sd = c(0.25) #, 0.5, 0.75) #1, 1.25, 1.5, 2, 2.5, 3
+list_sd = c(0.25, 0.5) #, 0.75) #1, 1.25, 1.5, 2, 2.5, 3
 df_sd_mcmc_results = MCMC_range_sd(list_sd, data, n, r0_true)
 
 
