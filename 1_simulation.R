@@ -67,5 +67,5 @@ plot_variations(list_r0,  list_shape_scale, num_days)
 #**********
 #Inspect gamma density
 seq1 = seq(0.0, 10, by = 1)
-gammaX = dgamma(a, shape = 1.5, scale = 2)
+gammaX = dgamma(seq1, shape = 1.5, scale = 2)
 plot(seq1, gammaX)

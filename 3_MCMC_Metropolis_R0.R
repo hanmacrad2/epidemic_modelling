@@ -2,7 +2,8 @@
 #Metropolis algorithm with target r0
 
 #Setup
-source("simulate_branching.R")
+#source("1_simulate_branching.R")
+source("1_simulation.R")
 par(mar=c(1,1,1,1))
 
 #Params
@@ -42,21 +43,23 @@ log_like <- function(y, r0_dash){
 
 #***********************************
 #MCMC
-MetropolisHastings_r0 <- function(data, n, x0 = 1, sigma_opt, burn_in = 1000) {
+MetropolisHastings_r0 <- function(data, n, sigma, x0 = 1, burn_in = 1000) {
   
   #Set up
   r0_vec <- vector('numeric', n)
   r0_vec[1] <- x0
   U <- runif(n)
+  count_accept = 0
+  count_reject = 0
   
   #MCMC chain
   for(i in 2:n) {
-    Y <- r0_vec[i-1] + rnorm(1, sd = sigma_opt) #, mean = 0, sd = sigma_opt)
+    Y <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
     if(Y < 0){
       Y = abs(Y)
     }
     
-    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, rate = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], rate = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
     if (is.na(log_alpha)){
       print('na value')
@@ -71,9 +74,12 @@ MetropolisHastings_r0 <- function(data, n, x0 = 1, sigma_opt, burn_in = 1000) {
     }
   }
   #Final stats
-  sprintf("Total iterations = %i", count_accept + count_reject)
+  total_iters = count_accept + count_reject
   accept_rate = count_accept/(count_accept+count_reject)
-  sprintf("Acceptance rate = %i", accept_rate)
+  print("Total iterations = ")
+  print(total_iters)
+  print("Acceptance rate = ")
+  print(accept_rate)
   
   r0_vec = r0_vec[burn_in:n]
   r0_vec
@@ -86,7 +92,7 @@ data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
 r0_mcmc = MetropolisHastings_r0(data, n, sigma)
 
 #Plots
-ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC chain of R0, sd of proposal = 1')
+ts.plot(r0_mcmc, ylab = 'R0', main = 'MCMC of R0, true R0 = 3.1, sd of proposal = 1')
 
 #Plot mean
 r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
