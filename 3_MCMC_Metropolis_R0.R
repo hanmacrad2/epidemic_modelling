@@ -253,7 +253,7 @@ df_sd_mcmc_results = MCMC_range_sd(list_sd, data, n, r0_true)
 #********************************************************************
 #Adaptive MCMC (every 10)
 
-adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
+adaptive_mc_r0 <- function(data, n, x0 = 1, burn_in = 2500) {
   
   'Returns mcmc samples of R0 & acceptance rate'
   
@@ -303,25 +303,6 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   return(list(r0_vec, accept_rate))
 }
 
-#Apply
-
-#Simulated data
-r0_true = 3.1
-data = simulate_branching(num_days, r0_true, shape_gamma, scale_gamma)
-
-#Time
-start_time = Sys.time()
-mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
-end_time = Sys.time()
-time_elap = end_time - start_time
-print('Time elapsed:')
-print(time_elap)
-
-#Extract params
-r0_mcmc = mcmc_params_ad[1]
-r0_mcmc = unlist(r0_mcmc)
-accept_rate = mcmc_params_ad[2]
-
 #Plots
 mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   
@@ -339,19 +320,86 @@ mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   print(plot2)
   
   #Histogram
-  hist1 = hist(mcmc_vector, prob = TRUE)
-  print(hist1)
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
   
   #Hist
   hist2 <- hist(mcmc_vector, breaks = 80)
   hist2$counts <- hist2$counts/sum(hist2$counts)
   hist3 = plot(hist2, xlab = 'r0', ylab = 'Density', 
-       main = 'Empirical density of r0 - MCMC chain')
+               main = 'Empirical density of r0 - MCMC chain')
   print(hist3)
   dev.off()
   
 }
 
 #Apply
-folder_dir_ad = 'Results/adapitve_mcmc'
+
+#Simulated data
+r0_true = 2.5 #3.1
+data = simulate_branching(num_days, r0_true, shape_gamma, scale_gamma)
+
+#Time
+start_time = Sys.time()
+mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
+end_time = Sys.time()
+time_elap = end_time - start_time
+print('Time elapsed:')
+print(time_elap)
+
+#Extract params
+r0_mcmc = mcmc_params_ad[1]
+r0_mcmc = unlist(r0_mcmc)
+accept_rate = mcmc_params_ad[2]
+
+#Apply Plotting
+folder_dir_ad = 'Results/Adaptive_MC'
 mcmc_plotting_adaptive(r0_mcmc, r0_true, folder_dir_ad)
+
+#************
+#Apply Adaptive MCMC to a range of r0s
+
+apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
+  
+  #Create folder
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  list_accept_rate = vector('numeric', length(list_r0))
+  
+  for (r0X in list_r0){
+    
+    #Get simulated data when r0 is r0X
+    data = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
+    
+    #Time
+    start_time = Sys.time()
+    mcmc_params_ad = adaptive_mc_r0(data, n)
+    end_time = Sys.time()
+    time_elap = end_time - start_time
+    print('Time elapsed:')
+    print(time_elap)
+    
+    #Extract params
+    r0_mcmc = mcmc_params_ad[1]
+    r0_mcmc = unlist(r0_mcmc)
+    accept_rate = mcmc_params_ad[2]
+    list_accept_rate[i] = accept_rate
+    
+    #Apply Plotting
+    mcmc_plotting_adaptive(r0_mcmc, r0X, folder_dir_ad)
+    
+  }
+  
+  #Create dataframe
+  df_results <- data.frame(
+    sd = list_r0,
+    acceptance_rate = unlist(list_accept_rate))
+  
+  print(df_results)
+  
+  df_results
+}
+
+#Apply
+folder_dir_ad = 'Results/adaptive_mc_I'
+list_r0 = c(1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+apply_adaptive_mc_range_r0(list_r0, folder_dir_ad)

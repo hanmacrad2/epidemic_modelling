@@ -14,14 +14,16 @@ simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
   vec_infecteds = vector('numeric', num_days)
   vec_infecteds[1] = 1
   
-  #Infectiousness (Discrete gamma)
+  #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
+  #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
+  #Days of Infection Spreading
   for (t in 2:num_days) {
     
     #Total rate
-    tot_rate = r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)]))
-    vec_infecteds[t] = rpois(1, tot_rate)
+    tot_rate = r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    vec_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
   }
   
   vec_infecteds
