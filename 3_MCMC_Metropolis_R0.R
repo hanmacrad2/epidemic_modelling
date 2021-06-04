@@ -323,24 +323,35 @@ r0_mcmc = unlist(r0_mcmc)
 accept_rate = mcmc_params_ad[2]
 
 #Plots
-mcmc_plotting_adaptive <- function(mcmc_vector) {
+mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
+  
+  #Folder save
+  pdf(paste(folder_dir_ad, "/", "adpative_mc_r0_true_", r0_true, ".pdf", sep=""))
   
   #i. MCMC chain
-  ts.plot(mcmc_vector, ylab = 'R0', main = paste("Adaptive MC for R0, true R0 = ", r0_true, "sd of proposal = ", sigma))
-  #main = paste("Tau= ", tau, " Sigma= ", sigma),
+  plot1 = ts.plot(mcmc_vector, ylab = 'R0', main = paste("Adaptive MC for R0, true R0 = ", r0_true, ". SD of proposal = ", sigma))
+  print(plot1)
   
   #ii. Mean
   #Plot mean
   r0_mean = cumsum(mcmc_vector)/seq_along(mcmc_vector)
-  plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true, ", sd of proposal = ", sigma))
+  plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true, ". SD of proposal = ", sigma))
+  print(plot2)
   
   #Histogram
-  hist(mcmc_vector, prob = TRUE)
+  hist1 = hist(mcmc_vector, prob = TRUE)
+  print(hist1)
   
   #Hist
-  hist1 <- hist(mcmc_vector, breaks = 80)
-  hist1$counts <- hist1$counts/sum(hist1$counts)
-  plot(hist1, xlab = 'r0', ylab = 'Density', 
+  hist2 <- hist(mcmc_vector, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'r0', ylab = 'Density', 
        main = 'Empirical density of r0 - MCMC chain')
+  print(hist3)
+  dev.off()
   
 }
+
+#Apply
+folder_dir_ad = 'Results/adapitve_mcmc'
+mcmc_plotting_adaptive(r0_mcmc, r0_true, folder_dir_ad)
