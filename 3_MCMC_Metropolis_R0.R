@@ -1,5 +1,6 @@
 #Description
 #Metropolis algorithm with target r0
+library(gridExtra)
 
 #Setup
 #source("1_simulate_branching.R")
@@ -8,7 +9,7 @@ par(mar=c(1,1,1,1))
 
 #Params
 num_days = 60 #100
-r0_true = 3.1 #2.8 #
+r0_true = 2.5 #3.1 #2.8 #
 shape_gamma = 6
 scale_gamma = 1
 data = simulate_branching(num_days, r0_true, shape_gamma, scale_gamma)
@@ -94,24 +95,27 @@ sigma =  0.5 #(2.38^2/dimesnion_paramter)*Posterior or sample variance ~optimal
 r0_mcmc = MetropolisHastings_r0(data, n, sigma)
 
 #Plots
-#i. MCMC chain
-ts.plot(r0_mcmc, ylab = 'R0', main = paste("MCMC of R0, true R0 = 3.1, sd of proposal = ", sigma))
-#main = paste("Tau= ", tau, " Sigma= ", sigma),
+mcmc_plotting <- function(mcmc_vector, r0_true) {
 
-#ii. Mean
-#Plot mean
-r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
-plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0, ", sd of proposal = ", sigma))
+  #i. MCMC chain
+  ts.plot(mcmc_vector, ylab = 'R0', main = paste("MCMC of R0, true R0 = ", r0_true, "sd of proposal = ", sigma))
+  #main = paste("Tau= ", tau, " Sigma= ", sigma),
+  
+  #ii. Mean
+  #Plot mean
+  r0_mean = cumsum(mcmc_vector)/seq_along(mcmc_vector)
+  plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true, ", sd of proposal = ", sigma))
+  
+  #Histogram
+  hist(mcmc_vector, prob = TRUE)
+  
+  #Hist
+  hist1 <- hist(mcmc_vector, breaks = 80)
+  hist1$counts <- hist1$counts/sum(hist1$counts)
+  plot(hist1, xlab = 'r0', ylab = 'Density', 
+       main = 'Empirical density of r0 - MCMC chain')
 
-#Histogram
-hist(r0_mcmc, prob = TRUE)
-
-#Hist
-hist1 <- hist(r0_mcmc, breaks = 80)
-hist1$counts <- hist1$counts/sum(hist1$counts)
-plot(hist1, xlab = 'r0', ylab = 'Density', 
-     main = 'Empirical density of r0 - MCMC chain')
-
+}
 #*******************************************************************
 #MCMC v2
 MetropolisHastings_r0_vII <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
@@ -150,7 +154,7 @@ MetropolisHastings_r0_vII <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   total_iters = count_accept + count_reject
   print("Acceptance count = ")
   print(count_accept)
-  accept_rate = 100*(count_accept/(count_accept+count_reject))
+  accept_rate = (count_accept/(count_accept+count_reject))
   print("Total iterations = ")
   print(total_iters)
   print("Acceptance rate = ")
@@ -191,6 +195,7 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
     r0_mcmc = mcmc_params[1]
     r0_mcmc = unlist(r0_mcmc)
     accept_rate = mcmc_params[2]
+    print('Accept_rate =')
     print(accept_rate)
     list_accept_rate[i] = accept_rate
     
@@ -228,10 +233,19 @@ MCMC_range_sd <- function(list_sd, data, n, r0_true){
     sd = list_sd,
     acceptance_rate = unlist(list_accept_rate))
   
+  print(df_sd_results) 
+  
+  #Save results
+  #pdf(paste(folder_dir, "/df_acceptance_rate_r0_true_",r0_true, ".pdf", sep="")) #pdf("test.pdf", height=11, width=10)
+  #grid.table(df_sd_results)
+  #dev.off()
+  
   df_sd_results
 }
 
 #Apply
+r0_true = 3.2 #2.8
+data = simulate_branching(num_days, r0_true, shape_gamma, scale_gamma)
 list_sd = c(0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 2.5, 3, 5, 7.5, 10)
 df_sd_mcmc_results = MCMC_range_sd(list_sd, data, n, r0_true)
 
@@ -249,10 +263,11 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   U <- runif(n)
   count_accept = 0
   count_reject = 0
+  sd_sample = 1
   
   #MCMC chain
   for(i in 2:n) {
-    Y <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
+    Y <- r0_vec[i-1] + rnorm(1, sd = sd_sample) #, mean = 0, sd = sigma_opt)
     if(Y < 0){
       Y = abs(Y)
     }
@@ -270,6 +285,8 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
       r0_vec[i] <- r0_vec[i-1]
       count_reject = count_reject + 1
     }
+    #Get sample sd
+    sd_sample = sd(r0_vec)
   }
   #Final stats
   total_iters = count_accept + count_reject
@@ -286,3 +303,44 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   return(list(r0_vec, accept_rate))
 }
 
+#Apply
+
+#Simulated data
+r0_true = 3.1
+data = simulate_branching(num_days, r0_true, shape_gamma, scale_gamma)
+
+#Time
+start_time = Sys.time()
+mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
+end_time = Sys.time()
+time_elap = end_time - start_time
+print('Time elapsed:')
+print(time_elap)
+
+#Extract params
+r0_mcmc = mcmc_params_ad[1]
+r0_mcmc = unlist(r0_mcmc)
+accept_rate = mcmc_params_ad[2]
+
+#Plots
+mcmc_plotting_adaptive <- function(mcmc_vector) {
+  
+  #i. MCMC chain
+  ts.plot(mcmc_vector, ylab = 'R0', main = paste("Adaptive MC for R0, true R0 = ", r0_true, "sd of proposal = ", sigma))
+  #main = paste("Tau= ", tau, " Sigma= ", sigma),
+  
+  #ii. Mean
+  #Plot mean
+  r0_mean = cumsum(mcmc_vector)/seq_along(mcmc_vector)
+  plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true, ", sd of proposal = ", sigma))
+  
+  #Histogram
+  hist(mcmc_vector, prob = TRUE)
+  
+  #Hist
+  hist1 <- hist(mcmc_vector, breaks = 80)
+  hist1$counts <- hist1$counts/sum(hist1$counts)
+  plot(hist1, xlab = 'r0', ylab = 'Density', 
+       main = 'Empirical density of r0 - MCMC chain')
+  
+}
