@@ -332,8 +332,8 @@ adaptive_mc_r0I <- function(data, n, x0 = 1, burn_in = 2500) {
     log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
     if (is.na(log_alpha)){
-      print('na value, Y value:')
-      print(Y)
+      #print('na value, Y value:')
+      #print(Y)
     }
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
@@ -367,13 +367,13 @@ mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   pdf(paste(folder_dir_ad, "/", "adpative_mc_r0_true_", r0_true, ".pdf", sep=""))
   
   #i. MCMC chain
-  plot1 = ts.plot(mcmc_vector, ylab = 'R0', main = paste("Adaptive MC for R0, true R0 = ", r0_true, ". SD of proposal = ", sigma))
+  plot1 = ts.plot(mcmc_vector, ylab = 'R0', main = paste("Adaptive MC for R0, true R0 = ", r0_true))
   print(plot1)
   
   #ii. Mean
   #Plot mean
   r0_mean = cumsum(mcmc_vector)/seq_along(mcmc_vector)
-  plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true, ". SD of proposal = ", sigma))
+  plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true))
   print(plot2)
   
   #Histogram
@@ -458,9 +458,9 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
 }
 
 #Apply
-folder_dir_ad = 'Results/adaptive_mc_formula_iter_V'
-#list_r0 = c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
-list_r0 = c(0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
+folder_dir_ad = 'Results/adaptive_mc_formula_iter_VI'
+list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+#list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, folder_dir_ad)
 
 
@@ -511,9 +511,9 @@ apply_adaptive_mc_range_r0_I <- function(list_r0, folder_dir_ad){
 }
 
 #Apply
-folder_dir_ad = 'Results/adaptive_mc_sd_sample_iterIII'
-list_r0 = c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
-df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, folder_dir_ad)
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_sd_sample_iterIV'
+list_r0 = c(0.65, 0.75, 0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+df_ad_results_formI = apply_adaptive_mc_range_r0_I(list_r0, folder_dir_ad)
 
 
 #**************
