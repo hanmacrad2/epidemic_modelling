@@ -457,7 +457,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
 
 #Apply
 folder_dir_ad = 'Results/adaptive_mc_formulaI'
-list_r0 = c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+list_r0 = c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, folder_dir_ad)
 
 #**************
