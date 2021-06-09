@@ -42,7 +42,7 @@ log_like <- function(y, r0_dash){
 #********************************************************************
 #Adaptive MCMC
 
-adaptive_mc_r0 <- function(data, n, x0 = 1, burn_in = 2500) {
+adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   
   'Returns mcmc samples of R0 & acceptance rate'
   
@@ -58,17 +58,17 @@ adaptive_mc_r0 <- function(data, n, x0 = 1, burn_in = 2500) {
   for(i in 2:n) {
     
     #New Proposal
-    Y <- r0_vec[i-1] + rnorm(1, sd = sd_sample) 
+    Y <- r0_vec[i-1] + rnorm(1, sd = sigma) 
     if(Y < 0){
       Y = abs(Y)
     }
     
     log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
-    if (is.na(log_alpha)){
+    #if (is.na(log_alpha)){
       #print('na value, Y value:')
       #print(Y)
-    }
+    #}
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
       count_accept = count_accept + 1
@@ -76,8 +76,12 @@ adaptive_mc_r0 <- function(data, n, x0 = 1, burn_in = 2500) {
       r0_vec[i] <- r0_vec[i-1]
       count_reject = count_reject + 1
     }
-    #Get sample sd
-    sd_sample = var(r0_vec)*(2.38^2)
+    
+    #Adaptive MC
+    if (i == burn_in){
+      sigma = var(r0_vec)*(2.38^2)
+    }
+    
   }
   #Final stats
   total_iters = count_accept + count_reject
@@ -91,7 +95,7 @@ adaptive_mc_r0 <- function(data, n, x0 = 1, burn_in = 2500) {
   r0_vec = r0_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(list(r0_vec, accept_rate))
+  return(list(r0_vec, accept_rate, sigma))
 }
 
 #Plots
@@ -124,14 +128,15 @@ mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   
 }
 
-#************
+#********************************************************************
 #Apply Adaptive MCMC to a range of r0s
 
-apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
+apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
   
   #Create folder
   ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
   list_accept_rate = vector('numeric', length(list_r0))
+  list_sd = vector('numeric', length(list_r0))
   i = 1
   
   for (r0X in list_r0){
@@ -141,7 +146,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
     
     #Time
     start_time = Sys.time()
-    mcmc_params_ad = adaptive_mc_r0(data, n)
+    mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
     end_time = Sys.time()
     time_elap = end_time - start_time
     print('Time elapsed:')
@@ -152,6 +157,8 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
     r0_mcmc = unlist(r0_mcmc)
     accept_rate = mcmc_params_ad[2]
     list_accept_rate[i] = accept_rate
+    sd_final = mcmc_params_ad[3]
+    list_sd[i] = sd_final
     i = i + 1
     
     #Apply Plotting
@@ -162,7 +169,8 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
   #Create dataframe
   df_results <- data.frame(
     r0 = list_r0,
-    acceptance_rate = unlist(list_accept_rate))
+    acceptance_rate = unlist(list_accept_rate),
+    sd_final = unlist(list_sd))
   
   print(df_results)
   
@@ -170,7 +178,9 @@ apply_adaptive_mc_range_r0 <- function(list_r0, folder_dir_ad){
 }
 
 #Apply
-folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_formula_iter_VII'
+sigma = 0.75
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iterII'
 list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
-df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, folder_dir_ad)
+df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, sigma, folder_dir_ad)
+
