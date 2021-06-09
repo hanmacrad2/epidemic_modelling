@@ -42,7 +42,7 @@ log_like <- function(y, r0_dash){
 #********************************************************************
 #Adaptive MCMC
 
-adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
+adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 2500
   
   'Returns mcmc samples of R0 & acceptance rate'
   
@@ -179,7 +179,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
 
 #Apply
 sigma = 0.75
-folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iterII'
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iterIII_burn_in_5k'
 list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, sigma, folder_dir_ad)
