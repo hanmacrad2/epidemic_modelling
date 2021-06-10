@@ -2,7 +2,7 @@
 #par(mar=c(1,1,1,1))
 
 #Parameters
-num_days = 10#30, 100
+num_days = 30 #100
 r0 = 3.1
 shape_gamma = 6
 scale_gamma = 1
@@ -10,7 +10,9 @@ scale_gamma = 1
 
 #Function
 simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, prop_ss, magnitude_ss) {
-  'Simulate an epidemic with Superspreading events'
+  'Simulate an epidemic with Superspreading events
+  prop_ss = Proportion of superspreading days
+  magnitude_ss = increased rate of superspreading event'
   
   #Set up
   vec_infecteds = vector('numeric', num_days)
@@ -20,20 +22,20 @@ simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, prop_ss
   #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
-  #Superspreading days
+  #Superspreading days.
+  #prop_ss = Proportion of superspreading days
   days_ss = ceiling(runif(round(prop_ss*num_days), 2, num_days))
   
   #Days of Infection Spreading
   for (t in 2:num_days) {
     
-    #Probability p == Super-spreading event
-    #Check if in list then superspreading 
-    if (is.element(5,c(1:5))) {
+    #If t == Superspreading day
+    if (is.element(t, days_ss)) {
       tot_rate = magnitude_ss*r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)]))
     } else {
       tot_rate = r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     }
-    #Total rate
+    #Poisson dist - daily number of infections
     vec_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
   }
   
