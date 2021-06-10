@@ -1,15 +1,15 @@
 #Simulate Branching Process
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
 #Parameters
-num_days = 100
+num_days = 10#30, 100
 r0 = 3.1
 shape_gamma = 6
 scale_gamma = 1
 
 
 #Function
-simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, percent_ss, magnitude_ss) {
+simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, prop_ss, magnitude_ss) {
   'Simulate an epidemic with Superspreading events'
   
   #Set up
@@ -21,7 +21,7 @@ simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, percent
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
   #Superspreading days
-  days_ss = ceiling(runif(round(percent_ss*num_days), 2, num_days))
+  days_ss = ceiling(runif(round(prop_ss*num_days), 2, num_days))
   
   #Days of Infection Spreading
   for (t in 2:num_days) {
@@ -29,7 +29,7 @@ simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, percent
     #Probability p == Super-spreading event
     #Check if in list then superspreading 
     if (is.element(5,c(1:5))) {
-      tot_rate = ss*r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)]))
+      tot_rate = magnitude_ss*r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)]))
     } else {
       tot_rate = r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     }
@@ -42,11 +42,13 @@ simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, percent
 
 #Implement
 start_time = Sys.time()
-x = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+prop_ss = 0.05
+magnitude_ss = 10
+x = simulate_branching_ss(num_days, r0, shape_gamma, scale_gamma, prop_ss, magnitude_ss)
 end_time = Sys.time()
 time_elap = end_time - start_time
 #print(time_elap)
-x
+#x
 
 #Plots
 plot.ts(x, ylab = "N Daily infections")
@@ -83,9 +85,6 @@ seq1 = seq(0.0, 10, by = 1)
 gammaX = dgamma(seq1, shape = 1.5, scale = 2)
 plot(seq1, gammaX)
 
-if (1 in j){
-  print('yes')
-}
 
 if (is.element(5,c(1:5))){
   print('yes')

@@ -2,7 +2,7 @@
 par(mar=c(1,1,1,1))
 
 #Parameters
-num_days = 100
+num_days = 30 #100
 r0 = 3.1
 shape_gamma = 6
 scale_gamma = 1
