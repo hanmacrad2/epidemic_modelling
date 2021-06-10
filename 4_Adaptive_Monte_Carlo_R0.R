@@ -41,7 +41,6 @@ log_like <- function(y, r0_dash){
 
 #********************************************************************
 #Adaptive MCMC
-
 adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 2500
   
   'Returns mcmc samples of R0 & acceptance rate'
@@ -79,23 +78,26 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
     
     #Adaptive MC
     if (i == burn_in){
-      sigma = var(r0_vec)*(2.38^2)
+      sigma = var(r0_vec[2:i])*(2.38^2)
     }
     
   }
   #Final stats
   total_iters = count_accept + count_reject
   accept_rate = 100*(count_accept/(count_accept+count_reject))
+  num_samples = count_accept
   print("Total iterations = ")
   print(total_iters)
   print("Acceptance rate = ")
   print(accept_rate)
+  print("Number samples = ")
+  print(count_accept)
   
   #Burn-in
   r0_vec = r0_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(list(r0_vec, accept_rate, sigma))
+  return(list(r0_vec, accept_rate, num_samples, sigma))
 }
 
 #Plots
@@ -137,6 +139,8 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
   ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
   list_accept_rate = vector('numeric', length(list_r0))
   list_sd = vector('numeric', length(list_r0))
+  list_num_samp = vector('numeric', length(list_r0))
+  list_time_taken = vector('numeric', length(list_r0))
   i = 1
   
   for (r0X in list_r0){
@@ -155,10 +159,17 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
     #Extract params
     r0_mcmc = mcmc_params_ad[1]
     r0_mcmc = unlist(r0_mcmc)
+    
     accept_rate = mcmc_params_ad[2]
-    list_accept_rate[i] = accept_rate
-    sd_final = mcmc_params_ad[3]
-    list_sd[i] = sd_final
+    list_accept_rate[i] = round(accept_rate, 2)
+    
+    num_samples = mcmc_params_ad[3]
+    list_num_samp[i] = num_samples
+    
+    sd_final = mcmc_params_ad[4]
+    list_sd[i] = round(sd_final, 3)
+    
+    list_time_taken[i] = round(time_elap, 2)
     i = i + 1
     
     #Apply Plotting
@@ -170,6 +181,8 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
   df_results <- data.frame(
     r0 = list_r0,
     acceptance_rate = unlist(list_accept_rate),
+    num_samples = unlist(list_num_samp),
+    time_mcmc_sec = unlist(list_time_taken),
     sd_final = unlist(list_sd))
   
   print(df_results)
@@ -179,7 +192,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
 
 #Apply
 sigma = 0.75
-folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iterIII_burn_in_5k'
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iter_V_burn_in_5k'
 list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, sigma, folder_dir_ad)
