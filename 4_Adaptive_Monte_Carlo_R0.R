@@ -160,13 +160,13 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
     r0_mcmc = mcmc_params_ad[1]
     r0_mcmc = unlist(r0_mcmc)
     
-    accept_rate = mcmc_params_ad[2]
+    accept_rate = mcmc_params_ad[[2]]
     list_accept_rate[i] = round(accept_rate, 2)
     
-    num_samples = mcmc_params_ad[3]
+    num_samples = mcmc_params_ad[[3]]
     list_num_samp[i] = num_samples
     
-    sd_final = mcmc_params_ad[4]
+    sd_final = mcmc_params_ad[[4]]
     list_sd[i] = round(sd_final, 3)
     
     list_time_taken[i] = round(time_elap, 2)
@@ -180,9 +180,9 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
   #Create dataframe
   df_results <- data.frame(
     r0 = list_r0,
-    acceptance_rate = unlist(list_accept_rate),
-    num_samples = unlist(list_num_samp),
-    time_mcmc_sec = unlist(list_time_taken),
+    accept_rate = unlist(list_accept_rate),
+    n_samples = unlist(list_num_samp),
+    time_sec = unlist(list_time_taken),
     sd_final = unlist(list_sd))
   
   print(df_results)
@@ -192,7 +192,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
 
 #Apply
 sigma = 0.75
-folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iter_V_burn_in_5k'
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iter_VII_burn_in_5k'
 list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, sigma, folder_dir_ad)
