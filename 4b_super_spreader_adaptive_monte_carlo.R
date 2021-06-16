@@ -126,8 +126,8 @@ adaptive_mc_r0_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in =
       p_dash = abs(p_dash)
     }
     
-    log_alpha = log_like(data, r01_vec[i], r02_vec[i-1], p_dash) 
-    - log_like(data, r01_vec[i], r02_vec[i-1], p_vec[i-1])
+    log_alpha = log_like_ss(data, r01_vec[i], r02_vec[i-1], p_dash) 
+    - log_like_ss(data, r01_vec[i], r02_vec[i-1], p_vec[i-1])
     + dgamma(p_dash, shape = 1, scale = 1, log = TRUE)
     - dgamma(p_vec[i-1], shape = 1, scale = 1, log = TRUE) 
     
@@ -145,11 +145,26 @@ adaptive_mc_r0_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in =
     }
   }
   #Final stats
+  #r01
   total_iters1 = count_accept1 + count_reject1
   accept_rate1 = 100*(count_accept1/(count_accept1+count_reject1))
   num_samples1 = count_accept1
   print("Acceptance rate1 = ")
   print(accept_rate1)
+  
+  #ro2
+  total_iters2 = count_accept2 + count_reject2
+  accept_rate2 = 100*(count_accept2/(count_accept2+count_reject2))
+  num_samples2 = count_accept2
+  print("Acceptance rate2 = ")
+  print(accept_rate2)
+  
+  #p
+  total_iters3 = count_accept3 + count_reject3
+  accept_rate3 = 100*(count_accept3/(count_accept3+count_reject3))
+  num_samples3 = count_accept3
+  print("Acceptance rate3 = ")
+  print(accept_rate3)
   
   #Burn-in 
   r01_vec = r01_vec[burn_in:n]
@@ -253,13 +268,20 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
   
   #Create folder
   ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
-  list_accept_rate = vector('numeric', length(list_r0))
-  list_sd = vector('numeric', length(list_r0))
+  list_accept_rate1 = vector('numeric', length(list_r0))
+  list_accept_rate2 = vector('numeric', length(list_r0))
+  list_accept_rate3 = vector('numeric', length(list_r0))
+  list_sd1 = vector('numeric', length(list_r0))
+  list_sd2 = vector('numeric', length(list_r0))
+  list_sd3 = vector('numeric', length(list_r0))
   list_num_samp = vector('numeric', length(list_r0))
   list_time_taken = vector('numeric', length(list_r0))
   i = 1
   
   for (r0X in list_r0){
+    
+    print('ro:')
+    print(r0X)
     
     #Get simulated data when r0 is r0X
     data = simulate_branching_ss(num_days, r0X, shape_gamma, scale_gamma, prop_ss, magnitude_ss)
@@ -274,7 +296,7 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
     
     #Extract params
     r01_mcmc = mcmc_params_ad[1]
-    r0_mcmc = unlist(r0_mcmc)
+    r01_mcmc = unlist(r01_mcmc)
     
     r02_mcmc = mcmc_params_ad[2]
     r02_mcmc = unlist(r02_mcmc)
@@ -282,14 +304,26 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
     p_mcmc = mcmc_params_ad[3]
     p_mcmc = unlist(p_mcmc)
     
-    accept_rate = mcmc_params_ad[[4]]
-    list_accept_rate[i] = round(accept_rate, 2)
+    accept_rate_r01 = mcmc_params_ad[[4]]
+    list_accept_rate1[i] = round(accept_rate_r01, 2)
     
-    num_samples = mcmc_params_ad[[5]]
-    list_num_samp[i] = num_samples
+    num_samples1 = mcmc_params_ad[[5]]
+    list_num_samp[i] = num_samples1
     
-    sd_final = mcmc_params_ad[[6]]
-    list_sd[i] = round(sd_final, 3)
+    sd_final_ro1 = mcmc_params_ad[[6]]
+    list_sd1[i] = round(sd_final_ro1, 3)
+    
+    accept_rate_r02 = mcmc_params_ad[[7]]
+    list_accept_rate2[i] = round(accept_rate_r02, 2)
+    
+    sd_final_ro2 = mcmc_params_ad[[9]]
+    list_sd2[i] = round(sd_final_ro2, 3)
+    
+    accept_rate_p = mcmc_params_ad[[10]]
+    list_accept_rate3[i] = round(accept_rate_p, 2)
+    
+    sd_final_p = mcmc_params_ad[[12]]
+    list_sd3[i] = round(sd_final_p, 3)
     
     list_time_taken[i] = round(time_elap, 2)
     i = i + 1
@@ -302,10 +336,15 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
   #Create dataframe
   df_results <- data.frame(
     r0 = list_r0,
-    accept_rate = unlist(list_accept_rate),
-    n_samples = unlist(list_num_samp),
-    time_sec = unlist(list_time_taken),
-    sd_final = unlist(list_sd))
+    accept_rate_r01 = unlist(list_accept_rate1),
+    n_samples_r01 = unlist(list_num_samp),
+    sd_final_r01 = unlist(list_sd1),
+    accept_rate_r02 = unlist(list_accept_rate2),
+    sd_final_r02 = unlist(list_sd2),
+    accept_rate_r03 = unlist(list_accept_rate3),
+    sd_final_r03 = unlist(list_sd3),
+    time_sec = unlist(list_time_taken))
+    
   
   print(df_results)
   
@@ -317,7 +356,7 @@ prop_ss = 0.1
 magnitude_ss = 10
 sigma = 0.75
 folder_dir_ad = 'Results/super_spreaders/ss_model_I_burn_in_5k'
-list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+list_r0 = c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ss_results = apply_adaptive_mc_range_r0_ss(list_r0, sigma, sigma, sigma, prop_ss, magnitude_ss, folder_dir_ad)
 
