@@ -1,5 +1,5 @@
 #Simulate Branching Process
-#par(mar=c(1,1,1,1))
+par(mar=c(1,1,1,1))
 
 #Parameters
 num_days = 30 #100
@@ -9,48 +9,52 @@ scale_gamma = 1
 
 
 #Function
-simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, prop_ss, magnitude_ss) {
+simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, k_mag_ss, rate_mu) {
   'Simulate an epidemic with Superspreading events
   prop_ss = Proportion of superspreading days
   magnitude_ss = increased rate of superspreading event'
   
   #Set up
-  vec_infecteds = vector('numeric', num_days)
-  vec_infecteds[1] = 1
+  total_infecteds = vector('numeric', num_days)
+  nsse_infecteds = vector('numeric', num_days)
+  sse_infecteds = vector('numeric', num_days)
+  total_infecteds[1] = 1
+  nsse_infecteds[1] = 1
+  sse_infecteds[1] = 0
   
   #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
   #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
-  #Superspreading days.
-  #prop_ss = Proportion of superspreading days
-  days_ss = ceiling(runif(round(prop_ss*num_days), 2, num_days))
-  
   #Days of Infection Spreading
   for (t in 2:num_days) {
     
-    #If t == Superspreading day
-    if (is.element(t, days_ss)) {
-      tot_rate = magnitude_ss*r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)]))
-    } else {
-      tot_rate = r0*sum(vec_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    #Regular infecteds
+    tot_rate = r0*sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
+    
+    #Super-spreaders
+    n_t = rpois(1, k_mag_ss*tot_rate)
+    
+    if (n_t > 0){
+      sse_infecteds[t] = rpois(1, n_t*rate_mu)
     }
-    #Poisson dist - daily number of infections
-    vec_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
+    
+    total_infecteds[t] = nsse_infecteds[t] + sse_infecteds[t]
   }
   
-  vec_infecteds
+  total_infecteds
 }
 
 #Implement
+k_mag_ss = 10 
+rate_mu = 5
 start_time = Sys.time()
-prop_ss = 0.05
-magnitude_ss = 10
-x = simulate_branching_ss(num_days, r0, shape_gamma, scale_gamma, prop_ss, magnitude_ss)
+x = simulate_branching_ss(num_days, r0, shape_gamma, scale_gamma, k_mag_ss, rate_mu)
 end_time = Sys.time()
 time_elap = end_time - start_time
 #print(time_elap)
-#x
+x
 
 #Plots
 plot.ts(x, ylab = "N Daily infections")
@@ -86,8 +90,3 @@ plot_variations(list_r0,  list_shape_scale, num_days)
 seq1 = seq(0.0, 10, by = 1)
 gammaX = dgamma(seq1, shape = 1.5, scale = 2)
 plot(seq1, gammaX)
-
-
-if (is.element(5,c(1:5))){
-  print('yes')
-}
