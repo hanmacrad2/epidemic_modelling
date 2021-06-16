@@ -196,7 +196,7 @@ mcmc_plotting_adaptive_ss <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, 
   #print(hist1)
   
   #Hist
-  hist2 <- hist(mcmc_vector, breaks = 80)
+  hist2 <- hist(mcmc_vector1, breaks = 80)
   hist2$counts <- hist2$counts/sum(hist2$counts)
   hist3 = plot(hist2, xlab = 'r0', ylab = 'Density', 
                main = 'Empirical density of r01 - MCMC chain')
