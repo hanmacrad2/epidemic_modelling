@@ -90,3 +90,18 @@ plot_variations(list_r0,  list_shape_scale, num_days)
 seq1 = seq(0.0, 10, by = 1)
 gammaX = dgamma(seq1, shape = 1.5, scale = 2)
 plot(seq1, gammaX)
+
+
+#***************
+#*Negative Binomial - inspect
+vs = c();
+
+#Poisson of poissons
+for (i in 1:10000){
+  vs[i] = rpois(1, rpois(1,20))
+}
+
+print(c(mean(vs), var(vs)))
+
+#Negative Binomial
+vs2 = rnbinom(10000, 20, )
