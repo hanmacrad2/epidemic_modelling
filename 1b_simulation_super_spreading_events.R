@@ -104,4 +104,14 @@ for (i in 1:10000){
 print(c(mean(vs), var(vs)))
 
 #Negative Binomial
-vs2 = rnbinom(10000, 20, )
+vs2 = rnbinom(10000, 20, 0.5)
+print(c(mean(vs), var(vs)))
+
+hist(vs)
+hist(vs2)
+
+#**************************
+#*Neyman type A distribution
+seq1 = seq(0.0, 10, by = 1)
+neyAdist = dCompound(seq1, parent = "pois", compound = "neymantypea", compoundDist = "neymantypea")
+plot(seq1, neyAdist)

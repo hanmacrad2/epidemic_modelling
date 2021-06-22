@@ -12,7 +12,7 @@ scale_gamma = 1
 simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
   #Set up
   vec_infecteds = vector('numeric', num_days)
-  vec_infecteds[1] = 1
+  vec_infecteds[1] = 2
   
   #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
   #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
