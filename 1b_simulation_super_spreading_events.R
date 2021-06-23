@@ -1,5 +1,5 @@
 #Simulate Branching Process
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
 #Parameters
 num_days = 30 #100
@@ -34,10 +34,10 @@ simulate_branching_ss = function(num_days, r0, shape_gamma, scale_gamma, k_mag_s
     nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     
     #Super-spreaders
-    n_t = rpois(1, k_mag_ss*tot_rate)
+    n_t = rpois(1, k_mag_ss*tot_rate) #Number of super-spreading events
     
     if (n_t > 0){
-      sse_infecteds[t] = rpois(1, n_t*rate_mu)
+      sse_infecteds[t] = rpois(1, n_t*rate_mu) #z_t: Total individuals num of events x Num individuals
     }
     
     total_infecteds[t] = nsse_infecteds[t] + sse_infecteds[t]
@@ -57,9 +57,9 @@ time_elap = end_time - start_time
 x
 
 #Plots
-plot.ts(x, ylab = "N Daily infections")
+plot.ts(x, ylab = "N Daily infections", main = 'Simulation of Super-spreading events')
 cum_data <- cumsum(x)
-plot.ts(cum_data)
+plot.ts(cum_data, ylab = "Cumulated infections")
 
 
 #*********************************************************************
