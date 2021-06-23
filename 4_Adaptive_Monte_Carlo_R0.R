@@ -8,6 +8,7 @@ par(mar=c(1,1,1,1))
 
 #Params
 num_days = 60 #100
+n = 50000
 shape_gamma = 6
 scale_gamma = 1
 #Priors
@@ -146,6 +147,7 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
   for (r0X in list_r0){
     
     #Get simulated data when r0 is r0X
+    print(r0X)
     data = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
     
     #Time
@@ -192,8 +194,8 @@ apply_adaptive_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
 
 #Apply
 sigma = 0.75
-folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iter_VII_burn_in_5k'
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_mc_iter_VIII_burn_in_5k'
 list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ad_results_formI = apply_adaptive_mc_range_r0(list_r0, sigma, folder_dir_ad)
-
+df_ad_results_formI
