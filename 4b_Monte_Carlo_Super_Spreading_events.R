@@ -48,7 +48,7 @@ log_like_ss <- function(x, alphaX, betaX, gammaX, lambdaX){
 
 #********************************************************************
 #Adaptive MCMC
-adaptive_mc_r0_ss <- function(data, n, sigma1, sigma2, sigma3, sigma4, x0 = 1, burn_in = 5000) { #burn_in = 2500
+adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, sigma4, x0 = 1, burn_in = 5000) { #burn_in = 2500
   
   'Returns mcmc samples of R0 & acceptance rate'
   
