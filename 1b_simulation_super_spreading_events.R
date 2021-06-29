@@ -5,7 +5,7 @@
 num_days = 30 #100
 shape_gamma = 6
 scale_gamma = 1
-alpha = 1 #Without ss event. Alpha~ 1
+alpha = 1 #Without ss event, ~r0. 
 
 #Function
 simulate_branching_ss = function(num_days, alphaX, shape_gamma, scale_gamma, betaX, gammaX) {
