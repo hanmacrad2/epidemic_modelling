@@ -29,15 +29,25 @@ log_like_ss <- function(x, alphaX, betaX, gammaX, lambdaX){
   #Infectiousness (Discrete gamma)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   logl = 0
-  
-  for (t in 2:num_days) {
+  count = 0
+  for (y_t in 0:x){
     
-    lambda = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
-    
-    #Log likelihood
-    logl = logl + -alphaX*lambda + ln(1/y_t!**) + ln(y_t*alphaX*lambda) + ln(gamma(z_t))
+    for (t in 2:num_days) {
       
-      log(p) + log(lambda) + log(1-p) + log(lambda) - lambda - lambda
+      lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+      
+      #Log likelihood
+      if (count == 0){
+        logl = exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
+          (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                  (x[t] - y_t)!)*(1/(gammaX +1))^(betaX*lambda_t)*
+      }
+      logl = logl*exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
+        (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                (x[t] - y_t)!)*(1/(gammaX +1))^(betaX*lambda_t)*
+        (gammaX/(gammaX + 1))^(x[t] - y_t)
+      
+    }
     
   }
   
@@ -109,7 +119,8 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, sigma4, x0 = 1, burn
       beta_dash = abs(beta_dash)
     }
     
-    log_alpha = log_like_ss(data, alpha_vec[i], beta_dash, gamma_vec[i-1], lambda_vec[i-1]) - log_like_ss(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1], lambda_vec[i-1])
+    log_alpha = log_like_ss(data, alpha_vec[i], beta_dash, gamma_vec[i-1], lambda_vec[i-1]) 
+    - log_like_ss(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1], lambda_vec[i-1])
     + dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
     - dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE) #Do other priors cancel?
     
