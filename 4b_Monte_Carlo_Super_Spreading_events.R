@@ -39,12 +39,13 @@ log_like_ss <- function(x, alphaX, betaX, gammaX, lambdaX){
       #Log likelihood
       if (count == 0){
         logl = exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
-          (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                                  (x[t] - y_t)!)*(1/(gammaX +1))^(betaX*lambda_t)*
-      }
+          (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t))*
+                                                  (factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
+          (gammaX/(gammaX + 1))^(x[t] - y_t)
+        }
       logl = logl*exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
-        (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                                (x[t] - y_t)!)*(1/(gammaX +1))^(betaX*lambda_t)*
+        (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t))*
+                                                factorial(x[t] - y_t)*(1/(gammaX +1))^(betaX*lambda_t)*
         (gammaX/(gammaX + 1))^(x[t] - y_t)
       
     }
@@ -226,8 +227,16 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, sigma4, x0 = 1, burn
   lambda_vec = gamma_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(list(alpha_vec, beta_vec, gamma_vec, lambda_vec, accept_rate1, num_samples1, sigma1, accept_rate2, num_samples2, sigma2, accept_rate3, num_samples3, sigma3, accept_rate4, num_samples4, sigma4))
+  return(list(alpha_vec, beta_vec, gamma_vec, lambda_vec, 
+              accept_rate1, num_samples1, sigma1, 
+              accept_rate2, num_samples2, sigma2, 
+              accept_rate3, num_samples3, sigma3, 
+              accept_rate4, num_samples4, sigma4))
 }
+
+#********
+#*Implement
+#*
 
 #Plots
 mcmc_plotting_adaptive_ss <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, mcmc_vector4, r0_true, folder_dir_ad) {
@@ -309,16 +318,13 @@ mcmc_plotting_adaptive_ss <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, 
 #Plot
 
 
-
-
-
 #************************
 #Other
 
 #********************************************************************
 #Apply Adaptive MCMC to a range of r0s
 
-apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_ss, magnitude_ss, folder_dir_ad){
+apply_adaptive_mc_range_r0_ss <- function(list_alpha, sigma1, sigma2, sigma3, sigma4, betaX, gammaX, folder_dir_ad){
   
   #Create folder
   ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
@@ -332,17 +338,17 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
   list_time_taken = vector('numeric', length(list_r0))
   i = 1
   
-  for (r0X in list_r0){
+  for (alphaX in list_alpha){
     
     print('ro:')
-    print(r0X)
+    print(alphaX)
     
-    #Get simulated data when r0 is r0X
-    data = simulate_branching_ss(num_days, r0X, shape_gamma, scale_gamma, prop_ss, magnitude_ss)
+    #Get simulated data when r0 is alphaX
+    data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
     
     #Time
     start_time = Sys.time()
-    mcmc_params_ad = adaptive_mc_r0_ss(data, n, sigma1, sigma2, sigma3)
+    mcmc_params_ad = adaptive_mc_r0_ss(data, n, sigma1, sigma2, sigma3, sigma4)
     end_time = Sys.time()
     time_elap = end_time - start_time
     print('Time elapsed:')
@@ -355,8 +361,11 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
     beta_mcmc = mcmc_params_ad[2]
     beta_mcmc = unlist(beta_mcmc)
     
-    p_mcmc = mcmc_params_ad[3]
-    p_mcmc = unlist(p_mcmc)
+    gamma_mcmc = mcmc_params_ad[3]
+    gamma_mcmc = unlist(gamma_mcmc)
+    
+    lambda_mcmc = mcmc_params_ad[4]
+    lambda_mcmc = unlist(lambda_mcmc)
     
     accept_rate_alpha = mcmc_params_ad[[4]]
     list_accept_rate1[i] = round(accept_rate_alpha, 2)
@@ -373,17 +382,23 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
     sd_final_beta = mcmc_params_ad[[9]]
     list_sd2[i] = round(sd_final_beta, 3)
     
-    accept_rate_p = mcmc_params_ad[[10]]
-    list_accept_rate3[i] = round(accept_rate_p, 2)
+    accept_rate_gamma = mcmc_params_ad[[10]]
+    list_accept_rate3[i] = round(accept_rate_gamma, 2)
     
-    sd_final_p = mcmc_params_ad[[12]]
-    list_sd3[i] = round(sd_final_p, 3)
+    sd_final_gamma = mcmc_params_ad[[12]]
+    list_sd3[i] = round(sd_final_gamma, 3)
+    
+    accept_rate_lambda = mcmc_params_ad[[4]] #******number  
+    list_accept_rate4[i] = round(accept_rate_lambda, 2)
+    
+    sd_final_lambda = mcmc_params_ad[[6]]
+    list_sd4[i] = round(sd_final_lambda, 3)
     
     list_time_taken[i] = round(time_elap, 2)
     i = i + 1
     
     #Apply Plotting
-    mcmc_plotting_adaptive_ss(alpha_mcmc, beta_mcmc, p_mcmc, r0X, folder_dir_ad)
+    mcmc_plotting_adaptive_ss(alpha_mcmc, beta_mcmc, gamma_mcmc, alphaX, folder_dir_ad)
     
   }
   
@@ -406,11 +421,11 @@ apply_adaptive_mc_range_r0_ss <- function(list_r0, sigma1, sigma2, sigma3, prop_
 }
 
 #Apply
-prop_ss = 0.1
-magnitude_ss = 10
+betaX = 5
+gammaX = 5
 sigma = 0.75
-folder_dir_ad = 'Results/super_spreaders/ss_model_I_burn_in_5k'
-list_r0 = c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+folder_dir_ad = 'Results/super_spreaders/ss_model_III_iterII'
+list_alphaX = c(1.0, 1.5, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
-df_ss_results = apply_adaptive_mc_range_r0_ss(list_r0, sigma, sigma, sigma, prop_ss, magnitude_ss, folder_dir_ad)
+df_ss_results = apply_adaptive_mc_range_r0_ss(list_alphaX, sigma, sigma, sigma, sigma4, betaX, gammaX, folder_dir_ad)
 

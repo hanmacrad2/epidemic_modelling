@@ -8,7 +8,7 @@ scale_gamma = 1
 alpha = 1 #Without ss event, ~r0. 
 
 #Function
-simulate_branching_ss = function(num_days, alphaX, shape_gamma, scale_gamma, betaX, gammaX) {
+simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
   'Simulate an epidemic with Superspreading events
   prop_ss = Proportion of superspreading days
   magnitude_ss = increased rate of superspreading event'
