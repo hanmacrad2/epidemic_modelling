@@ -107,6 +107,7 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in = 50
     #Adaptive MC
     if (i == burn_in){
       sigma1 = var(alpha_vec[2:i])*(2.38^2)
+      print('Burn in reached')
     }
     
     #******************
@@ -304,9 +305,12 @@ apply_adaptive_mc_range_alpha_ss <- function(list_alpha, sigma1, sigma2, sigma3,
     
     #Get simulated data when alpha is alphaX
     data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+    print('Data simulated')
     
     #Time
     start_time = Sys.time()
+    print('Start time:')
+    print(start_time)
     mcmc_params_ad = adaptive_mc_ss(data, n, sigma1, sigma2, sigma3)
     end_time = Sys.time()
     time_elap = end_time - start_time
