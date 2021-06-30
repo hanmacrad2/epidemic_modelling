@@ -5,7 +5,7 @@ library(gridExtra)
 
 #Setup
 source("1b_simulation_super_spreading_events.R")
-par(mar=c(1,1,1,1))
+#par(mar=c(1,1,1,1))
 
 #Params
 n = 50000
@@ -307,7 +307,7 @@ apply_adaptive_mc_range_alpha_ss <- function(list_alpha, sigma1, sigma2, sigma3,
     
     #Time
     start_time = Sys.time()
-    mcmc_params_ad = adaptive_mc_alpha_ss(data, n, sigma1, sigma2, sigma3)
+    mcmc_params_ad = adaptive_mc_ss(data, n, sigma1, sigma2, sigma3)
     end_time = Sys.time()
     time_elap = end_time - start_time
     print('Time elapsed:')

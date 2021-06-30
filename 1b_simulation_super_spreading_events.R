@@ -5,7 +5,7 @@
 num_days = 30 #100
 shape_gamma = 6
 scale_gamma = 1
-alpha = 1 #Without ss event, ~r0. 
+alphaX = 1 #Without ss event, ~r0. 
 
 #Function
 simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
@@ -29,12 +29,12 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability
-    tot_rate = alpha*lambda #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability
+    tot_rate = alphaX*lambda_t #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     
     #Super-spreaders
-    n_t = rpois(1, beta*lambda) #Number of super-spreading events (beta)
+    n_t = rpois(1, betaX*lambda_t) #Number of super-spreading events (beta)
     
     if (n_t > 0){
       sse_infecteds[t] = rpois(1, gammaX*n_t) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
