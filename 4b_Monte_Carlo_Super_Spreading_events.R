@@ -43,9 +43,16 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
                                                 factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
         (gammaX/(gammaX + 1))^(x[t] - y_t)
       
-      } #calculate max of vector s vec_terms(which contains each terms) for a given y_t
-      logl = logl + log(inner_sum_xt) #log sum(exp(vec_terms) - max(s)) + max_s #Outer log
-    
+      } 
+      print('x[t]')
+      print(x[t])
+      logl = logl + log(inner_sum_xt) 
+      print('inner_sum_xt')
+      print(inner_sum_xt)
+      print('log_inner_sum_xt')
+      print(log(inner_sum_xt))
+      print('logl')
+      print(logl)
   }
   
   logl

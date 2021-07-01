@@ -1,17 +1,66 @@
-#Experimentation
+#Log likelihood with additional function using log_exp_sum trick
+source("1b_simulation_super_spreading_events.R")
 
-#Log sum exp
-y_t = 0
-t = 2
-x[t]
-a = exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
-  (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                            factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-  (gammaX/(gammaX + 1))^(x[t] - y_t)
+#Parameters
+n = 50000
+num_days = 60 #100
+shape_gamma = 6
+scale_gamma = 1
+#Priors
+prior_alpha_k = 1
+prior_alpha_theta = 1
 
 
+#***********************************
+#Log Likelihood 
+log_like_ss <- function(x, alphaX, betaX, gammaX){
+  
+  #Params
+  num_days = length(x)
+  shape_gamma = 6
+  scale_gamma = 1
+  
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  logl = 0
+  
+  for (t in 2:num_days) {
+    
+    lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+    inner_sum_xt = 0
+    
+    for (y_t in 0:x[t]){ #Sum for all values of y_t
+      
+      #Log likelihood
+      inner_sum_xt = inner_sum_xt + exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
+        (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                  factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
+        (gammaX/(gammaX + 1))^(x[t] - y_t)
+      
+    } 
+    print('x[t]')
+    print(x[t])
+    logl = logl + log(inner_sum_xt) 
+    print('inner_sum_xt')
+    print(inner_sum_xt)
+    print('log_inner_sum_xt')
+    print(log(inner_sum_xt))
+    print('logl')
+    print(logl)
+  }
+  
+  logl
+  
+}
 
-#***********************************#*******************************************
+#Apply
+num_days = 15
+x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
+x
+logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
+logl_1
+
+#******************************************************************************8
 #Log Likelihood - log-exp-sum trick 
 log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
@@ -37,9 +86,9 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       
       #Store inner product in vector position
       logl = logl + log(exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
-        (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                                  factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-        (gammaX/(gammaX + 1))^(x[t] - y_t))
+                          (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                                    factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
+                          (gammaX/(gammaX + 1))^(x[t] - y_t))
       print('logl')
       print(logl)
       
@@ -57,8 +106,8 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
           (gammaX/(gammaX + 1))^(x[t] - y_t)
         
       }
-    
-    
+      
+      
       #Calculate max element in inner vector, for all y_t for a given t, x[t]
       x_max = max(inner_sum_vec)
       
@@ -68,7 +117,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
         innersum2 = innersum2 + exp(inner_sum_vec[i] - x_max)
       }
       lse = x_max + log(innersum2)
-
+      
       #Add to overall log likelihood 
       logl = logl + lse 
       
@@ -84,9 +133,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       print('x_max')
       print(x_max)
       
-      
     }
-    
     
   }
   
@@ -100,30 +147,3 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
 #x
 logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
-
-
-
-
-
-#**************************
-#*Neyman type A distribution
-seq1 = seq(0.0, 10, by = 1)
-neyAdist = dCompound(seq1, parent = "pois", compound = "neymantypea", compoundDist = "neymantypea")
-
-neyAdist = dCompound(seq1, parent = "poisson", compound = "poisson", compoundDist = "neymantypea", params = c(1,1), shape1 = 1, shape2 = 1)
-
-neyAdist = dCompound(seq1, parent = "poisson", compoundDist = "neymantypea", params = c(1,1))
-
-plot(seq1, neyAdist)
-
-seq2 = seq(-1, 1, by = 0.2)
-params<-c(4,5)
-pgfDneymantypea(seq2,params)
-
-#***********
-
-for (y_t in 1:1){
-  
-  print(y_t)
-  
-}
