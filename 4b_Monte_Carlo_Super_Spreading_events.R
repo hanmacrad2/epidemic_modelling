@@ -29,26 +29,22 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
   #Infectiousness (Discrete gamma)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   logl = 0
-  count = 0
-  for (y_t in 0:x){
     
-    for (t in 2:num_days) {
+  for (t in 2:num_days) {
       
       lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+      inner_sum_xt = 0
+      
+      for (y_t in 0:x[t]){ #Sum for all values of y_t
       
       #Log likelihood
-      if (count == 0){
-        logl = exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
-          (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t))*
-                                                  (factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-          (gammaX/(gammaX + 1))^(x[t] - y_t)
-        }
-      logl = logl*exp(-alphaX*lambda_t)*(1/y_t)*(alphaX*lambda_t)^y_t*
-        (gamma(x[t] - y_t + betaX*lambda_t))/(gamma(betaX*lambda_t))*
-                                                factorial(x[t] - y_t)*(1/(gammaX +1))^(betaX*lambda_t)*
+      inner_sum_xt = inner_sum_xt + exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
+        (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
         (gammaX/(gammaX + 1))^(x[t] - y_t)
       
-    }
+      } #calculate max of vector s vec_terms(which contains each terms) for a given y_t
+      logl = logl + log(inner_sum_xt) #log sum(exp(vec_terms) - max(s)) + max_s #Outer log
     
   }
   
@@ -56,6 +52,80 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
   
 }
 
+#Apply
+num_days = 15
+x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
+x
+logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
+logl_1
+
+#***********************************#*******************************************
+#Log Likelihood - log-exp-sum trick 
+log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
+  
+  #Params
+  num_days = length(x)
+  shape_gamma = 6
+  scale_gamma = 1
+  
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  logl = 0.000001
+  
+  for (t in 2:num_days) {
+    
+    lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+    inner_sum_vec <- vector('numeric', x[t])
+    #inner_sum_xt = 0
+    print('x[t]')
+    print(x[t])
+    
+    
+    for (y_t in 1:x[t]){ #Sum for all values of y_t
+      
+      #Store inner product in vector position
+      inner_sum_vec[y_t] = exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
+        (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                  factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
+        (gammaX/(gammaX + 1))^(x[t] - y_t)
+      
+    }
+    #Calculate max of vector s vec_terms(which contains each terms) for a given y_t
+    print(inner_sum_vec)
+    x_max = max(inner_sum_vec)
+    print(x_max)
+    
+    #Calculate lse
+    innersum2 = 0
+    for (i in 1:length(inner_sum_vec)){
+      innersum2 = innersum2 + exp(inner_sum_vec[i] - x_max)
+    }
+    print('innersum2')
+    print(innersum2)
+    lse = x_max + log(innersum2)
+    #print('type of lse')
+    #print(typeof(lse))
+    print('lse')
+    print(lse)
+    #Add to overall log likelihood 
+    logl = logl + lse 
+    print('logl')
+    print(logl)
+    print(typeof(logl))
+    
+    
+  }
+  
+  logl
+  
+}
+
+#Apply
+#num_days = 10
+#x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
+#x
+logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
+logl_1
 
 #********************************************************************
 #Adaptive MCMC
@@ -381,4 +451,7 @@ folder_dir_ad = 'Results/super_spreaders/ss_model_III_iterII'
 list_alphaX = c(1.0, 1.5, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_alpha = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ss_results = apply_adaptive_mc_range_alpha_ss(list_alphaX, sigma, sigma, sigma, betaX, gammaX, folder_dir_ad)
+
+
+#Checks
 
