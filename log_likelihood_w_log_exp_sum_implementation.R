@@ -54,7 +54,7 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
 }
 
 #Apply
-num_days = 15
+num_days = 10
 x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
 x
 logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
@@ -85,10 +85,9 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       y_t = 0
       
       #Store inner product in vector position
-      logl = logl + log(exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
-                          (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                                                    factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-                          (gammaX/(gammaX + 1))^(x[t] - y_t))
+      logl = logl -(alphaX*lambda_t) - lgamma(betaX*lambda_t) - 
+        (betaX*lambda_t*log(gammaX +1))
+      
       print('logl')
       print(logl)
       
@@ -99,11 +98,17 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       
       for (y_t in 1:x[t]){ #Sum for all values of y_t up to x_t
         
-        #Store inner product in vector position
-        inner_sum_vec[y_t] = exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
-          (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
-                                                    factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-          (gammaX/(gammaX + 1))^(x[t] - y_t)
+        #Store inner product in vector position L(x_i)
+        inner_sum_vec[y_t] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) 
+          + lgamma((x[t] - y_t)*betaX*lambda_t) - lgamma(betaX*lambda_t) - 
+                                                    lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) + 
+          (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1)
+        
+        
+        #inner_sum_vec[y_t] = exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
+          #(gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
+                                                    #factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
+          #(gammaX/(gammaX + 1))^(x[t] - y_t)
         
       }
       
@@ -121,17 +126,17 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       #Add to overall log likelihood 
       logl = logl + lse 
       
-      print('lse')
-      print(innersum2)
+      #print('lse')
+      #print(innersum2)
       
-      print('log_lse')
-      print(log(innersum2))
+      #print('log_lse')
+      #print(log(innersum2))
       
       print('logl')
       print(logl)
       
-      print('x_max')
-      print(x_max)
+      #print('x_max')
+      #print(x_max)
       
     }
     
