@@ -41,10 +41,10 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
     print('x[t]')
     print(x[t])
     logl = logl + log(inner_sum_xt) 
-    print('inner_sum_xt')
-    print(inner_sum_xt)
-    print('log_inner_sum_xt')
-    print(log(inner_sum_xt))
+    #print('inner_sum_xt')
+    #print(inner_sum_xt)
+    #print('log_inner_sum_xt')
+    #print(log(inner_sum_xt))
     print('logl')
     print(logl)
   }
@@ -54,10 +54,13 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
 }
 
 #Apply
-num_days = 10
+num_days = 50
 x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
-x
+#x
 logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
+logl_1
+
+logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
 
 #******************************************************************************8
