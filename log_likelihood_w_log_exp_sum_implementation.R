@@ -11,7 +11,7 @@ prior_alpha_k = 1
 prior_alpha_theta = 1
 
 
-#***********************************
+#***********************************************************************************************************
 #Log Likelihood 
 log_like_ss <- function(x, alphaX, betaX, gammaX){
   
@@ -62,7 +62,7 @@ logl_1
 logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
 
-#******************************************************************************8
+#******************************************************************************************************************
 #Log Likelihood - log-exp-sum trick 
 log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
@@ -73,7 +73,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
   #Infectiousness (Discrete gamma)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
-  logl = 0 #0.000001
+  logl = 0 
   
   for (t in 2:num_days) {
     
@@ -96,7 +96,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       
       for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
         
-        #Store inner product in vector position L(x_i)
+        #Storeinner L(x_i) term in vector position
         inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) 
           + lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
                                                     lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) + 
