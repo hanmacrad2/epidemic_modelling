@@ -80,9 +80,9 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
     print(t)
     lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
     
-    if(x[t] == 0){
+    if(x[t] == 0){ #y_t also equal to zero
       
-      #Store inner product in vector position
+      #L(x_i) for y_t, x_t = 0
       logl = logl -(alphaX*lambda_t) - lgamma(betaX*lambda_t) - 
         (betaX*lambda_t*log(gammaX +1))
       
@@ -96,7 +96,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       
       for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
         
-        #Storeinner L(x_i) term in vector position
+        #Store inner L(x_i) term in vector position
         inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) 
           + lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
                                                     lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) + 
