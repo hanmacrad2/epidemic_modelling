@@ -41,10 +41,6 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
       print('x[t]')
       print(x[t])
       logl = logl + log(inner_sum_xt) 
-      #print('inner_sum_xt')
-      #print(inner_sum_xt)
-      #print('log_inner_sum_xt')
-      #print(log(inner_sum_xt))
       print('logl')
       print(logl)
     
@@ -62,6 +58,7 @@ x
 logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
 logl_1
 
+#log exp sum trick
 logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
 
@@ -82,8 +79,6 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
     
     print(t)
     lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
-    print('x[t]')
-    print(x[t])
     
     if(x[t] == 0){
       
@@ -135,8 +130,5 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
 }
 
 #Apply
-#num_days = 10
-#x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
-#x
 logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
