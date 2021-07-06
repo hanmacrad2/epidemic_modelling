@@ -31,16 +31,18 @@ simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
 
 #Implement
 start_time = Sys.time()
-x = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+x2 = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
 end_time = Sys.time()
 time_elap = end_time - start_time
 #print(time_elap)
-x
+x2
 
 #Plots
-plot.ts(x, ylab = "N Daily infections")
-cum_data <- cumsum(x)
-plot.ts(cum_data)
+plot.ts(x2, ylab = "N Daily infections", main = 'Num Daily Infections, R0 = 3.1')
+
+#Cumulative data
+cum_data <- cumsum(x2)
+plot.ts(cum_data, , ylab = "Cumulative infections", main = 'Cumulative Infections, R0 = 3.1')
 
 
 #*********************************************************************

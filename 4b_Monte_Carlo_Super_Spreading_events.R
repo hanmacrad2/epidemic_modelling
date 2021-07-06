@@ -9,7 +9,7 @@ source("1b_simulation_super_spreading_events.R")
 
 #Params
 n = 50000
-num_days = 60 #100
+num_days = 10 #60 #100
 shape_gamma = 6
 scale_gamma = 1
 #Priors
@@ -44,15 +44,15 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
         (gammaX/(gammaX + 1))^(x[t] - y_t)
       
       } 
-      print('x[t]')
-      print(x[t])
+      #print('x[t]')
+      #print(x[t])
       logl = logl + log(inner_sum_xt) 
-      print('inner_sum_xt')
-      print(inner_sum_xt)
-      print('log_inner_sum_xt')
-      print(log(inner_sum_xt))
-      print('logl')
-      print(logl)
+      #print('inner_sum_xt')
+      #print(inner_sum_xt)
+      #print('log_inner_sum_xt')
+      #print(log(inner_sum_xt))
+      #print('logl')
+      #print(logl)
   }
   
   logl
@@ -451,11 +451,11 @@ apply_adaptive_mc_range_alpha_ss <- function(list_alpha, sigma1, sigma2, sigma3,
 }
 
 #Apply
-betaX = 5
-gammaX = 5
+betaX = 3
+gammaX = 3
 sigma = 0.75
-folder_dir_ad = 'Results/super_spreaders/ss_model_III_iterII'
-list_alphaX = c(1.0, 1.5, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+folder_dir_ad = 'Results/super_spreaders/ss_model_III_iterIII'
+list_alphaX = c(1.0, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_alpha = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ss_results = apply_adaptive_mc_range_alpha_ss(list_alphaX, sigma, sigma, sigma, betaX, gammaX, folder_dir_ad)
 
