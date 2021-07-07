@@ -51,16 +51,6 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
   
 }
 
-#Apply
-num_days = 15
-x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
-x
-logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
-logl_1
-
-#log exp sum trick
-logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
-logl_1
 
 #******************************************************************************************************************
 #Log Likelihood - log-exp-sum trick 
@@ -94,7 +84,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       #Terms in inner sum
       inner_sum_vec <- vector('numeric', x[t])
       
-      for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
+      for (y_t in 0:x[t]+1){ #Sum for all values of y_t up to x_t
         
         #Store inner L(x_i) term in vector position
         inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
@@ -129,6 +119,14 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
 }
 
+
 #Apply
+num_days = 15
+x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
+x
+logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
+logl_1
+
+#log exp sum trick
 logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
