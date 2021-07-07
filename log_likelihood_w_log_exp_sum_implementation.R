@@ -1,11 +1,12 @@
 #Log likelihood with additional function using log_exp_sum trick
-source("1b_simulation_super_spreading_events.R")
+#source("1b_simulation_super_spreading_events.R")
 
 #Parameters
 n = 50000
 num_days = 60 #100
 shape_gamma = 6
 scale_gamma = 1
+
 #Priors
 prior_alpha_k = 1
 prior_alpha_theta = 1
@@ -32,25 +33,20 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
       for (y_t in 0:x[t]){ #Sum for all values of y_t
         
         #Log likelihood
-        inner_sum_xt = inner_sum_xt + exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
+        inner_sum_xt = (inner_sum_xt + exp(-alphaX*lambda_t)*(1/factorial(y_t))*(alphaX*lambda_t)^y_t*
           (gamma((x[t] - y_t) + betaX*lambda_t))/(gamma(betaX*lambda_t)*
                                                     factorial(x[t] - y_t))*(1/(gammaX +1))^(betaX*lambda_t)*
-          (gammaX/(gammaX + 1))^(x[t] - y_t)
+          (gammaX/(gammaX + 1))^(x[t] - y_t))
         
       } 
-      print('x[t]')
-      print(x[t])
+      
       logl = logl + log(inner_sum_xt) 
-      print('logl')
-      print(logl)
-    
 
   }
   
   logl
   
 }
-
 
 #******************************************************************************************************************
 #Log Likelihood - log-exp-sum trick 
@@ -67,7 +63,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
   for (t in 2:num_days) {
     
-    print(t)
+    #print(t)
     lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
     
     if(x[t] == 0){ #y_t also equal to zero
@@ -76,40 +72,29 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       logl = logl -(alphaX*lambda_t) - 
         (betaX*lambda_t*log(gammaX +1))
       
-      print('logl')
-      print(logl)
-      
     } else {
       
       #Terms in inner sum
       inner_sum_vec <- vector('numeric', x[t])
       
-      for (y_t in 0:x[t]+1){ #Sum for all values of y_t up to x_t
+      for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
         
         #Store inner L(x_i) term in vector position
-        inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
-          lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
+        inner_sum_vec[y_t + 1] = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
+           lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
                                                     lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) + 
-          (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1)
+          (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
         
       }
       
-      
       #Calculate max element in inner vector, for all y_t for a given t, x[t]
-      x_max = max(inner_sum_vec)
+      lx_max = max(inner_sum_vec)
       
       #Calculate lse
-      innersum2 = 0
-      for (i in 1:length(inner_sum_vec)){
-        innersum2 = innersum2 + exp(inner_sum_vec[i] - x_max)
-      }
-      lse = x_max + log(innersum2)
+      lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
       
       #Add to overall log likelihood 
       logl = logl + lse 
-      
-      print('logl')
-      print(logl)
       
     }
     
@@ -123,10 +108,9 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
 #Apply
 num_days = 15
 x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
-x
 logl_1 = log_like_ss(x, alphaX, betaX, gammaX)
-logl_1
+print(logl_1)
 
 #log exp sum trick
-logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
-logl_1
+logl_2 = log_like_ss_lse(x, alphaX, betaX, gammaX)
+print(logl_2)
