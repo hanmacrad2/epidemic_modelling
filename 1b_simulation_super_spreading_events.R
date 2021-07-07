@@ -73,7 +73,7 @@ plot_variations = function(list_r0, list_scale_shape, num_days){
     shape_gamma = shape_scale[[1]]
     scale_gamma = shape_scale[[2]]
     for (r0 in list_r0){
-      num_daily = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+      num_daily = simulate_branching_ss(num_days, r0, shape_gamma, scale_gamma)
       plot.ts(num_daily,lwd = 2, ylab = "N Daily infections", col = 'purple')
     }
   }
