@@ -26,7 +26,7 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
   
   for (t in 2:num_days) {
       
-      lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+      lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
       inner_sum_xt = 0
       
       for (y_t in 0:x[t]){ #Sum for all values of y_t
@@ -68,12 +68,12 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   for (t in 2:num_days) {
     
     print(t)
-    lambda_t = sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+    lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
     
     if(x[t] == 0){ #y_t also equal to zero
       
       #L(x_i) for y_t, x_t = 0
-      logl = logl -(alphaX*lambda_t) - lgamma(betaX*lambda_t) - 
+      logl = logl -(alphaX*lambda_t) - 
         (betaX*lambda_t*log(gammaX +1))
       
       print('logl')
