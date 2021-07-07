@@ -97,8 +97,8 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
         
         #Store inner L(x_i) term in vector position
-        inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) 
-          + lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
+        inner_sum_vec[y_t + 1] = -(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
+          lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) - 
                                                     lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) + 
           (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1)
         
