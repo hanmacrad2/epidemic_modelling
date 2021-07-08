@@ -80,11 +80,13 @@ plot_range_r0(list_r0, num_days, shape_gamma, scale_gamma, colorsX)
 #Plot range of gamma distributions
 
 #Plot range of R0
-plot_range_r0 = function(r0X, num_days, list_gamma_params, shape_gamma, scale_gamma, colorsX){
+plot_range_gamma = function(r0X, num_days, list_gamma_params, colorsX){
+  i = 1
   #Plot
-  for (i in seq_along(list_gamma_params)) {
+  for (shape_scale in list_gamma_params) {
     #Extract params
-    shape_scale = list_gamma_params[i]
+    #shape_scale = list_gamma_params[[i]]
+    #print(shape_scale)
     shape_gamma = shape_scale[[1]]
     scale_gamma = shape_scale[[2]]
     print(shape_gamma)
@@ -95,25 +97,32 @@ plot_range_r0 = function(r0X, num_days, list_gamma_params, shape_gamma, scale_ga
     #Plot first val
     if (i == 1) {
       plot.ts(num_daily, lwd = 2, xlab = 'Time', ylab = "N Daily infections",
-              main = expression(paste('No. Daily Infections, R0 = ', r0X)),
+              main = paste('No. Daily Infections, R0 = 2.0'),# r0X),
               col = colorsX[i])
     } else {
       lines(num_daily, lwd = 2, col = colorsX[i])
     }
-    
+   i = i + 1 
   }
-  #legend("topleft", inset=.03,
-         #legend = sapply(1:3, function(x) as.expression(substitute(alpha == B,
-                                                                   #list(B = as.name(x))))),
-         #lty = 1:3)
+  
+  legend("topleft", inset=.03,
+         legend = c(expression(paste(Gamma, "(2,2)")),
+                    expression(paste(Gamma, "(3,2)")),
+                    expression(paste(Gamma, "(1.5, 2)")),
+                    expression(paste(Gamma, "(4,1)")),
+                    expression(paste(Gamma, "(6,1)"))),
+         col= colorsX, lwd = c(2,2,2,2,2), cex=0.8)
   
 }
-
+#list_gamma_params[1][[1]]
 #Apply
 num_days = 30
-list_r0 = rev(c(1.0, 1.5, 2.0, 2.5, 3.0))
+#list_r0 = rev(c(1.0, 1.5, 2.0, 2.5, 3.0))
 colorsX = c('orange', 'red', 'green', 'blue', 'cyan')
-plot_range_r0(list_r0, num_days, shape_gamma, scale_gamma, colorsX)
+
+list_gamma_params = list(list(2,2), list(3,2), list(1.5, 2), list(4, 1), list(6, 1))
+r0X = 2.5
+plot_range_gamma(r0X, num_days, list_gamma_params, colorsX)
 
 #*************************************
 #Plot variation of r0 on multiple plots
@@ -147,4 +156,27 @@ plot(seq1, gammaX, type =  'l', xlab = "Time", ylab = '',
      col = 'orange', lwd = 2.5)
 legend()
 
+#legend
+legend("topleft", inset=.03,
+       legend = c(expression(paste(Gamma, "(", list_gamma_params[1][[1]],
+                                                         list_gamma_params[1][[2]],")")),
+                  legend = c(expression(paste(Gamma, "(", list_gamma_params[1][[1]],
+                                              list_gamma_params[1][[2]],")")),
+                             legend = c(expression(paste(Gamma, "(", list_gamma_params[1][[1]],
+                                                         list_gamma_params[1][[2]],")")),
+                                        legend = c(expression(paste(Gamma, "(", list_gamma_params[1][[1]],
+                                                                    list_gamma_params[1][[2]],")")),
+                                                   legend = c(expression(paste(Gamma, "(", list_gamma_params[1][[1]],
+                                                                               list_gamma_params[1][[2]],")"))),
+                                                              lwd = c('2', '2', '2', '2', '2')
 
+#Legend
+legend("topleft", inset=.03,
+       legend = c(expression(paste(Gamma, "(2,2)")),
+                              expression(paste(Gamma, "(3,2)")),
+                              expression(paste(Gamma, "(1.5, 2)")),
+                              expression(paste(Gamma, "(4,1)")),
+                              expression(paste(Gamma, "(6,1)")),
+                  lwd = c('2', '2', '2', '2', '2')))
+
+(2,2), list(3,2), list(1.5, 2), list(4, 1), list(6, 1))
