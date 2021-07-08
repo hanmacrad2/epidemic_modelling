@@ -38,15 +38,85 @@ time_elap = end_time - start_time
 x2
 
 #Plots
-plot.ts(x2, ylab = "N Daily infections", main = 'Num Daily Infections, R0 = 3.1')
+plot.ts(x2, ylab = "N Daily infections", main = 'Number of Daily Infections, R0 = 3.1')
 
 #Cumulative data
 cum_data <- cumsum(x2)
-plot.ts(cum_data, , ylab = "Cumulative infections", main = 'Cumulative Infections, R0 = 3.1')
+plot.ts(cum_data, ylab = "Cumulative infections", main = 'Cumulative Infections, R0 = 3.1',
+        col = 'orange', lwd = 2)
 
 
 #*********************************************************************
 #Plots
+#Plot range of R0
+
+plot_range_r0 = function(list_r0, num_days, shape_gamma, scale_gamma, colorsX){
+  #Plot
+  for (i in seq_along(list_r0)) {
+    r0X = list_r0[i]
+    print(r0X)
+    num_daily = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
+    #Plot first val
+    if (i == 1) {
+      plot.ts(num_daily, lwd = 2, xlab = 'Time', ylab = "N Daily infections",
+              main = expression(paste('No. Daily Infections, ' ~ Gamma, "(6,1)")),
+              col = colorsX[i])
+    } else {
+      lines(num_daily, lwd = 2, col = colorsX[i])
+    }
+    
+  }
+  legend("topleft", inset=.03, legend = list_r0,
+         col= colorsX, lwd = c(2,2,2,2,2), cex=0.8)
+  }
+
+#Apply
+num_days = 30
+list_r0 = rev(c(1.0, 1.5, 2.0, 2.5, 3.0))
+colorsX = c('orange', 'red', 'green', 'blue', 'cyan')
+plot_range_r0(list_r0, num_days, shape_gamma, scale_gamma, colorsX)
+
+#*********************************
+#Plot range of gamma distributions
+
+#Plot range of R0
+plot_range_r0 = function(r0X, num_days, list_gamma_params, shape_gamma, scale_gamma, colorsX){
+  #Plot
+  for (i in seq_along(list_gamma_params)) {
+    #Extract params
+    shape_scale = list_gamma_params[i]
+    shape_gamma = shape_scale[[1]]
+    scale_gamma = shape_scale[[2]]
+    print(shape_gamma)
+    print(scale_gamma)
+    
+    num_daily = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
+    
+    #Plot first val
+    if (i == 1) {
+      plot.ts(num_daily, lwd = 2, xlab = 'Time', ylab = "N Daily infections",
+              main = expression(paste('No. Daily Infections, R0 = ', r0X)),
+              col = colorsX[i])
+    } else {
+      lines(num_daily, lwd = 2, col = colorsX[i])
+    }
+    
+  }
+  #legend("topleft", inset=.03,
+         #legend = sapply(1:3, function(x) as.expression(substitute(alpha == B,
+                                                                   #list(B = as.name(x))))),
+         #lty = 1:3)
+  
+}
+
+#Apply
+num_days = 30
+list_r0 = rev(c(1.0, 1.5, 2.0, 2.5, 3.0))
+colorsX = c('orange', 'red', 'green', 'blue', 'cyan')
+plot_range_r0(list_r0, num_days, shape_gamma, scale_gamma, colorsX)
+
+#*************************************
+#Plot variation of r0 on multiple plots
 plot_variations = function(list_r0, list_scale_shape, num_days){
   #Plot
   par(mfrow=c(3,5))
@@ -70,6 +140,11 @@ plot_variations(list_r0,  list_shape_scale, num_days)
 
 #**********
 #Inspect gamma density
-seq1 = seq(0.0, 10, by = 1)
-gammaX = dgamma(seq1, shape = 1.5, scale = 2)
-plot(seq1, gammaX)
+seq1 = seq(0.0, 9.5, by = 0.01)
+gammaX = dgamma(seq1, shape = shape_gamma, scale = scale_gamma)
+plot(seq1, gammaX, type =  'l', xlab = "Time", ylab = '', 
+     main = expression(paste('Time-varying infectiousness of each individual,' ~ Gamma, "(6,1)")),
+     col = 'orange', lwd = 2.5)
+legend()
+
+
