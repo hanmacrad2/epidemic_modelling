@@ -1,5 +1,5 @@
 #Log likelihood with additional function using log_exp_sum trick
-#source("1b_simulation_super_spreading_events.R")
+source("1b_simulation_super_spreading_events.R")
 
 #Parameters
 n = 50000
