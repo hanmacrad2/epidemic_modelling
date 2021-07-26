@@ -121,7 +121,7 @@ num_days = 30
 colorsX = c('orange', 'red', 'green', 'blue', 'cyan')
 
 list_gamma_params = list(list(2,2), list(3,2), list(1.5, 2), list(4, 1), list(6, 1))
-r0X = 2.5
+r0X = 2.0
 plot_range_gamma(r0X, num_days, list_gamma_params, colorsX)
 
 #*************************************
@@ -150,10 +150,10 @@ plot_variations(list_r0,  list_shape_scale, num_days)
 #**********
 #Inspect gamma density
 seq1 = seq(0.0, 9.5, by = 0.01)
-gammaX = dgamma(seq1, shape = shape_gamma, scale = scale_gamma)
+gammaX = dgamma(seq1, shape = 1.5, scale = 2)
 plot(seq1, gammaX, type =  'l', xlab = "Time", ylab = '', 
-     main = expression(paste('Time-varying infectiousness of each individual,' ~ Gamma, "(6,1)")),
-     col = 'orange', lwd = 2.5)
+     main = expression(paste('Time-varying infectiousness of each individual,' ~ Gamma, "(1.5, 2)")),
+     col = 'green', lwd = 2.5)
 legend()
 
 #legend

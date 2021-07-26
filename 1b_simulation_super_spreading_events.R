@@ -47,10 +47,10 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
 }
 
 #Implement
-alphaX = 2
+alphaX = 3
 betaX = 3
-gammaX = 2
-num_days = 10
+gammaX = 3
+num_days = 30
 start_time = Sys.time()
 x = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, gammaX, betaX)
 end_time = Sys.time()
@@ -59,7 +59,9 @@ time_elap = end_time - start_time
 x
 
 #Plots
-plot.ts(x, ylab = "N Daily infections", main = 'Simulation of Super-spreading events - Daily Infections')
+plot.ts(x, ylab = "N Daily infections",
+        main = expression(paste('No. Daily Infections of Super-Spreading events', alpha, '= 3', beta, '= 3', gamma, '= 3')),
+        col = 'orange', lwd = 2)
 cum_data <- cumsum(x)
 plot.ts(cum_data, ylab = "Cumulated infections", main = 'Simulation of Super-spreading events - Cumulated Infections')
 
