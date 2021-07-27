@@ -38,8 +38,8 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
   total_infecteds = vector('numeric', num_days)
   nsse_infecteds = vector('numeric', num_days)
   sse_infecteds = vector('numeric', num_days)
-  total_infecteds[1] = 1
-  nsse_infecteds[1] = 1
+  total_infecteds[1] = 2
+  nsse_infecteds[1] = 2
   sse_infecteds[1] = 0
   
   #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people

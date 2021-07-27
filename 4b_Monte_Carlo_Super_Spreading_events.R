@@ -157,6 +157,36 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in = 50
 
 #********
 #*Implement
+num_days = 30
+num_days = 30 #100
+shape_gamma = 6
+scale_gamma = 1
+alphaX = 3 #Without ss event, ~r0. 
+betaX = 3
+gammaX = 3
+data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+data
+
+#Time
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+sigma = 1
+mcmc_params_ad = adaptive_mc_ss(data, n, sigma, sigma, sigma)
+end_time = Sys.time()
+time_elap = end_time - start_time
+print('Time elapsed:')
+print(time_elap)
+
+#Extract params
+alpha_mcmc = mcmc_params_ad[1]
+alpha_mcmc = unlist(alpha_mcmc)
+
+beta_mcmc = mcmc_params_ad[2]
+beta_mcmc = unlist(beta_mcmc)
+
+gamma_mcmc = mcmc_params_ad[3]
+gamma_mcmc = unlist(gamma_mcmc)
 
 
 
