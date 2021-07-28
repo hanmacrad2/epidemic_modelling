@@ -50,7 +50,7 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability
+    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written
     tot_rate = alphaX*lambda_t #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     

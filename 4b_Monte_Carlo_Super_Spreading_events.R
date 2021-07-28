@@ -49,7 +49,7 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in = 50
       alpha_dash = abs(alpha_dash)
     }
     
-    log_alpha = log_like_ss_lse_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    log_alpha = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
     - log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     + dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
     - dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE) 
@@ -188,7 +188,8 @@ beta_mcmc = unlist(beta_mcmc)
 gamma_mcmc = mcmc_params_ad[3]
 gamma_mcmc = unlist(gamma_mcmc)
 
-
+#Plot
+plot.ts
 
 #**********************************************
 #Plots
