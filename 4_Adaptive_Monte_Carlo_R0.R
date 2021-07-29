@@ -226,11 +226,11 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     
     #New Proposal
     Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) 
-    print('y')
-    print(Y)
     if(Y < 0){
       Y = abs(Y)
     }
+    print('y')
+    print(Y)
     
     log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
@@ -249,7 +249,7 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     #Scaling factor
     print('log_alpha')
     print(log_alpha)
-    scaling_vec[i] = scaling_vec[i-1] + exp(log_alpha - alpha_star)
+    scaling_vec[i] = scaling_vec[i-1] + (1/i)*(exp(log_alpha) - alpha_star)
     print('scaling_vec')
     print(scaling_vec[i])
     
@@ -285,3 +285,6 @@ as_params = adaptive_scaling_metropolis_r0(data, n, sigma, alpha_star, x0 = 1, b
 
 r0_as = as_params[1]
 r0_as = unlist(r0_as)
+
+#Plot
+plot.ts(r0_as)
