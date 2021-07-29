@@ -226,6 +226,9 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     
     #New Proposal
     Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) 
+    
+    if (is.na(Y) || is.nan(Y) || is.infinite(Y)) next
+    
     if(Y < 0){
       Y = abs(Y)
     }
@@ -276,7 +279,7 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
   r0_vec = r0_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(list(r0_vec, accept_rate, num_samples, sigma))
+  return(list(r0_vec, accept_rate, num_samples))
 }
 
 #Apply
