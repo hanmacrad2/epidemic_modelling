@@ -43,6 +43,29 @@ log_like <- function(y, r0_dash){
   
 }
 
+#Version 2
+log_likeII <- function(x, r0_dash){
+  
+  #Params
+  num_days = length(x)
+  shape_gamma = 6
+  scale_gamma = 1
+  
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  logl = 0
+  
+  for (t in 2:num_days) {
+    
+    lambda = r0_dash*sum(x[1:t-1]*rev(prob_infect[1:t-1]))
+    logl = logl + x[t]*log(lambda) - lambda + log(1/(factorial(x[t])))
+    
+  }
+  
+  logl
+  
+}
+
 #********************************************************************
 #Adaptive MCMC
 adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 2500
@@ -61,18 +84,21 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
   for(i in 2:n) {
     
     #New Proposal
-    Y <- r0_vec[i-1] + rnorm(1, sd = sigma) 
+    Y <- r0_vec[i-1] + rnorm(1, sd = sigma)
+    print(Y)
     if(Y < 0){
       Y = abs(Y)
     }
     
     log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
-    
+    print('log_alpha')
+    print(log_alpha)
     #if (is.na(log_alpha)){
       #print('na value, Y value:')
       #print(Y)
     #}
-    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    #if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    if(log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
       count_accept = count_accept + 1
     } else {
@@ -104,6 +130,11 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
   return(list(r0_vec, accept_rate, num_samples, sigma))
 }
 
+
+#Apply
+mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
+
+
 #Plots
 mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   
@@ -133,6 +164,7 @@ mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   dev.off()
   
 }
+
 
 #********************************************************************
 #Apply Adaptive MCMC to a range of r0s
@@ -219,7 +251,7 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
   U <- runif(n)
   count_accept = 0
   count_reject = 0
-  sd_sample = 1
+  #sd_sample = 1
   
   #MCMC chain
   for(i in 2:n) {
@@ -227,19 +259,34 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     #New Proposal
     Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) 
     
-    if (is.na(Y) || is.nan(Y) || is.infinite(Y)) next
+    #if (is.na(Y) || is.nan(Y) || is.infinite(Y)) next
     
     if(Y < 0){
       Y = abs(Y)
     }
-    #print('y')
-    #print(Y)
+    print('y')
+    print(Y)
     
-    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    #Prints
+    #print('loglikes')
+    #loglike1 = log_like(data, Y)
+    #print(loglike1)
+    #loglike2 = log_like(data, r0_vec[i-1])
+    #print(loglike2)
+    #dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
+    #print(dg1)
+    #dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    #print(dg2)
+    
+    log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    print('log_alpha')
+    print(log_alpha)
     
     #if (is.na(log_alpha)){
-    #print('na value, Y value:')
-    #print(Y)
+      #print('na log_alpha value:')
+      #print(log_alpha)
+      #print('Y value:')
+      #print(Y)
     #}
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
@@ -253,10 +300,8 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     #print('log_alpha')
     #print(log_alpha)
     scaling_vec[i] = scaling_vec[i-1] + (1/i)*(exp(log_alpha) - alpha_star)
-    #print('scaling_vec')
-    #print(scaling_vec[i])
-    
-    
+    print('scaling_vec')
+    print(scaling_vec[i])
     
     #Adaptive MC
     #if (i == burn_in){
