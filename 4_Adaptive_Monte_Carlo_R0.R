@@ -90,7 +90,7 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
       Y = abs(Y)
     }
     
-    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     print('log_alpha')
     print(log_alpha)
     #if (is.na(log_alpha)){
@@ -133,6 +133,11 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
 
 #Apply
 mcmc_params_ad = adaptive_mc_r0(data, n, sigma)
+r0_as = mcmc_params_ad[1]
+r0_as = unlist(r0_as)
+
+#Plot
+plot.ts(r0_as)
 
 
 #Plots
@@ -257,7 +262,7 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
   for(i in 2:n) {
     
     #New Proposal
-    Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) 
+    Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) exp
     
     #if (is.na(Y) || is.nan(Y) || is.infinite(Y)) next
     
@@ -268,15 +273,16 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     print(Y)
     
     #Prints
-    #print('loglikes')
-    #loglike1 = log_like(data, Y)
-    #print(loglike1)
-    #loglike2 = log_like(data, r0_vec[i-1])
-    #print(loglike2)
-    #dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
-    #print(dg1)
-    #dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    #print(dg2)
+    print('log-likelihoods')
+    loglike1 = log_like(data, Y)
+    print(loglike1)
+    loglike2 = log_like(data, r0_vec[i-1])
+    print(loglike2)
+    dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
+    print('priors')
+    print(dg1)
+    dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    print(dg2)
     
     log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     print('log_alpha')
@@ -288,12 +294,14 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
       #print('Y value:')
       #print(Y)
     #}
-    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    #if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    if(log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
       count_accept = count_accept + 1
     } else {
       r0_vec[i] <- r0_vec[i-1]
       count_reject = count_reject + 1
+      log_alpha = 0 
     }
     
     #Scaling factor
