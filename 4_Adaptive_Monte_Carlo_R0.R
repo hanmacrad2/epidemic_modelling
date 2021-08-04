@@ -9,7 +9,7 @@ par(mar=c(1,1,1,1))
 
 #Params
 num_days = 30 # 60 #100
-r0 = 3.0
+r0 = 3.5
 n = 50000
 shape_gamma = 6
 scale_gamma = 1
@@ -17,6 +17,7 @@ scale_gamma = 1
 prior_r0_k = 1
 prior_r0_theta = 1
 data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+data
 
 
 #***********************************
@@ -152,6 +153,8 @@ plot.ts(r0_as)
 #Plots
 mcmc_plotting_adaptive <- function(mcmc_vector, r0_true, folder_dir_ad) {
   
+  #Create folder
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
   #Folder save
   pdf(paste(folder_dir_ad, "/", "adpative_mc_r0_true_", r0_true, ".pdf", sep=""))
   
@@ -352,4 +355,8 @@ r0_as = as_params[1]
 r0_as = unlist(r0_as)
 
 #Plot
-plot.ts(r0_as)
+#plot.ts(r0_as)
+
+#Plotting
+folder_dir_ad = 'Results/Adaptive_MC/adaptive_scaling_iterI'
+mcmc_plotting_adaptive(r0_as, r0, folder_dir_ad)
