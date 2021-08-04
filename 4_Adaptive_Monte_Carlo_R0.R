@@ -85,18 +85,26 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
     
     #New Proposal
     Y <- r0_vec[i-1] + rnorm(1, sd = sigma)
-    print(Y)
     if(Y < 0){
       Y = abs(Y)
     }
     
+    #Prints
+    # print('log-likelihoods')
+    # loglike1 = log_like(data, Y)
+    # print(loglike1)
+    # loglike2 = log_like(data, r0_vec[i-1])
+    # print(loglike2)
+    # dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
+    # print('priors')
+    # print(dg1)
+    # dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    # print(dg2)
+    
     log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
-    print('log_alpha')
-    print(log_alpha)
-    #if (is.na(log_alpha)){
-      #print('na value, Y value:')
-      #print(Y)
-    #}
+    # print('log_alpha')
+    # print(log_alpha)
+
     #if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
     if(log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
@@ -110,6 +118,7 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
     if (i == burn_in){
       sigma = var(r0_vec[2:i])*(2.38^2)
     }
+    
     
   }
   #Final stats
@@ -269,24 +278,24 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     if(Y < 0){
       Y = abs(Y)
     }
-    print('y')
-    print(Y)
-    
-    #Prints
-    print('log-likelihoods')
-    loglike1 = log_like(data, Y)
-    print(loglike1)
-    loglike2 = log_like(data, r0_vec[i-1])
-    print(loglike2)
-    dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
-    print('priors')
-    print(dg1)
-    dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    print(dg2)
+    # print('y')
+    # print(Y)
+    # 
+    # #Prints
+    # print('log-likelihoods')
+    # loglike1 = log_like(data, Y)
+    # print(loglike1)
+    # loglike2 = log_like(data, r0_vec[i-1])
+    # print(loglike2)
+    # dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
+    # print('priors')
+    # print(dg1)
+    # dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    # print(dg2)
     
     log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
-    print('log_alpha')
-    print(log_alpha)
+    # print('log_alpha')
+    # print(log_alpha)
     
     #if (is.na(log_alpha)){
       #print('na log_alpha value:')
@@ -301,15 +310,15 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     } else {
       r0_vec[i] <- r0_vec[i-1]
       count_reject = count_reject + 1
-      log_alpha = 0 
     }
-    
+    log_alpha = min(0, log_alpha)
+      
     #Scaling factor
     #print('log_alpha')
     #print(log_alpha)
     scaling_vec[i] = scaling_vec[i-1] + (1/i)*(exp(log_alpha) - alpha_star)
-    print('scaling_vec')
-    print(scaling_vec[i])
+    # print('scaling_vec')
+    # print(scaling_vec[i])
     
     #Adaptive MC
     #if (i == burn_in){
