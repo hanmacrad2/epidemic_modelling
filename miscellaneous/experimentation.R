@@ -102,6 +102,108 @@ logl_1 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 logl_1
 
 
+#**********************************************************************
+#*Adaptive Scaling Algorithm
+
+adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, burn_in = 5000) { #burn_in = 2500
+  
+  'Returns mcmc samples of R0 & acceptance rate'
+  
+  #Set up
+  r0_vec <- vector('numeric', n)
+  scaling_vec <- vector('numeric', n)
+  r0_vec[1] <- x0
+  scaling_vec[1] <- x0
+  U <- runif(n)
+  count_accept = 0
+  count_reject = 0
+  #sd_sample = 1
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    #New Proposal
+    Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) #sd = sigma) exp
+    
+    #if (is.na(Y) || is.nan(Y) || is.infinite(Y)) next
+    
+    if(Y < 0){
+      Y = abs(Y)
+    }
+    # print('y')
+    # print(Y)
+    # 
+    # #Prints
+    # print('log-likelihoods')
+    # loglike1 = log_like(data, Y)
+    # print(loglike1)
+    # loglike2 = log_like(data, r0_vec[i-1])
+    # print(loglike2)
+    # dg1 = dgamma(Y, shape = 1, scale = 1, log = TRUE)
+    # print('priors')
+    # print(dg1)
+    # dg2 = dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    # print(dg2)
+    
+    log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
+    # print('log_alpha')
+    # print(log_alpha)
+    
+    #if (is.na(log_alpha)){
+    #print('na log_alpha value:')
+    #print(log_alpha)
+    #print('Y value:')
+    #print(Y)
+    #}
+    #if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    if(log(U[i]) < log_alpha) {
+      r0_vec[i] <- Y
+      count_accept = count_accept + 1
+    } else {
+      r0_vec[i] <- r0_vec[i-1]
+      count_reject = count_reject + 1
+    }
+    log_alpha = min(0, log_alpha)
+    
+    #Scaling factor
+    #print('log_alpha')
+    #print(log_alpha)
+    scaling_vec[i] = scaling_vec[i-1] + (1/i)*(exp(log_alpha) - alpha_star)
+    # print('scaling_vec')
+    # print(scaling_vec[i])
+    
+    #Adaptive MC
+    #if (i == burn_in){
+    #  sigma = var(r0_vec[2:i])*(2.38^2)
+    #}
+    
+  }
+  #Final stats
+  total_iters = count_accept + count_reject
+  accept_rate = 100*(count_accept/(count_accept+count_reject))
+  num_samples = count_accept
+  print("Total iterations = ")
+  print(total_iters)
+  print("Acceptance rate = ")
+  print(accept_rate)
+  print("Number samples = ")
+  print(count_accept)
+  
+  #Burn-in
+  r0_vec = r0_vec[burn_in:n]
+  
+  #Return r0, acceptance rate
+  return(list(r0_vec, accept_rate, num_samples))
+}
+
+#Apply
+alpha_star = 0.40
+as_params = adaptive_scaling_metropolis_r0(data, n, sigma, alpha_star, x0 = 1, burn_in = 5000)
+
+r0_as = as_params[1]
+r0_as = unlist(r0_as)
+
+
 
 
 
