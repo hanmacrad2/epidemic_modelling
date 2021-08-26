@@ -223,3 +223,4 @@ prior_alpha_theta = 1
 #logl_2 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 #print(logl_2)
 
+

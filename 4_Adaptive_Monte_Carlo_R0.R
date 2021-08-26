@@ -2,6 +2,8 @@
 #Adaptive Monte Carlo targeting r0
 library(gridExtra)
 
+library(ggplot2)
+
 #Setup
 source("1_simulation.R")
 source("functions.R")
@@ -106,8 +108,8 @@ adaptive_mc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 5000) { #burn_in = 
     # print('log_alpha')
     # print(log_alpha)
 
-    #if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
-    if(log(U[i]) < log_alpha) {
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    #if(log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
       count_accept = count_accept + 1
     } else {
@@ -256,7 +258,7 @@ df_ad_results_formI
 #**********************************************************************
 #*Adaptive Scaling Algorithm
 
-adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, burn_in = 5000) { #burn_in = 2500
+adaptive_scaling_metropolis_r0 <- function(data, sigma, alpha_star, n = 100000, x0 = 1, burn_in = 5000) { #burn_in = 2500
   
   'Adaptive scaling Metropolis algorithm (adpoted from Vihola (2011)
    Returns mcmc samples of R0 & acceptance rate'
@@ -274,15 +276,18 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
   for(i in 2:n) {
     
     #New Proposal
-    Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1) 
+    Y <- r0_vec[i-1] + exp(scaling_vec[i-1])*rnorm(1)
+    sigma = exp(scaling_vec[i-1])*rnorm(1)
     
+    if(!(is.na(Y))){
+      
     if(Y < 0){
       Y = abs(Y)
     }
     
     log_alpha = log_likeII(data, Y) - log_likeII(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) #log_prior(theta_dash) - log_prior(theta) = 1 - 1 
     
-    if(log(U[i]) < log_alpha) {
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       r0_vec[i] <- Y
       count_accept = count_accept + 1
     } else {
@@ -294,6 +299,7 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
     #Scaling factor
     scaling_vec[i] = scaling_vec[i-1] + (1/i)*(exp(log_alpha) - alpha_star)
     
+    }
   }
   #Final stats
   total_iters = count_accept + count_reject
@@ -310,19 +316,126 @@ adaptive_scaling_metropolis_r0 <- function(data, n, sigma, alpha_star, x0 = 1, b
   r0_vec = r0_vec[burn_in:n]
   
   #Return r0, acceptance rate
-  return(list(r0_vec, accept_rate, num_samples))
+  return(list(r0_vec, accept_rate, num_samples, sigma))
 }
 
 #Apply
 alpha_star = 0.40
-as_params = adaptive_scaling_metropolis_r0(data, n, sigma, alpha_star, x0 = 1, burn_in = 5000)
+as_params = adaptive_scaling_metropolis_r0(data, sigma, alpha_star)
 
 r0_as = as_params[1]
 r0_as = unlist(r0_as)
 
 #Plot
-#plot.ts(r0_as)
+plot.ts(r0_as)
 
 #Plotting
 folder_dir_ad = 'Results/Adaptive_MC/adaptive_scaling_iterI'
 mcmc_plotting_adaptive(r0_as, r0, folder_dir_ad)
+
+
+#****************************************************************************************************************************************
+#Apply adaptive scaling to a range
+apply_adaptive_scaling_mc_range_r0 <- function(list_r0, sigma, folder_dir_ad){
+  
+  #Create folder
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  list_accept_rate = vector('numeric', length(list_r0))
+  list_sd = vector('numeric', length(list_r0))
+  list_num_samp = vector('numeric', length(list_r0))
+  list_time_taken = vector('numeric', length(list_r0))
+  i = 1
+  
+  for (r0X in list_r0){
+    
+    #Get simulated data when r0 is r0X
+    print(r0X)
+    data = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
+    
+    #Time
+    start_time = Sys.time()
+    mcmc_params_ad = adaptive_scaling_metropolis_r0(data, sigma, alpha_star)
+    end_time = Sys.time()
+    time_elap = end_time - start_time
+    print('Time elapsed:')
+    print(time_elap)
+    
+    #Extract params
+    r0_mcmc = mcmc_params_ad[1]
+    r0_mcmc = unlist(r0_mcmc)
+    
+    accept_rate = mcmc_params_ad[[2]]
+    list_accept_rate[i] = round(accept_rate, 2)
+    
+    num_samples = mcmc_params_ad[[3]]
+    list_num_samp[i] = num_samples
+    
+    sd_final = mcmc_params_ad[[4]]
+    list_sd[i] = round(sd_final, 3)
+    
+    list_time_taken[i] = round(time_elap, 2)
+    i = i + 1
+    
+    #Apply Plotting
+    mcmc_plotting_adaptive(r0_mcmc, r0X, folder_dir_ad)
+    
+  }
+  
+  #Create dataframe
+  df_results <- data.frame(
+    r0 = list_r0,
+    accept_rate = unlist(list_accept_rate),
+    n_samples = unlist(list_num_samp),
+    time_sec = unlist(list_time_taken),
+    sd_final = unlist(list_sd))
+  
+  print(df_results)
+  
+  df_results
+}
+
+#*******************************************************************************
+#*#Display Results
+#*
+#Apply
+sigma = 0.75
+folder_dir_ad = 'Results/Adaptive_scaling_MCMC/adaptive_mcmc_iter_report'
+#list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+#list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
+list_r0 = c(2.75, 2.75, 2.75, 3.5, 3.5, 3.5, 8, 8, 8, 10, 10, 10) 
+df_ad_results_formI = apply_adaptive_scaling_mc_range_r0(list_r0, sigma, folder_dir_ad)
+df_ad_results_formI
+
+#Plot acceptance rate results
+vec_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)
+vec_rate = c(35.4, 39.17, 40.1, 40.42, 39.34, 36.62, 39.37, 35.17, 39.24, 26.47, 38.06, 38.34, 37.98, 37.34, 38.12, 36.48, 33.41, 35.88)
+df_acc_rate = data.frame(vec_r0, vec_rate)
+
+#Plot
+ggplot(df_acc_rate, aes(x=vec_r0, y=vec_rate)) +
+  geom_line() +
+  ylim(0, 100) +
+  geom_point() +
+  ggtitle("Acceptance rate for varying R0")
+
+ggplot(df_acc_rate, aes(x=vec_r0, y=vec_rate)) +
+  geom_line( color="grey") +
+  ylim(0, 100) +
+  theme_bw() + 
+  geom_point(shape=21, color="black", fill="black", size=6) +
+  ggtitle("Acceptance rate for varying R0")
+
+ggplot(df_acc_rate, aes(x=vec_r0, y=vec_rate)) +
+geom_line( color="grey") +
+  ylim(0, 100) +
+geom_point(shape=21, color="black", fill="#69b3a2", size=6) +
+ggtitle("Acceptance rate for varying R0")
+
+#Plot
+ggplot(df_acc_rate, aes(x=vec_r0, y=vec_rate)) +
+  geom_line( color="grey") +
+  ylim(0, 100) +
+  theme_bw() + 
+  xlab("R0") + ylab("Acceptance Rate %") + 
+  geom_point(shape=21, color="black", fill="black", size=6) +
+  ggtitle("Acceptance rate % for varying R0")

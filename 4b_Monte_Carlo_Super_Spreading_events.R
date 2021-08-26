@@ -374,5 +374,188 @@ list_alphaX = c(1.0, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #
 #df_ss_results = apply_adaptive_mc_range_alpha_ss(list_alphaX, sigma, sigma, sigma, betaX, gammaX, folder_dir_ad)
 
 
+#***************************************************************************************************************************
+#* Adaptive Scaling 
+
+#Adaptive MCMC
+adaptive_scaling_met_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in = 5000) { #burn_in = 2500
+  
+  'Returns mcmc samples of alpha & acceptance rate'
+  
+  #Set up
+  alpha_vec <- vector('numeric', n)
+  beta_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n)
+  
+  alpha_vec[1] <- x0
+  beta_vec[1] <- x0
+  gamma_vec[1] <- x0
+  
+  U <- runif(n)
+  count_accept1 = 0
+  count_reject1 = 0
+  count_accept2 = 0
+  count_reject2 = 0
+  count_accept3 = 0
+  count_reject3 = 0
+  sd_sample = 1
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    #******************
+    #alpha
+    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma1) 
+    if(alpha_dash < 0){
+      alpha_dash = abs(alpha_dash)
+    }
+    
+    log_alpha = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    - log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+    + dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+    - dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+      alpha_vec[i] <- alpha_dash
+      count_accept1 = count_accept1 + 1
+    } else {
+      alpha_vec[i] <- alpha_vec[i-1]
+      count_reject1 = count_reject1 + 1
+    }
+    
+    #Adaptive MC
+    if (i == burn_in){
+      sigma1 = var(alpha_vec[2:i])*(2.38^2)
+      print('Burn in reached')
+    }
+    
+    #******************
+    #beta
+    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma2) 
+    if(beta_dash < 0){
+      beta_dash = abs(beta_dash)
+    }
+    
+    log_alpha = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1]) 
+    - log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    + dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
+    - dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE) #Do other priors cancel?
+    
+    
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+      beta_vec[i] <- beta_dash
+      count_accept2 = count_accept2 + 1
+    } else {
+      beta_vec[i] <- beta_vec[i-1]
+      count_reject2 = count_reject2 + 1
+    }
+    
+    #Adaptive MC
+    if (i == burn_in){
+      sigma2 = var(beta_vec[2:i])*(2.38^2)
+    }
+    
+    #******************
+    #gamma
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma3) 
+    if(gamma_dash < 0){
+      gamma_dash = abs(gamma_dash)
+    }
+    
+    log_alpha = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_dash)  
+    - log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    + dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
+    - dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+      gamma_vec[i] <- gamma_dash
+      count_accept3 = count_accept3 + 1
+    } else {
+      gamma_vec[i] <- gamma_vec[i-1]
+      count_reject3 = count_reject3 + 1
+    }
+    
+    #Adaptive MC
+    if (i == burn_in){
+      sigma3 = var(gamma_vec[2:i])*(2.38^2)
+    }
+    
+    
+  }
+  #Final stats
+  #alpha
+  total_iters1 = count_accept1 + count_reject1
+  accept_rate1 = 100*(count_accept1/(count_accept1+count_reject1))
+  num_samples1 = count_accept1
+  print("Acceptance rate1 = ")
+  print(accept_rate1)
+  
+  #beta
+  total_iters2 = count_accept2 + count_reject2
+  accept_rate2 = 100*(count_accept2/(count_accept2+count_reject2))
+  num_samples2 = count_accept2
+  print("Acceptance rate2 = ")
+  print(accept_rate2)
+  
+  #gamma
+  total_iters3 = count_accept3 + count_reject3
+  accept_rate3 = 100*(count_accept3/(count_accept3+count_reject3))
+  num_samples3 = count_accept3
+  print("Acceptance rate3 = ")
+  print(accept_rate3)
+  
+  #Burn-in 
+  alpha_vec = alpha_vec[burn_in:n]
+  beta_vec = beta_vec[burn_in:n]
+  gamma_vec = gamma_vec[burn_in:n]
+  
+  #Return alpha, acceptance rate
+  return(list(alpha_vec, beta_vec, gamma_vec, 
+              accept_rate1, num_samples1, sigma1, 
+              accept_rate2, num_samples2, sigma2, 
+              accept_rate3, num_samples3, sigma3))
+}
+
+#********
+#*Implement
+num_days = 30
+num_days = 30 #100
+shape_gamma = 6
+scale_gamma = 1
+alphaX = 3 #Without ss event, ~r0. 
+betaX = 3
+gammaX = 3
+data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+data
+
+#Time
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+sigma = 1
+mcmc_params_ad = adaptive_mc_ss(data, n, sigma, sigma, sigma)
+end_time = Sys.time()
+time_elap = end_time - start_time
+print('Time elapsed:')
+print(time_elap)
+
+#Extract params
+alpha_mcmc = mcmc_params_ad[1]
+alpha_mcmc = unlist(alpha_mcmc)
+
+beta_mcmc = mcmc_params_ad[2]
+beta_mcmc = unlist(beta_mcmc)
+
+gamma_mcmc = mcmc_params_ad[3]
+gamma_mcmc = unlist(gamma_mcmc)
+
+#Plot
+plot.ts(alpha_mcmc, title = 'alpha mcmc')
+
+plot.ts(beta_mcmc, title = 'alpha mcmc')
+
+plot.ts(gamma_mcmc, main = 'gamma mcmc')
+
+
 
 

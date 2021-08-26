@@ -38,12 +38,15 @@ time_elap = end_time - start_time
 x2
 
 #Plots
-plot.ts(x2, ylab = "N Daily infections", main = 'Number of Daily Infections, R0 = 3.1')
+par(mfrow=c(2,1))
+
+plot.ts(x2, ylab = "Daily infections Count", main = 'Daily Infections Count, R0 = 3.1',
+        col = 'green', lwd = 3)
 
 #Cumulative data
 cum_data <- cumsum(x2)
-plot.ts(cum_data, ylab = "Cumulative infections", main = 'Cumulative Infections, R0 = 3.1',
-        col = 'orange', lwd = 2)
+plot.ts(cum_data, ylab = "Cumulative Infections", main = 'Cumulative Count of Infections, R0 = 3.1',
+        col = 'red', lwd = 3)
 
 
 #*********************************************************************

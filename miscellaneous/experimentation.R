@@ -203,6 +203,78 @@ as_params = adaptive_scaling_metropolis_r0(data, n, sigma, alpha_star, x0 = 1, b
 r0_as = as_params[1]
 r0_as = unlist(r0_as)
 
+#3d Plots
+#Plots
+
+x2 = seq(-2,1,length=5) 
+
+for (i in x2) {
+  print(i)
+}
+
+#Test
+u <- seq(-5, 5, by = .1)
+v <- seq(-5, 5, by = .1)
+M <- expand.grid(u,v)
+
+x <- M$Var1
+y <- M$Var2
+
+sigma <- matrix(c(1, .5, .5, 1), nrow = 2, byrow = TRUE)
+z <- dmvnorm(x = M, sigma = sigma)
+
+scatterplot3js(x, y, z, phi = 40, theta = 20,
+               color=rainbow(length(z)),
+               colkey = FALSE,
+               cex = .3,
+               main = "Bivariate Normal")
+
+scatterplot3js(X1, X2, z, phi = 40, theta = 20,
+               color=rainbow(length(z)),
+               colkey = FALSE,
+               cex = .3,
+               main = "f(x1, x2)")
+
+#Plots
+plot
+library(plotly)
+
+# Data: volcano is provided by plotly
+
+# Plot
+persp(X1, X2, fx[3,], 
+      xlab = "x1", ylab = "x2",
+      main = "f(x1, x2)"
+)
+
+library(rgl)
+library(plot3D)
+library(threejs)
+library(mvtnorm)
+
+surf3D(x = fx[1,], y = fx[2 ,], z = fx[3 ,], type = "surface")
+rglwidget(elementId = "plot3drgl")
+
+z = fx[3 ,]
+z = matrix(fx[3 ,], nrow = 1, ncol = len_x^2)
+fig <- plot_ly(x = fx[1,], y = fx[2 ,], z = z) %>% add_surface()
+
+fig
+
+
+#Other
+scatterplot3js(X1, X2, z, phi = 40, theta = 20,
+               color=rainbow(length(z)),
+               colkey = FALSE,
+               cex = .3,
+               axisLabels=c("x1", "x2", "f(x1, x2"),
+               main = "f(x1, x2)")
+
+#Check
+h = 0 
+for (i in c(1,2,3,4)) {
+  h[i] = i*2
+}
 
 
 
