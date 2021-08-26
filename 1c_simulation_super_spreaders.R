@@ -105,7 +105,7 @@ z= unlist(z)
 par(mfrow=c(1,1))
 
 plot.ts(x, ylab = "Daily infections Count", main = 'Daily Infections Count - Super-Spreaders model',
-        col = 'blue', lwd = 2.5)
+        col = 'blue', lwd = 2.5, xlim=c(2,29))
 lines(y, col = 'green', lwd = 2.5)
 lines(z, col = 'red', lwd = 2.5)
 #legend
@@ -120,7 +120,7 @@ cum_data_y <- cumsum(y)
 cum_data_z <- cumsum(z)
 
 plot.ts(cum_data_x, ylab = "Cumulative Infections", main = 'Cumulative Count of Infections',
-        col = 'blue', lwd = 3)
+        col = 'blue', lwd = 3, xlim=c(2,29))
 lines(cum_data_y, col = 'green', lwd = 2.5)
 lines(cum_data_z, col = 'red', lwd = 2.5)
 legend('topleft', legend=c("Total", "Non Super-Spreading Events", "Super-Spreading Events"),
