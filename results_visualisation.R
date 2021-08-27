@@ -23,6 +23,10 @@ ggplot(df_results, aes(x = vec_r02, y = r0_results, color = group) ) + #3.5 == 3
   #labs(colour = group)
   #geom_smooth(method = "lm", se = FALSE)
 
+
+#Quantile plot
+r_quants = c(c(3.174966, 3.726409)) #3.5
+
 #*********************************
 #2 Acceptance Rate
 

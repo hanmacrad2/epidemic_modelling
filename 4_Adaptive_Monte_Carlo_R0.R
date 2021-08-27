@@ -439,3 +439,116 @@ ggplot(df_acc_rate, aes(x=vec_r0, y=vec_rate)) +
   xlab("R0") + ylab("Acceptance Rate %") + 
   geom_point(shape=21, color="black", fill="black", size=6) +
   ggtitle("Acceptance rate % for varying R0")
+
+
+
+#*******************************************
+#*  Quantiles of R0
+#*  
+
+adapt_scal_quantiles <- function(list_r0, sigma, folder_dir_ad){
+  
+  #Create folder
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  list_accept_rate = vector('numeric', length(list_r0))
+  list_sd = vector('numeric', length(list_r0))
+  list_num_samp = vector('numeric', length(list_r0))
+  list_time_taken = vector('numeric', length(list_r0))
+  
+  #Plot
+  list_final_mean = vector('numeric', length(list_r0))
+  list_q1 = vector('numeric', length(list_r0))
+  list_q2 = vector('numeric', length(list_r0))
+  
+  
+  i = 1
+  
+  
+  for (r0X in list_r0){
+    
+    #Get simulated data when r0 is r0X
+    print(r0X)
+    data = simulate_branching(num_days, r0X, shape_gamma, scale_gamma)
+    
+    #Time
+    start_time = Sys.time()
+    mcmc_params_ad = adaptive_scaling_metropolis_r0(data, sigma, alpha_star)
+    end_time = Sys.time()
+    time_elap = end_time - start_time
+    print('Time elapsed:')
+    print(time_elap)
+    
+    #Extract params
+    r0_mcmc = mcmc_params_ad[1]
+    r0_mcmc = unlist(r0_mcmc)
+    
+    #accept_rate = mcmc_params_ad[[2]]
+    #list_accept_rate[i] = round(accept_rate, 2)
+    
+    num_samples = mcmc_params_ad[[3]]
+    list_num_samp[i] = num_samples
+    
+    sd_final = mcmc_params_ad[[4]]
+    list_sd[i] = round(sd_final, 3)
+    
+    list_time_taken[i] = round(time_elap, 2)
+    
+    #Apply Plotting
+    #mcmc_plotting_adaptive(r0_mcmc, r0X, folder_dir_ad)
+    
+    #Final mean
+    final_mean = mean(r0_mcmc[length(r0_mcmc)-10: length(r0_mcmc)])
+    
+    #Save Quantiles
+    qr = quantile(r0_mcmc,  probs = c(0.025, 0.975))
+    q1 = qr[[1]]
+    q2 = qr[[2]]
+    
+    
+    #Add to lists
+    list_final_mean[i] = round(final_mean, 2)
+    list_q1[i] = round(q1, 2)
+    list_q2[i] = round(q2, 2)
+    
+    #Increment
+    i = i + 1
+    
+    
+  }
+  
+  #Plot
+  print(length(list_r0))
+  print(length(list_final_mean))
+  print(length(list_q1))
+  print(length(list_q2))
+  
+  
+  #Create dataframe
+  df_results <- data.frame(
+    r0 = list_r0,
+    #accept_rate = unlist(list_accept_rate),
+    n_samples = unlist(list_num_samp),
+    #time_sec = unlist(list_time_taken),
+    sd_final = unlist(list_sd),
+    mean_final = unlist(list_final_mean), 
+    q2_5 = unlist(list_q1),
+    q97_5 = unlist(list_q2))
+
+  
+  print(df_results)
+  
+  df_results
+}
+
+sigma = 0.75
+folder_dir_ad = 'Results/Adaptive_scaling_MCMC/adaptive_mcmc_iter_reportII'
+list_r0 = c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+#list_r0 = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
+#list_r0 = c(2.75, 2.75, 2.75, 3.5, 3.5, 3.5, 8, 8, 8, 10, 10, 10) 
+df_ad_results_formI = adapt_scal_quantiles(list_r0, sigma, folder_dir_ad)
+
+#Hi
+r0_true = 3.5
+r0_mean = cumsum(r0_as)/seq_along(r0_as)
+plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("Mean of R0 MCMC chain, True R0 = ",r0_true))
+print(plot2)
