@@ -38,23 +38,65 @@ q1 = c(vec_final_mean, vec_q1) #0, length(vec_r0))
 q2 = c(vec_final_mean, vec_q2) #0, length(vec_r0))
 col_group = c(rep('green', length(vec_r0)), rep('black', length(vec_r0)))
 
-col_group = c(rep(A = "#333BFF", length(vec_r0)), rep( B = "#CC6600", length(vec_r0)))
+col_group = c(rep(A = "#333BFF", length(vec_r0)), rep( B = "#9633FF", length(vec_r0)))
 
 df_results  = data.frame(group, vec_r02, r0_results, q1, q2, col_group)
+df_results
 
 r_quants = c(c(3.174966, 3.726409)) #3.5
 
 #Quantile df_ad_results_formI
-ggplot(df_results, aes(x = vec_r02, y = r0_results, color = ) ) + #3.5 == 3.41, 3 = 3.65, 
-  geom_point(shape=21, fill = group, size=3 ) +
+ggplot(df_results, aes(x = vec_r02, y = r0_results, color = group) ) + #3.5 == 3.41, 3 = 3.65, 
+  geom_point(shape=21, size=3 ) +
   theme_bw() +
-  geom_errorbar(aes(ymin=q1, ymax= q2, color = col_group), width=.2,
+  geom_errorbar(aes(ymin=q1, ymax= q2), width=.2,
                 position=position_dodge(0.05)) +
   xlab("R0") + ylab("True R0 vs Mean of MCMC sample)") + 
-  ggtitle("True R0 (black), MCMC sample (red)") +
-  scale_fill_manual(values=group.colors)
+  ggtitle("True R0 (black), MCMC sample (red)") #+
+  #scale_fill_manual(values=col_group)
 
 group.colors <- c(A = "#333BFF", B = "#CC6600") #, C ="#9633FF", D = "#E2FF33", E = "#E3DB71")
+
+
+#Attempt 2
+ggplot(df_results, aes(x = vec_r02, y = r0_results, color = group) ) + #3.5 == 3.41, 3 = 3.65, 
+  geom_point(aes(fill=factor(group)), shape=21, size=4 ) +
+  theme_bw() +
+  geom_errorbar(aes(ymin=q1, ymax= q2), width=.2,
+                position=position_dodge(0.05)) +
+  xlab("R0") + ylab("True R0 vs Mean of MCMC sample") + 
+  ggtitle("True R0 (red), MCMC sample + 95% quantile (blue)") #+
+#scale_fill_manual(values=col_group)
+
+
+
+ggplot(df_results, aes(x = vec_r02, y = r0_results, color = color=factor(group)) ) + #3.5 == 3.41, 3 = 3.65, 
+  geom_errorbar(aes(ymin=q1, ymax= q2, color = factor(group)), width=.2, position=position_dodge(0.05)) +
+  scale_color_manual("group", breaks=c(1,2),values=c("#0072B2", "#009E73"))+ ##E69F00" "#D55E00"
+  geom_point(aes(fill=factor(group)),size=5, shape=21)+
+  scale_fill_manual("group",breaks=c(1,2),values=c("#0072B2", "#009E73"))+
+  theme_bw() +
+  xlab("R0") + ylab("True R0 vs Mean of MCMC sample)") + 
+  ggtitle("True R0 (black), MCMC sample (red)") #+
+#scale_fill_manual(values=col_group)
+
+#
+#scale_color_manual("group", breaks=c(1,2),values=c("#0072B2", "#009E73"))+ "#E69F00", "#D55E00"
+#  geom_point(aes(fill=factor(group)),size=3, shape=21)+
+#  scale_fill_manual("group",breaks=c(1,2),values=c("#0072B2", "#009E73"))+ #, "#E69F00", "#D55E00"
+  
+#Example
+    ggplot(data, aes(a, mean)) +
+    geom_point()+
+    geom_errorbar(aes(ymax=mean+CI,ymin=mean-CI, color=factor(stress)), width=0.3)+
+    scale_color_manual("Stress", breaks=c(1,2,3,4),values=c("#0072B2", "#009E73", "#E69F00", "#D55E00"))+
+    geom_point(aes(fill=factor(stress)),size=8, shape=21)+
+    scale_fill_manual("Stress",breaks=c(1,2,3,4),values=c("#0072B2", "#009E73", "#E69F00", "#D55E00"))+
+    scale_x_continuous("Level A",breaks=c(10,20))+
+    ylab(expression("Level B"))+
+    theme_bw(17)
+
+
 
 
 #Colour
