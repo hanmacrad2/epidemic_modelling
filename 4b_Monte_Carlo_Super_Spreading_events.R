@@ -1,5 +1,6 @@
 #Description
 #Adaptive Monte Carlo targeting alpha, beta, gamma
+cat("Current working dir: ", 2)
 
 #Setup
 setwd("~/GitHub/epidemic_modelling")
@@ -48,11 +49,14 @@ adaptive_mc_ss <- function(data, n, sigma1, sigma2, sigma3, x0 = 1, burn_in = 50
     if(alpha_dash < 0){
       alpha_dash = abs(alpha_dash)
     }
-    
+    cat("alpha dash: ", alpha_dash)
+
     log_alpha = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
     - log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     + dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
     - dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    
+    cat("log_alpha: ", log_alpha)
     
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
       alpha_vec[i] <- alpha_dash
@@ -189,7 +193,7 @@ gamma_mcmc = mcmc_params_ad[3]
 gamma_mcmc = unlist(gamma_mcmc)
 
 #Plot
-plot.ts
+plot.ts(gamma_mcmc)
 
 #**********************************************
 #Plots

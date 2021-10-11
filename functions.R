@@ -223,4 +223,85 @@ prior_alpha_theta = 1
 #logl_2 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 #print(logl_2)
 
-
+#******************************************************
+#Plotting
+#**********************************************
+#*
+#Plots
+plot_mcmc_super_spreading <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, alpha_true, betaX, gammaX, folder_dir_ad) {
+  
+  #Folder save
+  pdf(paste(folder_dir_ad, "/", "ss_adpative_mc_alpha_true_", alpha_true, ".pdf", sep=""))
+  
+  #i. MCMC chain
+  plot1 = ts.plot(mcmc_vector1, ylab = 'alpha', main = paste("MCMC Results. Alpha - Super spreading model, true alpha = ", alpha_true))
+  print(plot1)
+  
+  #ii. Mean
+  #Plot mean
+  alpha_mean = cumsum(mcmc_vector1)/seq_along(mcmc_vector1)
+  plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Mean of alpha MCMC chain, True alpha = ",alpha_true))
+  print(plot2)
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector1, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'alpha', ylab = 'Density', 
+               main = 'Empirical density of alpha - MCMC chain')
+  print(hist3)
+  
+  #**************************************************
+  #2. beta
+  
+  #i. MCMC chain
+  plot1 = ts.plot(mcmc_vector2, ylab = 'beta', main = paste("MCMC Results; beta - Super spreading model, true beta = ", betaX))
+  print(plot1)
+  
+  #ii. Mean
+  #Plot mean
+  alpha_mean = cumsum(mcmc_vector2)/seq_along(mcmc_vector2)
+  plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, true beta = ", betaX))
+  print(plot2)
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector2, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'alpha', ylab = 'Density', 
+               main = 'Empirical density of beta - MCMC chain')
+  print(hist3)
+  
+  #**************************************************
+  #*gamma
+  
+  #i. MCMC chain
+  plot1 = ts.plot(mcmc_vector3, ylab = 'gamma', main = paste("MCMC Results; gamma - Super spreading model, true gamma = ", gammaX))
+  print(plot1)
+  
+  #ii. Mean
+  #Plot mean
+  gamma_mean = cumsum(mcmc_vector3)/seq_along(mcmc_vector3)
+  plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Mean of gamma MCMC chain, True gamma = ", gammaX))
+  print(plot2)
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector3, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'gamma', ylab = 'Density', 
+               main = 'Empirical density of gamma - MCMC chain')
+  print(hist3)
+  
+  dev.off()
+  
+}
