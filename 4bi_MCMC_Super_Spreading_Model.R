@@ -59,17 +59,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
     prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
     prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev + prior1 - prior2
-    #log_accept_prob = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
-    #- log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
-    #+ dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
-    #- dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE) 
-    
-    #cat("logl_new: ", logl_new, "\n")
-    #cat("logl_prev: ", logl_prev, "\n")
-    #cat("prior1: ", prior1, "\n")
-    #cat("prior2: ", prior2, "\n")
-    #cat("log_accept_prob: ", log_accept_prob, "\n")
-    #cat("log(U[i]): ", log(U[i]), "\n")
     
     if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
@@ -79,10 +68,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
       count_reject1 = count_reject1 + 1
     }
     
-    ##cat
-    #cat("alpha dash: ", alpha_dash, "\n")
-    #cat("alpha[i]: ",  alpha_vec[i], "\n")
-    
     #Adaptive MC
     #if (i == burn_in){
     #  sigma1 = var(alpha_vec[2:i])*(2.38^2)
@@ -91,9 +76,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
     
     #************************************************************************
     #beta
-    #cat("i: ", i, "\n")
-    #cat("beta_vec[i-1]: ", beta_vec[i-1], "\n")
-    #cat("rnorm(1, sd = sigma2) ", rnorm(1, sd = sigma2), "\n")
     beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma2) 
     #cat("Beta dash: ", beta_dash, "\n")
     if(beta_dash < 0){
@@ -105,20 +87,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
     prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
     prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev + prior1 - prior2 
-      
-    #log_accept_prob = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1]) 
-    #- log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    #+ dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
-    #- dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE) #Do other priors cancel?
-    
-    #Print
-    #cat("beta logl_new: ", logl_new, "\n")
-    #cat("beta logl_prev: ", logl_prev, "\n")
-    #cat("beta prior1: ", prior1, "\n")
-    #cat("beta prior2: ", prior2, "\n")
-    #cat("beta log_accept_prob: ", log_accept_prob, "\n")
-    #cat("beta log(U[i]): ", log(U[i]), "\n")
-    
     
     if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
       beta_vec[i] <- beta_dash
@@ -128,10 +96,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
       count_reject2 = count_reject2 + 1
     }
     
-    #New value
-    #cat("beta dash: ", beta_dash, "\n")
-    #cat("beta[i]: ",  beta_vec[i], "\n")
-    
     #Adaptive MC
     #if (i == burn_in){
     #  sigma2 = var(beta_vec[2:i])*(2.38^2)
@@ -140,7 +104,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
     #************************************************************************
     #gamma
     gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma3) 
-    #cat("Gamma dash: ", gamma_dash, "\n")
     
     if(gamma_dash < 0){
       gamma_dash = abs(gamma_dash)
@@ -153,18 +116,13 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
     prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = log1_new - logl_prev + prior1 - prior2 
     
-    #Print
-    #cat("gamma logl_new: ", logl_new, "\n")
-    #cat("gamma logl_prev: ", logl_prev, "\n")
-    #cat("gamma prior1: ", prior1, "\n")
-    #cat("gamma prior2: ", prior2, "\n")
-    #cat("gamma log_accept_prob: ", log_accept_prob, "\n")
-    #cat("gamma log(U[i]): ", log(U[i]), "\n")
-    
-    #log_accept_prob = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)  
-    #- log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    #+ dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
-    #- dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    #print
+    #cat("logl_new: ", logl_new, "\n")
+    #cat("logl_prev: ", logl_prev, "\n")
+    #cat("prior1: ", prior1, "\n")
+    #cat("prior2: ", prior2, "\n")
+    #cat("log_accept_prob: ", log_accept_prob, "\n")
+    #cat("log(U[i]): ", log(U[i]), "\n")
     
     if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
@@ -173,15 +131,6 @@ mcmc_super_spreading <- function(data, n, sigma1, sigma2, sigma3, burn_in, x0 = 
       gamma_vec[i] <- gamma_vec[i-1]
       count_reject3 = count_reject3 + 1
     }
-    
-    #New value
-    #cat("gamma dash: ", beta_dash, "\n")
-    #cat("gamma_vec[i]: ",  gamma_vec[i], "\n")
-    
-    #Adaptive MC
-    #if (i == burn_in){
-    #  sigma3 = var(gamma_vec[2:i])*(2.38^2)
-    #}
     
     
   }
@@ -381,16 +330,40 @@ mcmc_super_spreading_multi_var <- function(data, n, x0=as.vector(c(1,1,1)), Sigm
     params_new = abs(params_new)
     
     #Acceptance probability
-    log_accept_prob = log_like_ss_lse(data, params_new[1], params_new[2], params_new[3])
-    - log_like_ss_lse(data, params[1, i-1], params[2, i-1], params[3, i-1])
-    + dgamma(params_new[1], shape = 1, scale = 1, log = TRUE)
-    - dgamma( params[1, i-1], shape = 1, scale = 1, log = TRUE) 
-    + dgamma(params_new[2], shape = 1, scale = 1, log = TRUE)
-    - dgamma( params[2, i-1], shape = 1, scale = 1, log = TRUE) 
-    + dgamma(params_new[3], shape = 1, scale = 1, log = TRUE)
-    - dgamma( params[3, i-1], shape = 1, scale = 1, log = TRUE) 
-    cat('log accept prob;', log_accept_prob)
-
+    a = log_like_ss_lse(data, params_new[1], params_new[2], params_new[3])
+    b = log_like_ss_lse(data, params[1, i-1], params[2, i-1], params[3, i-1])
+    c = dgamma(params_new[1], shape = 1, scale = 1, log = TRUE)
+    d = dgamma( params[1, i-1], shape = 1, scale = 1, log = TRUE) 
+    e = dgamma(params_new[2], shape = 1, scale = 1, log = TRUE)
+    f = dgamma( params[2, i-1], shape = 1, scale = 1, log = TRUE)
+    g = dgamma(params_new[3], shape = 1, scale = 1, log = TRUE)
+    h = dgamma(params[3, i-1], shape = 1, scale = 1, log = TRUE) 
+    
+    log_accept_prob = a - b + c - d + e -f + g -h
+    
+    #Print individual
+    # cat("logl_new: ", a, "\n")
+    # cat("logl_prev: ", b, "\n")
+    # cat("prior_a1: ", c, "\n")
+    # cat("prior_a2: ", d, "\n")
+    # cat("prior_b1: ", e, "\n")
+    # cat("prior_b2: ", f, "\n")
+    # cat("prior_c1: ", g, "\n")
+    # cat("prior_c2: ", f, "\n")
+    # cat("log_accept_prob: ", log_accept_prob, "\n")
+    # cat("log(U[i]): ", log(U[i]), "\n")
+    
+    # log_accept_prob = log_like_ss_lse(data, params_new[1], params_new[2], params_new[3])
+    # - log_like_ss_lse(data, params[1, i-1], params[2, i-1], params[3, i-1])
+    # + dgamma(params_new[1], shape = 1, scale = 1, log = TRUE)
+    # - dgamma( params[1, i-1], shape = 1, scale = 1, log = TRUE) 
+    # + dgamma(params_new[2], shape = 1, scale = 1, log = TRUE)
+    # - dgamma( params[2, i-1], shape = 1, scale = 1, log = TRUE) 
+    # + dgamma(params_new[3], shape = 1, scale = 1, log = TRUE)
+    # - dgamma( params[3, i-1], shape = 1, scale = 1, log = TRUE) 
+    # cat('log accept prob;', log_accept_prob)
+    
+    
     #Accept/reject
     if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
       params[,i] <- params_new
@@ -423,7 +396,7 @@ mcmc_super_spreading_multi_var <- function(data, n, x0=as.vector(c(1,1,1)), Sigm
 }
 
 #Apply
-n = 1000
+n = 50000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
@@ -449,3 +422,82 @@ gamma_mcmc2 = unlist(gamma_mcmc2)
 plot.ts(alpha_mcmc2)
 plot.ts(beta_mcmc2)
 plot.ts(gamma_mcmc2)
+
+#**************************************************************************************************
+#Apply multiple times
+
+ss_mcmc_mv_range_alpha  <- function(list_alpha, betaX, gammaX, folder_dir_ad){
+  
+  #Create folder
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  list_accept_rate1 = vector('numeric', length(list_alpha))
+  list_num_samp = vector('numeric', length(list_alpha))
+  list_time_taken = vector('numeric', length(list_alpha))
+  i = 1
+  
+  for (alphaX in list_alpha){
+    
+    cat('alpha:', alphaX, "\n")
+    
+    #Get simulated data when alpha is alphaX
+    data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+    print('Data simulated')
+    
+    #Time
+    start_time = Sys.time()
+    print('Start time:')
+    print(start_time)
+    mcmc_params_ad = mcmc_super_spreading_multi_var(data, n)
+    end_time = Sys.time()
+    time_elap = end_time - start_time
+    print('Time elapsed:')
+    print(time_elap)
+    
+    #Extract params
+    alpha_mcmc = mcmc_params_ad[1]
+    alpha_mcmc = unlist(alpha_mcmc)
+    
+    beta_mcmc = mcmc_params_ad[2]
+    beta_mcmc = unlist(beta_mcmc)
+    
+    gamma_mcmc = mcmc_params_ad[3]
+    gamma_mcmc = unlist(gamma_mcmc)
+    
+    accept_rate_alpha = mcmc_params_ad[[4]]
+    list_accept_rate1[i] = round(accept_rate_alpha, 2)
+    
+    num_samples1 = mcmc_params_ad[[5]]
+    list_num_samp[i] = num_samples1
+    
+    list_time_taken[i] = round(time_elap, 2)
+    i = i + 1
+    
+    #Apply Plotting
+    plot_mcmc_super_spreading(alpha_mcmc, beta_mcmc, gamma_mcmc, alphaX, betaX, gammaX, folder_dir_ad)
+    
+  }
+  
+  #Create dataframe
+  df_results <- data.frame(
+    alpha = list_alpha,
+    accept_rate_alpha = unlist(list_accept_rate1),
+    n_samples_alpha = unlist(list_num_samp),
+    sd_final_alpha = unlist(list_sd1),
+    accept_rate_beta = unlist(list_accept_rate2),
+    sd_final_beta = unlist(list_sd2),
+    accept_rate_alpha3 = unlist(list_accept_rate3),
+    sd_final_alpha3 = unlist(list_sd3),
+    time_sec = unlist(list_time_taken))
+  
+  print(df_results)
+  
+  df_results
+}
+
+#Apply
+betaX = 3
+gammaX = 3
+folder_dir_ad = 'Results/super_spreaders/ss_model_mcmc_mv_I'
+list_alphaX = c(1.0, 1.5, 2.0, 2.5, 3.0, 3.5) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+#list_alpha = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
+df_ss_results = ss_mcmc_mv_range_alpha(list_alphaX, betaX, gammaX, folder_dir_ad)
