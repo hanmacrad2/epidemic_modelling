@@ -362,7 +362,7 @@ df_ss_results = ss_mcmc_range_alpha(list_alphaX, sigma, sigma, sigma, betaX, gam
 #**************************************************
 #*Multi paramater MCMC 
 
-mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0, 0)), Sigma = diag(1, nrow = 3)) { #burn_in = 2500
+mcmc_super_spreading_multi_var <- function(data, n, x0=as.vector(c(1,1,1)), Sigma = diag(1, nrow = 3)) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
@@ -370,10 +370,8 @@ mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0,
   params <- matrix(0, nrow=3, ncol= n)
   params[,1] <- x0
   U <- runif(n)
-  count_accept1 = 0
-  count_reject1 = 0
-  count_reject3 = 0
-  sd_sample = 1
+  count_accept = 0
+  count_reject = 0
   
   #MCMC chain
   for(i in 2:n) {
@@ -391,6 +389,7 @@ mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0,
     - dgamma( params[2, i-1], shape = 1, scale = 1, log = TRUE) 
     + dgamma(params_new[3], shape = 1, scale = 1, log = TRUE)
     - dgamma( params[3, i-1], shape = 1, scale = 1, log = TRUE) 
+    cat('log accept prob;', log_accept_prob)
 
     #Accept/reject
     if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
@@ -401,12 +400,17 @@ mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0,
       count_reject = count_reject + 1
     }
     
-    #Adaptive MC
+    #Sigma
     #if (i == burn_in){
     #  sigma3 = var(gamma_vec[2:i])*(2.38^2)
     #}
     
   }
+  
+  #Params
+  alpha_vec = params[1,]
+  beta_vec = params[2,]
+  gamma_vec = params[3,]
   
   #Final stats
   total_iters = count_accept + count_reject
@@ -415,16 +419,16 @@ mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0,
   cat("Acceptance rate = ", accept_rate, '\n')
   
   #Return alpha, acceptance rate
-  return(list(params, accept_rate, num_samples))
+  return(list(alpha_vec, beta_vec, gamma_vec, accept_rate, num_samples))
 }
 
 #Apply
-#Time
+n = 1000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-sigma = 1
-mcmc_params_ad = mcmc_super_spreading(data, n, sigma, sigma, sigma, burn_in)
+
+mcmc_params_mv = mcmc_super_spreading_multi_var(data, n)
 
 end_time = Sys.time()
 time_elap = end_time - start_time
@@ -432,16 +436,16 @@ print('Time elapsed:')
 print(time_elap)
 
 #Extract params
-alpha_mcmc = mcmc_params_ad[1]
-alpha_mcmc = unlist(alpha_mcmc)
+alpha_mcmc2 = mcmc_params_mv[1]
+alpha_mcmc2 = unlist(alpha_mcmc2)
 
-beta_mcmc = mcmc_params_ad[2]
-beta_mcmc = unlist(beta_mcmc)
+beta_mcmc2 = mcmc_params_mv[2]
+beta_mcmc2 = unlist(beta_mcmc2)
 
-gamma_mcmc = mcmc_params_ad[3]
-gamma_mcmc = unlist(gamma_mcmc)
+gamma_mcmc2 = mcmc_params_mv[3]
+gamma_mcmc2 = unlist(gamma_mcmc2)
 
 #Plot
-plot.ts(alpha_mcmc)
-plot.ts(beta_mcmc)
-plot.ts(gamma_mcmc)
+plot.ts(alpha_mcmc2)
+plot.ts(beta_mcmc2)
+plot.ts(gamma_mcmc2)
