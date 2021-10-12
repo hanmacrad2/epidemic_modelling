@@ -263,8 +263,8 @@ plot_mcmc_super_spreading <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, 
   
   #ii. Mean
   #Plot mean
-  alpha_mean = cumsum(mcmc_vector2)/seq_along(mcmc_vector2)
-  plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, true beta = ", betaX))
+  beta_mean = cumsum(mcmc_vector2)/seq_along(mcmc_vector2)
+  plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, true beta = ", betaX))
   print(plot2)
   
   #Histogram

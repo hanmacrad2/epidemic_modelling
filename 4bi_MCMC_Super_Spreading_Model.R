@@ -1,5 +1,6 @@
 #Description
 #Adaptive Monte Carlo targeting alpha, beta, gamma
+library(MASS)
 
 #Setup
 setwd("~/GitHub/epidemic_modelling")
@@ -227,8 +228,7 @@ scale_gamma = 1
 alphaX = 3 #Without ss event, ~r0. 
 betaX = 3
 gammaX = 3
-#data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-#data
+data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 
 #Time
 start_time = Sys.time()
@@ -353,7 +353,95 @@ ss_mcmc_range_alpha  <- function(list_alpha, sigma1, sigma2, sigma3, betaX, gamm
 betaX = 3
 gammaX = 3
 sigma = 0.75
-folder_dir_ad = 'Results/super_spreaders/ss_model_mcmc_results_I'
-list_alphaX = c(1.0, 2.0) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
+folder_dir_ad = 'Results/super_spreaders/ss_model_mcmc_results_II'
+list_alphaX = c(1.0, 1.5, 2.0, 2.5, 3.0, 3.5) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_alpha = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
 df_ss_results = ss_mcmc_range_alpha(list_alphaX, sigma, sigma, sigma, betaX, gammaX, folder_dir_ad)
+
+
+#**************************************************
+#*Multi paramater MCMC 
+
+mcmc_super_spreading_multi_var <- function(data, n, burn_in, x0=as.vector(c(0,0, 0)), Sigma = diag(1, nrow = 3)) { #burn_in = 2500
+  
+  'Returns mcmc samples of alpha & acceptance rate'
+  
+  #Setup
+  params <- matrix(0, nrow=3, ncol= n)
+  params[,1] <- x0
+  U <- runif(n)
+  count_accept1 = 0
+  count_reject1 = 0
+  count_reject3 = 0
+  sd_sample = 1
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    #Sample new value
+    params_new = params[, i-1] + mvrnorm(mu=as.vector(c(0,0,0)), Sigma=Sigma)
+    params_new = abs(params_new)
+    
+    #Acceptance probability
+    log_accept_prob = log_like_ss_lse(data, params_new[1], params_new[2], params_new[3])
+    - log_like_ss_lse(data, params[1, i-1], params[2, i-1], params[3, i-1])
+    + dgamma(params_new[1], shape = 1, scale = 1, log = TRUE)
+    - dgamma( params[1, i-1], shape = 1, scale = 1, log = TRUE) 
+    + dgamma(params_new[2], shape = 1, scale = 1, log = TRUE)
+    - dgamma( params[2, i-1], shape = 1, scale = 1, log = TRUE) 
+    + dgamma(params_new[3], shape = 1, scale = 1, log = TRUE)
+    - dgamma( params[3, i-1], shape = 1, scale = 1, log = TRUE) 
+
+    #Accept/reject
+    if(!(is.na(log_accept_prob)) && log(U[i]) < log_accept_prob) {
+      params[,i] <- params_new
+      count_accept = count_accept + 1
+    } else {
+      params[,i] <- params[,i-1]
+      count_reject = count_reject + 1
+    }
+    
+    #Adaptive MC
+    #if (i == burn_in){
+    #  sigma3 = var(gamma_vec[2:i])*(2.38^2)
+    #}
+    
+  }
+  
+  #Final stats
+  total_iters = count_accept + count_reject
+  accept_rate = 100*(count_accept/(count_accept + count_reject))
+  num_samples = count_accept
+  cat("Acceptance rate = ", accept_rate, '\n')
+  
+  #Return alpha, acceptance rate
+  return(list(params, accept_rate, num_samples))
+}
+
+#Apply
+#Time
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+sigma = 1
+mcmc_params_ad = mcmc_super_spreading(data, n, sigma, sigma, sigma, burn_in)
+
+end_time = Sys.time()
+time_elap = end_time - start_time
+print('Time elapsed:')
+print(time_elap)
+
+#Extract params
+alpha_mcmc = mcmc_params_ad[1]
+alpha_mcmc = unlist(alpha_mcmc)
+
+beta_mcmc = mcmc_params_ad[2]
+beta_mcmc = unlist(beta_mcmc)
+
+gamma_mcmc = mcmc_params_ad[3]
+gamma_mcmc = unlist(gamma_mcmc)
+
+#Plot
+plot.ts(alpha_mcmc)
+plot.ts(beta_mcmc)
+plot.ts(gamma_mcmc)
