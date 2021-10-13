@@ -426,11 +426,11 @@ plot.ts(gamma_mcmc2)
 #**************************************************************************************************
 #Apply multiple times
 
-ss_mcmc_mv_range_alpha  <- function(list_alpha, betaX, gammaX, folder_dir_ad){
+ss_mcmc_mv_range_alpha  <- function(n, list_alpha, betaX, gammaX, folder_dir_ad){
   
   #Create folder
   ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
-  list_accept_rate1 = vector('numeric', length(list_alpha))
+  list_accept_rate = vector('numeric', length(list_alpha))
   list_num_samp = vector('numeric', length(list_alpha))
   list_time_taken = vector('numeric', length(list_alpha))
   i = 1
@@ -464,7 +464,7 @@ ss_mcmc_mv_range_alpha  <- function(list_alpha, betaX, gammaX, folder_dir_ad){
     gamma_mcmc = unlist(gamma_mcmc)
     
     accept_rate_alpha = mcmc_params_ad[[4]]
-    list_accept_rate1[i] = round(accept_rate_alpha, 2)
+    list_accept_rate[i] = round(accept_rate_alpha, 2)
     
     num_samples1 = mcmc_params_ad[[5]]
     list_num_samp[i] = num_samples1
@@ -480,13 +480,8 @@ ss_mcmc_mv_range_alpha  <- function(list_alpha, betaX, gammaX, folder_dir_ad){
   #Create dataframe
   df_results <- data.frame(
     alpha = list_alpha,
-    accept_rate_alpha = unlist(list_accept_rate1),
+    accept_rate_alpha = unlist(list_accept_rate),
     n_samples_alpha = unlist(list_num_samp),
-    sd_final_alpha = unlist(list_sd1),
-    accept_rate_beta = unlist(list_accept_rate2),
-    sd_final_beta = unlist(list_sd2),
-    accept_rate_alpha3 = unlist(list_accept_rate3),
-    sd_final_alpha3 = unlist(list_sd3),
     time_sec = unlist(list_time_taken))
   
   print(df_results)
@@ -497,7 +492,7 @@ ss_mcmc_mv_range_alpha  <- function(list_alpha, betaX, gammaX, folder_dir_ad){
 #Apply
 betaX = 3
 gammaX = 3
-folder_dir_ad = 'Results/super_spreaders/ss_model_mcmc_mv_I'
+folder_dir_ad = 'Results/super_spreaders/ss_model_mcmc_mv_II'
 list_alphaX = c(1.0, 1.5, 2.0, 2.5, 3.0, 3.5) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3.5, 4.0, 5.0, 8.0) #c(0.7, 0.8, 0.9, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0)  #c(0.8, 0.9, 1.0, 2.75, 3, 3.5, 4.0, 4.5, 5.0, 8.0, 10.0) #c(0.8, 1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5,
 #list_alpha = c(0.5, 0.65, 0.70, 0.75, 0.8, 0.85, 0.95, 1.05, 2.80, 3.05, 3.55, 4.05, 4.55, 5.05, 8.05, 10.05)
-df_ss_results = ss_mcmc_mv_range_alpha(list_alphaX, betaX, gammaX, folder_dir_ad)
+df_ss_results = ss_mcmc_mv_range_alpha(n, list_alphaX, betaX, gammaX, folder_dir_ad)
