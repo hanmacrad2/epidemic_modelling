@@ -120,7 +120,7 @@ log_like_ss <- function(x, alphaX, betaX, gammaX){
   shape_gamma = 6
   scale_gamma = 1
   
-  #Infectiousness (Discrete gamma)
+  #Infectiousness (Discrete gamma) i,e Prob less than x2 - prob less than x1; the area in between 
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   logl = 0
   
@@ -223,15 +223,37 @@ prior_alpha_theta = 1
 #logl_2 = log_like_ss_lse(x, alphaX, betaX, gammaX)
 #print(logl_2)
 
-#******************************************************
+#**********************************************************************************************
 #Plotting
-#**********************************************
-#*
+
+plot_points_comparison <- function(vec1, vec2){
+  
+  'Plot points on ggplot for comparison, same x-axis'
+  #Setup data frame
+  x = seq_along(vec1)
+  df <- data.frame(x, vec1, vec2)
+  
+  ggplot(df, aes(x)) +                    # basic graphical object
+    geom_point(aes(y = vec1), colour="red", shape=21, size=3) +  # first layer
+    geom_point(aes(y = vec2), colour="green", shape=21, size=3) +  # second layer
+    theme_bw() +
+    xlab("R0") + ylab("Original (green), R packages (red)") + 
+    ggtitle("Log Acceptance prob; Original (green), R packages (red)") 
+  
+}
+#Apply
+jk = 1:10
+plot_points_comparison(jk, jk^2)
+
+
 #Plots
-plot_mcmc_super_spreading <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, alpha_true, betaX, gammaX, folder_dir_ad) {
+plot_mcmc_super_spreading <- function(sim_data, mcmc_vector1, mcmc_vector2, mcmc_vector3, alpha_true, betaX, gammaX, file_name, folder_dir_ad) {
   
   #Folder save
-  pdf(paste(folder_dir_ad, "/", "ss_adpative_mc_alpha_true_", alpha_true, ".pdf", sep=""))
+  pdf(paste(folder_dir_ad, "/", file_name, alpha_true, ".pdf", sep=""))
+  
+  #i. Epidemic data
+  plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
   
   #i. MCMC chain
   plot1 = ts.plot(mcmc_vector1, ylab = 'alpha', main = paste("MCMC Results. Alpha - Super spreading model, true alpha = ", alpha_true))
@@ -305,3 +327,15 @@ plot_mcmc_super_spreading <- function(mcmc_vector1, mcmc_vector2, mcmc_vector3, 
   dev.off()
   
 }
+
+#Setup data frame
+
+x = seq_along(jk)
+df <- data.frame(x, jk^2, jk^2.5)
+
+ggplot(df, aes(x)) +                    # basic graphical object
+  geom_point(aes(y = jk^2), colour="red") +  # first layer
+  geom_point(aes(y = jk^2.5), colour="green") +  # second layer
+  theme_bw() +
+  xlab("R0") + ylab("True R0 (black), MCMC sample (red)") + 
+  ggtitle("True R0 vs Mean of MCMC sample") 
