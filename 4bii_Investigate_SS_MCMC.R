@@ -44,7 +44,7 @@ log_like_ss_R_funcs <- function(x, alphaX, betaX, gammaX){
       prob_yt = dpois(y_t, alphaX*lambda_t)
       #cat("prob_yt, dpois : ", prob_yt, "\n")
       
-      prob_zt = dnbinom(y_t, betaX*lambda_t, 1/(1 + gammaX))
+      prob_zt = s(x[t] - y_t, betaX*lambda_t, 1/(1 + gammaX))
       #cat("prob_zt, dnbinom : ", prob_zt, "\n")
       
       prob_xt = prob_zt*prob_yt

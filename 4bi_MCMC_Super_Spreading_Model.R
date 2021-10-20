@@ -311,7 +311,7 @@ mcmc_ss_investigate <- function(data, n, sigma, alphaX, betaX, gammaX, x0 = 1) {
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
   gamma_vec <- vector('numeric', n)
   
-  alpha_vec[1] <- x0; beta_vec[1] <- betaX; gamma_vec[1] <- gammaX
+  alpha_vec[1] <- alphaX; beta_vec[1] <- betaX; gamma_vec[1] <- x0
   
   count_accept1 = 0; count_reject1 = 0; count_accept2 = 0
   count_reject2 = 0; count_accept3 = 0; count_reject3 = 0
@@ -345,50 +345,51 @@ mcmc_ss_investigate <- function(data, n, sigma, alphaX, betaX, gammaX, x0 = 1) {
     alpha_vec[i] <- alpha_vec[i-1]
     
     #************************************************************************
-    #beta
-    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma)
-    if(beta_dash < 0){
-      beta_dash = abs(beta_dash)
+    # #beta
+    # beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma)
+    # if(beta_dash < 0){
+    #   beta_dash = abs(beta_dash)
+    # }
+    # 
+    # logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+    # logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    # prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
+    # prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    # log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+    # 
+    # if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    #   beta_vec[i] <- beta_dash
+    #   count_accept2 = count_accept2 + 1
+    # } else {
+    #   beta_vec[i] <- beta_vec[i-1]
+    #   count_reject2 = count_reject2 + 1
+    # }
+
+    beta_vec[i] <- beta_vec[i-1]
+    #************************************************************************
+    #gamma
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma)
+
+    if(gamma_dash < 0){
+      gamma_dash = abs(gamma_dash)
     }
 
-    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
-    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    #Acceptance Probability
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+    #prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
+    #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
 
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-      beta_vec[i] <- beta_dash
-      count_accept2 = count_accept2 + 1
+      gamma_vec[i] <- gamma_dash
+      count_accept3 = count_accept3 + 1
     } else {
-      beta_vec[i] <- beta_vec[i-1]
-      count_reject2 = count_reject2 + 1
+      gamma_vec[i] <- gamma_vec[i-1]
+      count_reject3 = count_reject3 + 1
     }
     
-    #************************************************************************
-    #gamma
-    # gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma) 
-    # 
-    # if(gamma_dash < 0){
-    #   gamma_dash = abs(gamma_dash)
-    # }
-    # 
-    # #Acceptance Probability
-    # logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
-    # logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    # prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
-    # prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    # log_accept_prob = logl_new - logl_prev #+ prior1 - prior2 
-    # 
-    # if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-    #   gamma_vec[i] <- gamma_dash
-    #   count_accept3 = count_accept3 + 1
-    # } else {
-    #   gamma_vec[i] <- gamma_vec[i-1]
-    #   count_reject3 = count_reject3 + 1
-    # }
-    
-    gamma_vec[i] <- gamma_vec[i-1]
+    #gamma_vec[i] <- gamma_vec[i-1]
     
   }
   #Final stats
@@ -427,20 +428,20 @@ mcmc_ss_investigate <- function(data, n, sigma, alphaX, betaX, gammaX, x0 = 1) {
 
 #********
 #*Implement
-num_days = 50
-#lambda params
-shape_gamma = 6
-scale_gamma = 1
-#params
-alphaX = 2 #Without ss event, ~r0. 
-betaX = 0.05
-gammaX = 10
-#Epidemic data
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+# num_days = 50
+# #lambda params
+# shape_gamma = 6
+# scale_gamma = 1
+# #params
+# alphaX = 2 #Without ss event, ~r0. 
+# betaX = 0.05
+# gammaX = 10
+# #Epidemic data
+# sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #Time 
-n = 50000
+n = 5000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
