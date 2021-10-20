@@ -225,23 +225,60 @@ prior_alpha_theta = 1
 
 #**********************************************************************************************
 #Plotting
-
 plot_points_comparison <- function(vec1, vec2){
   
+  'Plot points on a diagonal line in ggplot for comparison, same x-axis'
+
+  
+  #Dataframe for plot
+  group = c(rep.int(1, length(vec1)), rep.int(2, length(vec1)))
+  results_total = c(vec1, vec2)
+  vec_x_axis = c(seq_along(vec1), seq_along(vec1))
+  df_results  = data.frame(group, vec_x_axis, results_total)
+  
+  #Plot
+  ggplot(df_results, aes(x = vec_x_axis, y = results_total, color = group) ) + #3.5 == 3.41, 3 = 3.65,
+    geom_point(shape=21, fill = group, size=3 ) +
+    theme_bw() +
+    xlab("Iteration") + ylab("Original (black), R packages (red)") +
+    ggtitle("Log(acceptance_prob); Original (black), R packages(red)")
+  
+}
+
+#Difference between lot points comparison
+jk = 1:10
+plot_points_comparison(jk, jk^2)
+
+#Difference between points
+plot_diff_points_comparison <- function(vec1, vec2, titleX){
+  
+  'Plot points on a diagonal line in ggplot for comparison, same x-axis'
+  plot(seq_along(vec1), abs(vec1 - vec2), type="b", pch=19, col="blue", main = titleX, xlab="index", ylab="Absolute difference")
+  
+}
+
+#Plot points comparison
+jk = 1:10
+plot_diff_points_comparison(exp(jk), jk^3, 'Abs difference btwn log(acceptance_probabilites) of Original ver & R packages ver; ')
+
+plot_points_comparison_straight <- function(vec1, vec2){
+  
   'Plot points on ggplot for comparison, same x-axis'
+  
   #Setup data frame
   x = seq_along(vec1)
   df <- data.frame(x, vec1, vec2)
   
   ggplot(df, aes(x)) +                    # basic graphical object
-    geom_point(aes(y = vec1), colour="red", shape=21, size=3) +  # first layer
-    geom_point(aes(y = vec2), colour="green", shape=21, size=3) +  # second layer
+    geom_point(aes(y = vec1), colour="red") +  # first layer
+    geom_point(aes(y = vec2), colour="green") +  # second layer
     theme_bw() +
     xlab("R0") + ylab("Original (green), R packages (red)") + 
-    ggtitle("Log Acceptance prob; Original (green), R packages (red)") 
+    ggtitle("Log(acceptance_prob); Original (green), R packages(red)") 
   
 }
-#Apply
+
+#Plot points comparison
 jk = 1:10
 plot_points_comparison(jk, jk^2)
 

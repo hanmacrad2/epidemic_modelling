@@ -113,8 +113,6 @@ mcmc_ss_compare_functions <- function(data, n, sigma, alphaX, betaX, gammaX, x0 
     loglike_prev = log_like_ss_R_funcs(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     log_accept_prob2 = loglike_new - loglike_prev
     #Print
-    #cat("1 loglike_new : ", loglike_new, "\n")
-    #cat("2 loglike_prev: ", loglike_prev, "\n")
     #cat("New log accept prob : ", log_accept_prob2, "\n")
     #cat("\n")
     vecloglikeII[i] = log_accept_prob2
@@ -200,7 +198,7 @@ mcmc_ss_compare_functions <- function(data, n, sigma, alphaX, betaX, gammaX, x0 
   #gamma_vec = gamma_vec[burn_in:n]
   
   #Plot log likelihoods Comparison (Original + Function)
-  plot_cmp = plot_points_comparison(vecloglikeI, vecloglikeII)
+  plot_cmp = plot_diff_points_comparison(vecloglikeI, vecloglikeII)
   print(plot_cmp)
   
   #Return alpha, acceptance rate
@@ -225,7 +223,7 @@ sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, bet
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #Time 
-n = 1000
+n = 10000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
