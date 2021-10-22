@@ -34,7 +34,7 @@ mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, 
   }
   
   #gamma
-  if (flag_infer == 'beta') {
+  if (flag_infer == 'gamma') {
     alpha_vec[1] <- alphaX
     beta_vec[1] <- betaX
     gamma_vec[1] <- x0
@@ -179,7 +179,7 @@ scale_gamma = 1
 #params
 flag_infer = 'gamma'
 alphaX = 2 #2 #Without ss event, ~r0.
-betaX = 0.2 #0.05
+betaX = 0.05 #0.05
 gammaX = 10
 true_tot_r0 = alphaX + betaX*gammaX
 
@@ -240,8 +240,7 @@ print(plot2)
 
 #Histograms
 #Hist I
-hist(r0_total_mcmc, prob = TRUE, breaks = 80,
-             main = paste("Histogram of R0_total MCMC samples, True R0 total = ", true_tot_r0))
+hist(r0_total_mcmc, prob = TRUE, breaks = 80,main = paste("Histogram of R0_total MCMC samples, True R0 total = ", true_tot_r0))
 
 #Hist - density
 hist2 <- hist(r0_total_mcmc, breaks = 80)
