@@ -1,0 +1,22 @@
+model
+    {
+
+  #Priors
+  r0~exp(1)
+
+  #Likelihood
+  #Params
+  num_days = length(y)
+
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  likel = 1
+
+  for (t in 2:num_days) {
+
+    lambda = r0*sum(y[1:t-1]*rev(prob_infect[1:t-1]))
+    likel = likel*lambda^(y[t])*exp(-lambda)
+    
+    }
+
+  }
