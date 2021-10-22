@@ -3,7 +3,7 @@
 library(MASS)
 
 #Setup
-setwd("~/GitHub/epidemic_modelling")
+setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
 #par(mar=c(1,1,1,1))
 
@@ -169,16 +169,16 @@ alphaX = 2 #Without ss event, ~r0.
 betaX = 0.05
 gammaX = 10
 #Epidemic data
-data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(data2)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data)
 
 #Time
-n = 10000
+n = 1000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
 sigma = 1
-mcmc_params_ad = mcmc_super_spreading(data2, n, sigma)
+mcmc_params_ad = mcmc_super_spreading(sim_data, n, sigma)
 
 end_time = Sys.time()
 time_elap = end_time - start_time
@@ -196,10 +196,29 @@ gamma_mcmc = mcmc_params_ad[3]
 gamma_mcmc = unlist(gamma_mcmc)
 
 #Plot
-plot.ts(alpha_mcmc)
-plot.ts(beta_mcmc)
-plot.ts(gamma_mcmc)
+plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC Super spreading model, simulated alpha = ", alphaX))
+plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC Super spreading model, simulated beta = ", betaX))
+plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC Super spreading model, simulated gamma = ", gammaX))
 
+#alpha mean
+alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Mean of alpha MCMC chain, True alpha = ",alphaX))
+print(plot2)
+
+#beta mean
+beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, True beta = ",betaX))
+print(plot2)
+
+#gamma Mean
+gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Mean of gamma MCMC chain, True gamma = ",gammaX))
+print(plot2)
+
+#Plot
+file_name = 'ss_mcmc_22_10_21_I'
+folder_dir_ad = 'Results/super_spreading_events/ss_mcmc_22_10_21_I' #Use date automate
+plot_mcmc_super_spreading_to_screen(sim_data, alpha_mcmc, beta_mcmc, gamma_mcmc, alphaX, betaX, gammaX, file_name, folder_dir_ad)
 
 #*************************************************************************************************
 #Super spreading mcmc for a range of alpha values 

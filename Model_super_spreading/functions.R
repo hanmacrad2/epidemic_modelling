@@ -1,5 +1,5 @@
 #Functions
-
+library(ggplot2)
 #*********************************************************
 #*Simulation Functions
 
@@ -28,8 +28,61 @@ simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
 
 #*******************************************************
 #Super-spreading simulation
-
 simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
+  'Simulate an epidemic with Superspreading events
+  prop_ss = Proportion of superspreading days
+  magnitude_ss = increased rate of superspreading event'
+  
+  #Set up
+  total_infecteds = vector('numeric', num_days)
+  nsse_infecteds = vector('numeric', num_days)
+  sse_infecteds = vector('numeric', num_days)
+  total_infecteds[1] = 2
+  nsse_infecteds[1] = 2
+  sse_infecteds[1] = 0
+  
+  #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
+  #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  
+  #Days of Infection Spreading
+  for (t in 2:num_days) {
+    
+    #Regular infecteds (tot_rate = lambda) fix notation
+    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written
+    tot_rate = alphaX*lambda_t #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
+    
+    #Super-spreaders
+    n_t = rpois(1, betaX*lambda_t) #Number of super-spreading events (beta)
+    
+    if (n_t > 0){
+      sse_infecteds[t] = dnbinom(1, betaX*lambda_t, 1/(1 + gammaX)) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
+    }
+    
+    total_infecteds[t] = nsse_infecteds[t] + sse_infecteds[t]
+  }
+  
+  total_infecteds
+}
+
+#********
+#*Implement
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+alphaX = 2 #Without ss event, ~r0. 
+betaX = 0.2
+gammaX = 10
+#Epidemic data
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#*******************************************************
+#Super-spreading simulation
+simulate_branching_ss_v_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
   'Simulate an epidemic with Superspreading events
   prop_ss = Proportion of superspreading days
   magnitude_ss = increased rate of superspreading event'
@@ -295,7 +348,7 @@ plot_points_comparison <- function(vec1, vec2){
 
 #Difference between lot points comparison
 jk = 1:10
-plot_points_comparison(jk, jk^2)
+#plot_points_comparison(jk, jk^2)
 
 #Difference between points
 plot_diff_points_comparison <- function(vec1, vec2, titleX){
@@ -306,8 +359,8 @@ plot_diff_points_comparison <- function(vec1, vec2, titleX){
 }
 
 #Plot points comparison
-jk = 1:10
-plot_diff_points_comparison(exp(jk), jk^3, 'Abs difference btwn log(acceptance_probabilites) of Original ver & R packages ver; ')
+#jk = 1:10
+#plot_diff_points_comparison(exp(jk), jk^3, 'Abs difference btwn log(acceptance_probabilites) of Original ver & R packages ver; ')
 
 plot_points_comparison_straight <- function(vec1, vec2){
   
@@ -327,14 +380,16 @@ plot_points_comparison_straight <- function(vec1, vec2){
 }
 
 #Plot points comparison
-jk = 1:10
-plot_points_comparison(jk, jk^2)
+#jk = 1:10
+#plot_points_comparison(jk, jk^2)
 
 
 #Plots
 plot_mcmc_super_spreading <- function(sim_data, mcmc_vector1, mcmc_vector2, mcmc_vector3, alpha_true, betaX, gammaX, file_name, folder_dir_ad) {
   
   #Folder save
+  ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  
   pdf(paste(folder_dir_ad, "/", file_name, alpha_true, ".pdf", sep=""))
   
   #i. Epidemic data
@@ -413,14 +468,99 @@ plot_mcmc_super_spreading <- function(sim_data, mcmc_vector1, mcmc_vector2, mcmc
   
 }
 
+#Plots
+plot_mcmc_super_spreading_to_screen <- function(sim_data, mcmc_vector1, mcmc_vector2, mcmc_vector3, alpha_true, betaX, gammaX, file_name, folder_dir_ad) {
+  
+  #Folder save
+  #ifelse(!dir.exists(file.path(folder_dir_ad)), dir.create(file.path(folder_dir_ad)), FALSE)
+  #pdf(paste(folder_dir_ad, "/", file_name, alpha_true, ".pdf", sep=""))
+  
+  #i. Epidemic data
+  plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+  
+  #i. MCMC chain
+  plot.ts(mcmc_vector1, ylab = 'alpha', main = paste("MCMC Results. Alpha - Super spreading model, true alpha = ", alpha_true))
+  
+  #ii. Mean
+  #Plot mean
+  alpha_mean = cumsum(mcmc_vector1)/seq_along(mcmc_vector1)
+  plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Mean of alpha MCMC chain, True alpha = ",alpha_true))
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector1, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'alpha', ylab = 'Density', 
+               main = 'Empirical density of alpha - MCMC chain')
+  print(hist3)
+  
+  #**************************************************
+  #2. beta
+  
+  #i. MCMC chain
+  plot.ts(mcmc_vector2, ylab = 'beta', main = paste("MCMC Results; beta - Super spreading model, true beta = ", betaX))
+  #print(plot1)
+  
+  #ii. Mean
+  #Plot mean
+  beta_mean = cumsum(mcmc_vector2)/seq_along(mcmc_vector2)
+  plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, true beta = ", betaX))
+  print(plot2)
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector2, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'alpha', ylab = 'Density', 
+               main = 'Empirical density of beta - MCMC chain')
+  print(hist3)
+  
+  #**************************************************
+  #*gamma
+  
+  #i. MCMC chain
+  plot.ts(mcmc_vector3, ylab = 'gamma', main = paste("MCMC Results; gamma - Super spreading model, true gamma = ", gammaX))
+  #print(plot1)
+  
+  #ii. Mean
+  #Plot mean
+  gamma_mean = cumsum(mcmc_vector3)/seq_along(mcmc_vector3)
+  plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Mean of gamma MCMC chain, True gamma = ", gammaX))
+  print(plot2)
+  
+  #Histogram
+  #hist1 = hist(mcmc_vector, prob = TRUE)
+  #print(hist1)
+  
+  #Hist
+  hist2 <- hist(mcmc_vector3, breaks = 80)
+  hist2$counts <- hist2$counts/sum(hist2$counts)
+  hist3 = plot(hist2, xlab = 'gamma', ylab = 'Density', 
+               main = 'Empirical density of gamma - MCMC chain')
+  print(hist3)
+  
+  dev.off()
+  
+}
+
+
 #Setup data frame
-
-x = seq_along(jk)
-df <- data.frame(x, jk^2, jk^2.5)
-
-ggplot(df, aes(x)) +                    # basic graphical object
-  geom_point(aes(y = jk^2), colour="red") +  # first layer
-  geom_point(aes(y = jk^2.5), colour="green") +  # second layer
-  theme_bw() +
-  xlab("R0") + ylab("True R0 (black), MCMC sample (red)") + 
-  ggtitle("True R0 vs Mean of MCMC sample") 
+ggplot_fn_temp <- function() {
+  
+  x = seq_along(jk)
+  df <- data.frame(x, jk^2, jk^2.5)
+  ggplot(df, aes(x)) +                    # basic graphical object
+    geom_point(aes(y = jk^2), colour="red") +  # first layer
+    geom_point(aes(y = jk^2.5), colour="green") +  # second layer
+    theme_bw() +
+    xlab("R0") + ylab("True R0 (black), MCMC sample (red)") + 
+    ggtitle("True R0 vs Mean of MCMC sample")
+  
+}
+ 
