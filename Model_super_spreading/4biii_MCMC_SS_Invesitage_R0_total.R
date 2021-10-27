@@ -166,7 +166,7 @@ num_days = 50
 shape_gamma = 6
 scale_gamma = 1 
 
-#params
+#INSERT PARAMETERS
 flag_infer = 'alpha'
 alphaX = 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
 betaX = 0.2 #0.05 #0.2 #0.05 #0.05
@@ -232,7 +232,7 @@ plot2 = plot(seq_along(r0_tot_mean), r0_tot_mean, xlab = 'Time', ylab = 'r0 tota
 print(plot2)
 
 #r0 hist
-hist(r0_total_mcmc, prob = TRUE, breaks = 80,main = paste("Histogram of R0_total MCMC samples, True R0 total = ", true_tot_r0))
+#hist(r0_total_mcmc, prob = TRUE, breaks = 80,main = paste("Histogram of R0_total MCMC samples, True R0 total = ", true_tot_r0))
 #Hist - density
 hist2 <- hist(r0_total_mcmc, breaks = 80)
 hist2$counts <- hist2$counts/sum(hist2$counts)
