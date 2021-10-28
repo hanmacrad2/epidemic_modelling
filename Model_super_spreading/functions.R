@@ -49,17 +49,14 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written
+    lambda_t = sum(total_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #Eg. Today is day 10. Infected on day 1. Current Infectiousness is t - day_infected 
     tot_rate = alphaX*lambda_t #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     
     #Super-spreaders
-    n_t = rpois(1, betaX*lambda_t) #Number of super-spreading events (beta)
+    sse_infecteds[t] = rnbinom(1, betaX*lambda_t, 1/(1 + gammaX)) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
     
-    if (n_t > 0){
-      sse_infecteds[t] = dnbinom(1, betaX*lambda_t, 1/(1 + gammaX)) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
-    }
-    
+    #Total 
     total_infecteds[t] = nsse_infecteds[t] + sse_infecteds[t]
   }
   
@@ -73,12 +70,12 @@ num_days = 50
 shape_gamma = 6
 scale_gamma = 1
 #params
-alphaX = 2 #Without ss event, ~r0. 
-betaX = 0.2
+alphaX = 0.8 #Without ss event, ~r0. 
+betaX = 0.1
 gammaX = 10
 #Epidemic data
-#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #*******************************************************
 #Super-spreading simulation
@@ -103,7 +100,7 @@ simulate_branching_ss_v_poisson = function(num_days, shape_gamma, scale_gamma, a
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum(nsse_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written
+    lambda_t = sum(total_infecteds[1:(t-1)]*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written
     tot_rate = alphaX*lambda_t #Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nsse_infecteds[t] = rpois(1, tot_rate) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     
@@ -119,6 +116,20 @@ simulate_branching_ss_v_poisson = function(num_days, shape_gamma, scale_gamma, a
   
   total_infecteds
 }
+
+#*Implement
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+alphaX = 1.2 #Without ss event, ~r0. 
+betaX = 0.5
+gammaX = 10
+#Epidemic data
+sim_data2 = simulate_branching_ss_v_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
 
 #*******************************************************
 #Super-spreaders simulation
@@ -143,7 +154,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum((nss_infecteds[1:(t-1)] + ss_mult*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum((total_infecteds[1:(t-1)] + ss_mult*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     ss_infecteds[t] = rpois(1, bX*lambda_t)
     total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]

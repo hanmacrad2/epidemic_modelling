@@ -696,3 +696,22 @@ list_alphaX = c(1.0, 1.5, 2.0, 2.5, 3.0, 3.5) #c(0.9, 1.25, 1.75, 2.0, 2.5, 3, 3
 df_ss_results = ss_mcmc_mv_range_alpha(n, list_alphaX, betaX, gammaX, file_name, folder_dir_ad)
 
 a = 1; b = 2; c = 4
+
+#Distributions
+# beta=0.5
+# gamma=10
+# lambda=1
+# 
+# par(mfrow=c(2,1))
+# 
+# #poisson-poisson compound
+# data=rpois(1000,gamma*rpois(1000,beta*lambda))
+# print(c(mean(data),var(data)))
+# data[which(data>20)]=20
+# hist(data,breaks = 0:20,)
+# 
+# #negbin approximation
+# data=rnbinom(1000,beta*lambda,1/(gamma+1))
+# print(c(mean(data),var(data)))
+# data[which(data>20)]=20
+# hist(data,breaks = 0:20,)

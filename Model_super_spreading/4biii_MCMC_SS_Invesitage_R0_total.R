@@ -8,17 +8,15 @@ source("functions.R")
 #par(mar=c(1,1,1,1))
 
 #*MCMC - Investigate one parameter at a time
-mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, flag_infer, x0 = 1) { #burn_in = 2500
+mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, flag_infer, true_R0, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
-  #Set up
+  #Initialise parameters
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
   gamma_vec <- vector('numeric', n); r0_total_vec <- vector('numeric', n)
-  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0;
-  
-  #Initialise parameters
   r0_total_vec[1] <- x0
+  count_accept = 0
   
   #alpha
   if (flag_infer == 'alpha') {
@@ -65,7 +63,7 @@ mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, 
       
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         alpha_vec[i] <- alpha_dash
-        count_accept1 = count_accept1 + 1
+        count_accept = count_accept + 1
       } else {
         alpha_vec[i] <- alpha_vec[i-1]
       }
@@ -90,7 +88,7 @@ mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, 
     if (!(is.na(log_accept_prob)) &&
         log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
-      count_accept2 = count_accept2 + 1
+      count_accept = count_accept + 1
     } else {
       beta_vec[i] <- beta_vec[i - 1]
     }
@@ -110,13 +108,11 @@ mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, 
     #Acceptance Probability
     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    #prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
-    #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
     
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
-      count_accept3 = count_accept3 + 1
+      count_accept = count_accept + 1
     } else {
       gamma_vec[i] <- gamma_vec[i-1]
     }
@@ -127,35 +123,34 @@ mcmc_ss_investigate_r0_total <- function(data, n, sigma, alphaX, betaX, gammaX, 
     #Calculate r0 value
     r0_total_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
   }
-  #Final stats
-  #alpha
-  accept_rate1 = 100*count_accept1/n
-  #beta
-  accept_rate2 = 100*count_accept2/n
+  #Final stats - Acceptance Rate
+  accept_rate = 100*count_accept/n
+  data_10_pc = 0.1*n
   
-  #gamma
-  accept_rate3 = 100*count_accept3/n
+  #Mean of parameter infered
+  if (flag_infer == 'alpha') {
+    param_mean_val = mean(alpha_vec[n-data_10_pc:n])
+  } else if (flag_infer == 'beta') {
+    param_mean_val = mean(beta_vec[n-data_10_pc:n])
+  } else if (flag_infer == 'gamma') {
+    param_mean_val = mean(gamma_vec[n-data_10_pc:n])
+  }
   
   #Results - Create dataframe
   df_results <- data.frame(
-    accept_rate_alpha = accept_rate1, #unlist(list_accept_rate1),
-    n_accepted_a = count_accept,
-    accept_rate_beta = accept_rate2, #unlist(list_accept_rate2),
-    n_accepted_b = count_accept2, 
-    accept_rate_gamma = accept_rate3,
-    n_accepted_g = count_accept3) #unlist(list_accept_rate3))
-  
-    #time_taken = unlist(list_time_taken))
+    alpha = alphaX,
+    beta = betaX,
+    gamma = gammaX,
+    param_infer = flag_infer,
+    param_mean = param_mean_val,
+    R0 = true_R0, 
+    R0_mean_MCMC = mean(r0_total_vec[n-data_10_pc:n]),
+    accept_rate = accept_rate) 
   
   print(df_results)
   
-  #Burn-in 
-  #alpha_vec = alpha_vec[burn_in:n]
-  #beta_vec = beta_vec[burn_in:n]
-  #gamma_vec = gamma_vec[burn_in:n]
-  
   #Return alpha, acceptance rate
-  return(list(alpha_vec, beta_vec, gamma_vec, r0_total_vec))
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_total_vec, accept_rate))
 }
 
 #********
@@ -167,7 +162,7 @@ shape_gamma = 6
 scale_gamma = 1 
 
 #INSERT PARAMETERS
-flag_infer = 'alpha'
+param_infer = 'alpha'
 alphaX = 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
 betaX = 0.2 #0.05 #0.2 #0.05 #0.05
 gammaX = 10
@@ -183,7 +178,7 @@ start_time = Sys.time()
 print('Start time:')
 print(start_time)
 sigma = 1
-mcmc_params_ad = mcmc_ss_investigate_r0_total(sim_data, n, sigma, alphaX, betaX, gammaX, flag_infer)
+mcmc_params_ad = mcmc_ss_investigate_r0_total(sim_data, n, sigma, alphaX, betaX, gammaX, param_infer, true_tot_r0)
 end_time = Sys.time()
 time_elap = end_time - start_time
 print('Time elapsed:')
@@ -202,40 +197,53 @@ gamma_mcmc = unlist(gamma_mcmc)
 r0_total_mcmc = mcmc_params_ad[4]
 r0_total_mcmc = unlist(r0_total_mcmc)
 
-#Plots
-#alpha
-plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC Super spreading model, simulated alpha = ", alphaX))
-#alpha mean
-alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
-plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Mean of alpha MCMC chain, True alpha = ",alphaX))
-print(plot2)
+accept_rate = mcmc_params_ad[5]
 
-#beta
-plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC Super spreading model, simulated beta = ", betaX))
-#beta mean
-beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
-plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Mean of beta MCMC chain, True beta = ",betaX))
-print(plot2)
+#*****************************
+#Plot results
+plot_mcmc_results <- function(param_infer, dist_type, true_tot_r0, param_mcmc, r0_total_vec){
+  
+  #Sim data
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste("Daily Infections, Super Spreading Events ", dist_type, ", r0 = ", true_tot_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 
-#gamma
-plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC Super spreading model, simulated gamma = ", gammaX))
-#gamma Mean
-gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
-plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Mean of gamma MCMC chain, True gamma = ",gammaX))
-print(plot2)
+  #Paramter (alpha, beta, gamma)
+  plot.ts(param_mcmc, xlab = 'Time', ylab = 'alpha',
+          main = paste("MCMC chain of ", param_infer),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #Paramter mean
+  dat_10_pc = 0.1*n
+  param_mean_val = mean(param_mcmc[n-dat_10_pc:n])
+  param_mean = cumsum(param_mcmc)/seq_along(param_mcmc)
+  plot(seq_along(param_mean), param_mean, xlab = 'Time', ylab = param_infer,
+       main = paste("Mean of ", param_infer, ". Final Mean = ", round(param_mean_val, 2), ", True value = ", alphaX),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #R0
+  plot.ts(r0_total_mcmc,  xlab = 'Time', ylab = 'r0',
+          main = paste("R0 total, MCMC Super spreading model, true total R0 = ", true_tot_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #R0 mean
+  r0_tot_mean = cumsum(r0_total_mcmc)/seq_along(r0_total_mcmc)
+  plot2 = plot(seq_along(r0_tot_mean), r0_tot_mean,
+               xlab = 'Time', ylab = 'r0 total',
+               main = paste("Mean of R0 total MCMC chain, True R0 total = ", true_tot_r0),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
 
-#r0
-plot.ts(r0_total_mcmc,  ylab = 'r0', main = paste("R0 total - MCMC Super spreading model, true total r0 = ", true_tot_r0))
-#r0 mean
-r0_tot_mean = cumsum(r0_total_mcmc)/seq_along(r0_total_mcmc)
-plot2 = plot(seq_along(r0_tot_mean), r0_tot_mean, xlab = 'Time', ylab = 'r0 total', main = paste("Mean of R0 total MCMC chain, True R0 total = ", true_tot_r0))
-print(plot2)
+  #Histogram
+  hist(r0_total_mcmc, freq = FALSE, xlab = 'R0 total', ylab = 'Density', 
+       main = 'Empirical density of R0 total MCMC samples',
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+}
 
-#r0 hist
-#hist(r0_total_mcmc, prob = TRUE, breaks = 80,main = paste("Histogram of R0_total MCMC samples, True R0 total = ", true_tot_r0))
-#Hist - density
-hist2 <- hist(r0_total_mcmc, breaks = 80)
-hist2$counts <- hist2$counts/sum(hist2$counts)
-hist3 = plot(hist2, xlab = 'R0 total', ylab = 'Density', 
-             main = 'Empirical density of R0 total - MCMC samples')
-print(hist3)
+#Apply
+dist_type = 'Neg Bin dist'
+plot_mcmc_results(param_infer, dist_type, true_tot_r0, alpha_mcmc, r0_total_mcmc)
+
+#Done
+#alpha 1, 
