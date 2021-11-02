@@ -164,14 +164,13 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
 }
 
 #Apply
-n = 50000
-num_days = 15 #60 #100
-shape_gamma = 6
-scale_gamma = 1
-aX = 2
-bX = 2
-ss_mult = 5
-data_ss = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
+#n = 50000
+#shape_gamma = 6
+#scale_gamma = 1
+#aX = 2
+#bX = 2
+#ss_mult = 5
+#data_ss = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
 
 #*******************************************************************************
 #Model functions  - Super-spreading Model

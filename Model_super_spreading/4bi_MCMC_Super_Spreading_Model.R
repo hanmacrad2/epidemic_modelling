@@ -24,12 +24,12 @@ mcmc_super_spreading <- function(data, n, sigma,  x0 = 1) { #burn_in = 2500
   
   #Set up
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
-  gamma_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
   
-  alpha_vec[1] <- x0; beta_vec[1] <- x0; gamma_vec[1] <- x0
+  alpha_vec[1] <- x0; beta_vec[1] <- x0;
+  gamma_vec[1] <- x0; r0_vec[1] <- x0;
   
-  count_accept1 = 0; count_reject1 = 0; count_accept2 = 0
-  count_reject2 = 0; count_accept3 = 0; count_reject3 = 0
+  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0;
   
   #MCMC chain
   for(i in 2:n) {
@@ -55,7 +55,6 @@ mcmc_super_spreading <- function(data, n, sigma,  x0 = 1) { #burn_in = 2500
       count_accept1 = count_accept1 + 1
     } else {
       alpha_vec[i] <- alpha_vec[i-1]
-      count_reject1 = count_reject1 + 1
     }
     
     #Adaptive MC
@@ -83,7 +82,6 @@ mcmc_super_spreading <- function(data, n, sigma,  x0 = 1) { #burn_in = 2500
       count_accept2 = count_accept2 + 1
     } else {
       beta_vec[i] <- beta_vec[i-1]
-      count_reject2 = count_reject2 + 1
     }
     
     #Adaptive MC
@@ -119,32 +117,23 @@ mcmc_super_spreading <- function(data, n, sigma,  x0 = 1) { #burn_in = 2500
       count_accept3 = count_accept3 + 1
     } else {
       gamma_vec[i] <- gamma_vec[i-1]
-      count_reject3 = count_reject3 + 1
     }
     
+    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
     
   }
   #Final stats
   #alpha
-  total_iters1 = count_accept1 + count_reject1
-  accept_rate1 = 100*(count_accept1/(count_accept1+count_reject1))
-  num_samples1 = count_accept1
-  print("Acceptance rate1 = ")
-  print(accept_rate1)
+  accept_rate1 = 100*count_accept1/n
+  cat("Acceptance rate1 = ",accept_rate1)
   
   #beta
-  total_iters2 = count_accept2 + count_reject2
   accept_rate2 = 100*(count_accept2/(count_accept2+count_reject2))
-  num_samples2 = count_accept2
-  print("Acceptance rate2 = ")
-  print(accept_rate2)
+  cat("Acceptance rate2 = ", accept_rate2)
   
   #gamma
-  total_iters3 = count_accept3 + count_reject3
-  accept_rate3 = 100*(count_accept3/(count_accept3+count_reject3))
-  num_samples3 = count_accept3
-  print("Acceptance rate3 = ")
-  print(accept_rate3)
+  accept_rate3 = 100*count_accept3/n
+  cat("Acceptance rate3 = ", accept_rate3)
   
   #Burn-in 
   #alpha_vec = alpha_vec[burn_in:n]
@@ -152,10 +141,8 @@ mcmc_super_spreading <- function(data, n, sigma,  x0 = 1) { #burn_in = 2500
   #gamma_vec = gamma_vec[burn_in:n]
   
   #Return alpha, acceptance rate
-  return(list(alpha_vec, beta_vec, gamma_vec, 
-              accept_rate1, num_samples1, sigma, 
-              accept_rate2, num_samples2, sigma, 
-              accept_rate3, num_samples3, sigma))
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+              accept_rate1, accept_rate2, accept_rate3))
 }
 
 #********
@@ -164,16 +151,24 @@ num_days = 50
 #lambda params
 shape_gamma = 6
 scale_gamma = 1
-#params
+
+#Params
 alphaX = 2 #Without ss event, ~r0. 
 betaX = 0.05
 gammaX = 10
+r0_true = alphaX + betaX*gammaX
+r0_true
+dist_type = 'Neg Bin dist'
+
 #Epidemic data
+par(mfrow = c(2,4))
 sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data)
+plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+        main = paste("Daily Infectns, SS Events", dist_type, ", r0 = ", r0_true),
+        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
 
 #Time
-n = 1000
+n = 50000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
@@ -195,10 +190,23 @@ beta_mcmc = unlist(beta_mcmc)
 gamma_mcmc = mcmc_params_ad[3]
 gamma_mcmc = unlist(gamma_mcmc)
 
+r0_mcmc = mcmc_params_ad[4]
+r0_mcmc = unlist(r0_mcmc)
+
+#Stats
+data_10_pc = 0.1*n
+a_mcmc_mean = mean(alpha_mcmc[n-data_10_pc:n])
+b_mcmc_mean = mean(beta_mcmc[n-data_10_pc:n])
+g_mcmc_mean = mean(gamma_mcmc[n-data_10_pc:n])
+r0_mcmc_mean = mean(r0_mcmc[n-data_10_pc:n])
+#r0_infer = a_mcmc_mean + b_mcmc_mean*g_mcmc_mean
+
 #Plot
-plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC Super spreading model, simulated alpha = ", alphaX))
-plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC Super spreading model, simulated beta = ", betaX))
-plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC Super spreading model, simulated gamma = ", gammaX))
+par(mfrow=c(2,4))
+plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC Super spreading model, true alpha = ", alphaX))
+plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC Super spreading model, true beta = ", betaX))
+plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC Super spreading model, true gamma = ", gammaX))
+plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC Super spreading model, true r0 = ", r0_true))
 
 #alpha mean
 alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
@@ -215,6 +223,28 @@ gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
 plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Mean of gamma MCMC chain, True gamma = ",gammaX))
 print(plot2)
 
+#r0 Mean
+r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'r0', main = paste("Mean of gamma MCMC chain, True gamma = ", r0_true))
+print(plot2)
+
+#Results
+df_results <- data.frame(
+  alpha = alphaX,
+  a_mcmc_mean = a_mcmc_mean,
+  beta = betaX,
+  b_mcmc_mean = b_mcmc_mean,
+  gamma = gammaX,
+  g_mcmc_mean = g_mcmc_mean,
+  R0 = r0_true, 
+  R0_mean_MCMC = r0_mcmc_mean)
+#accept_rate = accept_rate) 
+
+print(df_results)
+
+
+
+#************************************************************************************
 #Plot
 file_name = 'ss_mcmc_22_10_21_I'
 folder_dir_ad = 'Results/super_spreading_events/ss_mcmc_22_10_21_I' #Use date automate
