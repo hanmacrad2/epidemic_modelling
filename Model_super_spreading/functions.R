@@ -64,20 +64,20 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
   
   total_infecteds
 }
-
-#********
-#*Implement
-num_days = 50
-#lambda params
-shape_gamma = 6
-scale_gamma = 1
-#params
-alphaX = 0.8 #Without ss event, ~r0. 
-betaX = 0.1
-gammaX = 10
-#Epidemic data
-sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Daily Infections count')
+# 
+# #********
+# #*Implement
+# num_days = 50
+# #lambda params
+# shape_gamma = 6
+# scale_gamma = 1
+# #params
+# alphaX = 0.8 #Without ss event, ~r0. 
+# betaX = 0.1
+# gammaX = 10
+# #Epidemic data
+# sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+# plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #*******************************************************
 #Super-spreading simulation
@@ -108,10 +108,7 @@ simulate_ss_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX
     
     #Super-spreaders
     n_t = rpois(1, betaX*lambda_t) #Number of super-spreading events (beta)
-    
-    if (n_t > 0){
-      sse_infecteds[t] = rpois(1, gammaX*n_t) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
-    }
+    sse_infecteds[t] = rpois(1, gammaX*n_t) #z_t: Total infecteds due to super-spreading event - num of events x Num individuals
     
     total_infecteds[t] = nsse_infecteds[t] + sse_infecteds[t]
   }
