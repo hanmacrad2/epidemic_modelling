@@ -302,7 +302,7 @@ print(time_elap)
 ################################################################################
 
 #*MCMC - Investigate one parameter at a time
-mcmc_ss_r0_total_x2 <- function(data, n, sigma, alphaX, betaX, gammaX, param_infer, true_R0, x0 = 1) { #burn_in = 2500
+mcmc_ss_x2 <- function(data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_infer, true_R0, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
@@ -368,7 +368,7 @@ mcmc_ss_r0_total_x2 <- function(data, n, sigma, alphaX, betaX, gammaX, param_inf
     #************************************************************************
     #beta
     if ((param_infer == 'alpha_beta') | (param_infer == 'beta_gamma')) {
-      beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma)
+      beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b)
       if(beta_dash < 0){
         beta_dash = abs(beta_dash)
       }
@@ -516,6 +516,43 @@ plot_mcmc_results_total <- function(sim_data, mcmc_params, true_r0, dist_type, t
   
 }
 
+
+############# --- INSERT PARAMETERS! --- ######################################
+alphaX = 0.8 # 1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+betaX = 0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+gammaX = 10
+true_r0 = alphaX + betaX*gammaX
+true_r0
+##!!---##############################################################!!---##
+
+#Epidemic data - Neg Bin
+dist_type = 'Neg bin'
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#Epidemic data - Poisson 
+#sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#MCMC 
+param_infer = 'alpha_gamma'
+n = 10000
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+sigma = 1
+sigma_b = 0.05
+mcmc_params_x2 = mcmc_ss_x2(sim_data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_infer, true_R0, x0 = 1)
+#mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
+end_time = Sys.time()
+time_elap = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elap)
+
+
+#Plotting
+dist_type = 'Neg Bin,'
+plot_mcmc_results_total(sim_data, mcmc_params_x2, true_r0, dist_type, time_elap)
 
 
 ################################################################################
