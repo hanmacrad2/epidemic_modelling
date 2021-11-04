@@ -63,7 +63,7 @@ mcmc_ss_r0_total_x1 <- function(data, n, sigma, alphaX, betaX, gammaX, param_inf
       logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
       #prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
       #prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-      log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+      log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1]#+ prior1 - prior2
       
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         alpha_vec[i] <- alpha_dash
@@ -87,7 +87,7 @@ mcmc_ss_r0_total_x1 <- function(data, n, sigma, alphaX, betaX, gammaX, param_inf
     logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     #prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
     #prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+    log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1] #+ prior1 - prior2
 
     if (!(is.na(log_accept_prob)) &&
         log(runif(1)) < log_accept_prob) {
@@ -105,14 +105,14 @@ mcmc_ss_r0_total_x1 <- function(data, n, sigma, alphaX, betaX, gammaX, param_inf
     if (param_infer == 'gamma') {
     gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma)
     
-    if(gamma_dash < 0){
-      gamma_dash = abs(gamma_dash)
+    if(gamma_dash < 1){ #gamma always greater then one
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
     }
     
     #Acceptance Probability
     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+    log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #gamma prior always greater then one + prior1 - prior2
     
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
@@ -353,7 +353,7 @@ mcmc_ss_x2 <- function(data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_inf
       logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
       #prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
       #prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-      log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+      log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1] #+ prior1 - prior2
       
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         alpha_vec[i] <- alpha_dash
@@ -377,7 +377,9 @@ mcmc_ss_x2 <- function(data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_inf
       logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
       #prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
       #prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
-      log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+      log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1] #prior = log(exp(-x))
+      #+ prior1 - prior2
+      
       
       if (!(is.na(log_accept_prob)) &&
           log(runif(1)) < log_accept_prob) {
@@ -395,14 +397,14 @@ mcmc_ss_x2 <- function(data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_inf
     if ((param_infer == 'alpha_gamma') | (param_infer == 'beta_gamma')) {
       gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma)
       
-      if(gamma_dash < 0){
-        gamma_dash = abs(gamma_dash)
+      if(gamma_dash < 1){
+        gamma_dash = 2 - gamma_dash #abs(gamma_dash)
       }
       
       #Acceptance Probability
       logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)
       logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-      log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+      log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #Two ones cancel out in the priors. + prior1 - prior2
       
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         gamma_vec[i] <- gamma_dash
@@ -535,7 +537,7 @@ plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections coun
 #plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #MCMC 
-param_infer = 'alpha_gamma'
+param_infer = 'alpha_beta'
 n = 10000
 start_time = Sys.time()
 print('Start time:')
@@ -591,7 +593,7 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
     prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev #+ prior1 - prior2
+    log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1] #+ prior1 - prior2
     
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
@@ -612,7 +614,7 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
     prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
     prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev #+ prior1 - prior2 
+    log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1]#+ prior1 - prior2 
     
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
@@ -625,8 +627,8 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     #gamma
     gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma) 
     
-    if(gamma_dash < 0){
-      gamma_dash = abs(gamma_dash)
+    if(gamma_dash < 1){
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
     }
     
     #Acceptance Probability
@@ -634,7 +636,7 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
     #prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
     #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev #+ prior1 - prior2 
+    log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #+ prior1 - prior2 
     
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
