@@ -5,6 +5,7 @@ library(MASS)
 #Setup
 setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
+seed_count = 1
 #par(mar=c(1,1,1,1))
 
 ################################################################################
@@ -440,11 +441,11 @@ mcmc_ss_x2 <- function(data, n, sigma, sigma_b, alphaX, betaX, gammaX, param_inf
 
 #*****************************
 #Plot results
-plot_mcmc_results_total <- function(sim_data, mcmc_params, true_r0, dist_type, total_time){
+plot_mcmc_results_total <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count){
   
   #Plot Set up
   plot.new()
-  par(mfrow=c(2,4))
+  par(mfrow=c(3,4))
   
   #Extract params
   alpha_mcmc = mcmc_params[1]
@@ -469,7 +470,7 @@ plot_mcmc_results_total <- function(sim_data, mcmc_params, true_r0, dist_type, t
   #Plots
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste("Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC
@@ -550,7 +551,6 @@ end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
 print(time_elap)
-
 
 #Plotting
 dist_type = 'Neg Bin,'
@@ -668,20 +668,314 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
 
 
 ############# --- INSERT PARAMETERS! --- ######################################
-alphaX = 1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+alphaX = 0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
 betaX = 0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
 gammaX = 10
 true_r0 = alphaX + betaX*gammaX
 true_r0
 ##!!---##############################################################!!---##
 
+#Data: Set seed 
+for (i in 1:seed_count) {
+  cat('Seed count; ', i)
+  set.seed(i)
+}
 #Epidemic data - Neg Bin
-#sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #Epidemic data - Poisson 
-sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#MCMC 
+n = 30000
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+sigma = 1
+sigma_b = 0.05
+mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
+end_time = Sys.time()
+time_elap = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elap)
+
+#Plotting
+dist_type = 'Neg Bin,'
+plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+
+#what
+seed_count = seed_count + 1
+
+################################################################################
+# MCMC - FOUR PARAMETER UPDATES
+################################################################################
+
+#********************************************************************
+#MCMC Super-spreading
+mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 2500
+  
+  'Returns mcmc samples of alpha & acceptance rate'
+  
+  #Set up
+  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
+  
+  alpha_vec[1] <- x0; beta_vec[1] <- x0;
+  gamma_vec[1] <- x0; r0_vec[1] <- x0;
+  
+  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0; count_accept4 = 0
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    #******************************************************
+    #alpha
+    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma) 
+    #cat("alpha dash: ", alpha_dash, "\n")
+    
+    if(alpha_dash < 0){
+      alpha_dash = abs(alpha_dash)
+    }
+    
+    #log alpha
+    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1] #+ prior1 - prior2
+    
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) { #if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      alpha_vec[i] <- alpha_dash
+      count_accept1 = count_accept1 + 1
+    } else {
+      alpha_vec[i] <- alpha_vec[i-1]
+    }
+    
+    #************************************************************************
+    #beta
+    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
+    #cat("Beta dash: ", beta_dash, "\n")
+    if(beta_dash < 0){
+      beta_dash = abs(beta_dash)
+    }
+    
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
+    prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1]#+ prior1 - prior2 
+    
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      beta_vec[i] <- beta_dash
+      count_accept2 = count_accept2 + 1
+    } else {
+      beta_vec[i] <- beta_vec[i-1]
+    }
+    
+    #************************************************************************
+    #gamma
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma) 
+    
+    if(gamma_dash < 1){
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+    }
+    
+    #Acceptance Probability
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+    #prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
+    #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #+ prior1 - prior2 
+    
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      gamma_vec[i] <- gamma_dash
+      count_accept3 = count_accept3 + 1
+    } else {
+      gamma_vec[i] <- gamma_vec[i-1]
+    }
+    
+    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
+    
+    #gamma-beta
+    beta_new = (r0_vec[i] - alpha_vec[i])/gamma_vec[i]
+    
+    if(beta_new < 0){
+      beta_new = abs(beta_new)
+    }
+    
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    prior1 = dgamma(beta_new, shape = 1, scale = 1, log = TRUE)
+    prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev - beta_new + beta_vec[i-1]#+ prior1 - prior2 
+    
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      beta_vec[i] <- beta_new
+      count_accept4 = count_accept4 + 1
+    } else {
+      beta_vec[i] <- beta_vec[i]
+    }
+    
+  }
+  #Final stats
+  #alpha
+  accept_rate1 = 100*count_accept1/n
+  cat("Acceptance rate1 = ",accept_rate1)
+  
+  #beta
+  accept_rate2 = 100*count_accept2/n
+  cat("Acceptance rate2 = ", accept_rate2)
+  
+  #gamma
+  accept_rate3 = 100*count_accept3/n
+  cat("Acceptance rate3 = ", accept_rate3)
+  
+  #beta-gamma
+  accept_rate4 = 100*count_accept4/n
+  cat("Acceptance rate4 = ", accept_rate4)
+  
+  #Return alpha, acceptance rate
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+              accept_rate1, accept_rate2, accept_rate3, accept_rate4))
+}
+
+#*****************************
+#Plot results
+plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count){
+  
+  #Plot Set up
+  plot.new()
+  par(mfrow=c(3,4))
+  
+  #Extract params
+  alpha_mcmc = mcmc_params[1]
+  alpha_mcmc = unlist(alpha_mcmc)
+  
+  beta_mcmc = mcmc_params[2]
+  beta_mcmc = unlist(beta_mcmc)
+  
+  gamma_mcmc = mcmc_params[3]
+  gamma_mcmc = unlist(gamma_mcmc)
+  
+  r0_mcmc = mcmc_params[4]
+  r0_mcmc = unlist(r0_mcmc)
+  
+  #Stats
+  data_10_pc = 0.1*n
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
+  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Plots
+  #i.Infections
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #ii. MCMC
+  plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC SS Events, true alpha = ", alphaX))
+  abline(h = alphaX, col = 'red')
+  plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC SS Events, true beta = ", betaX))
+  abline(h = betaX, col = 'blue')
+  plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC SS Events, true gamma = ", gammaX))
+  abline(h = gammaX, col = 'green')
+  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
+  
+  #Mean data
+  #r0 Mean
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0))
+  print(plot2)
+  abline(h = true_r0, col = 'orange')
+  
+  #alpha mean
+  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+  plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX))
+  print(plot2)
+  abline(h = alphaX, col = 'red')
+  
+  #beta mean
+  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+  plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX))
+  print(plot2)
+  abline(h = betaX, col = 'blue')
+  
+  #gamma Mean
+  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+  plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX))
+  print(plot2)
+  abline(h = gammaX, col = 'green')
+  
+  #9,11,12; Histograms
+  hist(r0_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'R0 total', #ylab = 'Density', 
+       main = 'R0 total MCMC samples',
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = true_r0, col = 'orange')
+  
+  #Beta vs gamma
+  plot(beta_mcmc, gamma_mcmc, xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma')
+  
+  #Hist Beta 
+  hist(beta_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'Beta', #ylab = 'Density', 
+       main = paste("Beta, True beta = ", betaX), 
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = betaX, col = 'blue')
+  
+  #Hist Gamma 
+  hist(gamma_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'gamma', #ylab = 'Density', 
+       main = paste("Gamma, True gamma = ", gammaX), 
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = gammaX, col = 'green')
+  
+  #Results
+  df_results <- data.frame(
+    alpha = alphaX,
+    a_mc = a_mcmc_mean,
+    beta = betaX,
+    b_mc = b_mcmc_mean,
+    gamma = gammaX,
+    g_mc = g_mcmc_mean,
+    R0 = true_r0, 
+    R0_mc = r0_mcmc_mean,
+    accept_rate_a = round(mcmc_params[[5]],2),
+    a_rte_b = round(mcmc_params[[6]], 2),
+    a_rte_g = round(mcmc_params[[7]],2),
+    tot_time = total_time) 
+  
+  print(df_results)
+  
+}
+
+
+
+############# --- INSERT PARAMETERS! --- ######################################
+alphaX = 0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+betaX = 0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+gammaX = 10
+true_r0 = alphaX + betaX*gammaX
+true_r0
+##!!---##############################################################!!---##
+
+#Data: Set seed 
+for (i in 1:seed_count) {
+  cat('Seed count; ', i)
+  set.seed(i)
+}
+
+#Epidemic data - Neg Bin
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#Epidemic data - Poisson 
+#sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #MCMC 
 n = 30000
@@ -702,4 +996,7 @@ print(time_elap)
 
 #Plotting
 dist_type = 'Poisson,'
-plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap)
+plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+
+seed_count = seed_count + 1
+
