@@ -1,12 +1,20 @@
 #Description
 #Super spreading model- Monte Carlo
 library(MASS)
+library(pracma)
 
 #Setup
 setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
+
 seed_count = 1
 #par(mar=c(1,1,1,1))
+
+#Epidemic params
+num_days = 50
+#Gamma params for infectiousness curve (lambda) distribution
+shape_gamma = 6
+scale_gamma = 1 
 
 ################################################################################
 # MCMC - ONE PARAMETERS AT A TIME
@@ -208,14 +216,6 @@ plot_mcmc_results <- function(sim_data, param_mcmc, r0_total_vec, param_infer, d
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5) #Empirical density of 
   
 }
-
-#********
-#Implement
-num_days = 50
-
-#Gamma params for infectiousness curve (lambda) distribution
-shape_gamma = 6
-scale_gamma = 1 
 
 ############# INSERT PARAMETERS #!!---#######################################
 alphaX = 1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
@@ -687,70 +687,94 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   r0_mcmc = mcmc_params[4]
   r0_mcmc = unlist(r0_mcmc)
   
-  #Stats
-  data_10_pc = 0.1*n
-  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
-  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
-  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
-  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  #Cumulative means + param sample limits
+  #r0
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  r0_lim = max(true_r0, max(r0_mcmc))
+  r0_lim2 = max(true_r0, r0_mean)
   
-  #Plots
+  #alpha
+  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+  a_lim =  max(alphaX, max(alpha_mcmc))
+  a_lim2 =  max(alphaX, alpha_mean)
+  
+  #beta
+  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+  b_lim = max(betaX, max(beta_mcmc))
+  b_lim2 = max(betaX, beta_mean)
+  
+  #gamma
+  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+  g_lim =  max(gammaX, max(gamma_mcmc))
+  g_lim2 =  max(gammaX, gamma_mean) 
+  
+  #***********
+  #* Plots *
+
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
           main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
-  #ii. MCMC
-  plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC SS Events, true alpha = ", alphaX))
+  #ii. MCMC Trace Plots
+  plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
+          main = paste("MCMC SS Events, true alpha = ", alphaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = alphaX, col = 'red', lwd = 2)
-  plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC SS Events, true beta = ", betaX))
+  
+  plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim),
+          main = paste("MCMC SS Events, true beta = ", betaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = betaX, col = 'blue', lwd = 2)
-  plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC SS Events, true gamma = ", gammaX), ylim=c(0,gammaX + 0.5))
+  
+  plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
+          main = paste("MCMC SS Events, true gamma = ", gammaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = gammaX, col = 'chartreuse4', lwd = 2)
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
-  #Mean data
+  #iii. Cumulative mean plots
   #r0 Mean
-  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
   plot2 = plot(seq_along(r0_mean), r0_mean,
-               ylim=c(0, true_r0 + 0.5),
-               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0))
+               ylim=c(0, r0_lim),
+               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = true_r0, col = 'orange', lwd = 2)
   
   #alpha mean
-  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
   plot2 = plot(seq_along(alpha_mean), alpha_mean,
-               ylim=c(0, ceil(alphaX + alpha_mean)),
-               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX))
+               ylim=c(0, a_lim),
+               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = alphaX, col = 'red', lwd = 2)
   
   #beta mean
-  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
   plot2 = plot(seq_along(beta_mean), beta_mean,
-               ylim=c(0, ceil(betaX + beta_mean)),
-               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX))
+               ylim=c(0, b_lim),
+               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = betaX, col = 'blue', lwd = 2)
   
   #gamma Mean
-  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
   plot2 = plot(seq_along(gamma_mean), gamma_mean,
                xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
-               ylim=c(0, round(gammaX + gamma_mean)))
+               ylim=c(0, g_lim),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = gammaX, col = 'green', lwd = 2)
   
-  #9,11,12; Histograms
+  #iv. Param Histograms (Plots 9,11,12)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
        main = 'R0 total MCMC samples',
-       xlim=c(0, true_r0 + r0_mean),
+       xlim=c(0, r0_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
   
-  #Beta vs gamma
+  #v. Beta vs gamma
   plot(beta_mcmc, gamma_mcmc,
        xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
@@ -759,7 +783,7 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   hist(beta_mcmc, freq = FALSE, breaks = 100,
        xlab = 'beta', #ylab = 'Density', 
        main = paste("Beta, True beta = ", betaX), 
-       xlim=c(0, betaX + beta_mean),
+       xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = betaX, col = 'blue', lwd = 2)
   
@@ -767,9 +791,16 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   hist(gamma_mcmc, freq = FALSE, breaks = 100,
        xlab = 'gamma', #ylab = 'Density', 
        main = paste("Gamma, True gamma = ", gammaX),
-       xlim=c(0,gammaX + gamma_mean),
+       xlim=c(0, g_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = gammaX, col = 'green', lwd = 2)
+  
+  #Final Mean Stats
+  data_10_pc = 0.1*n
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
+  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
   
   #Results
   df_results <- data.frame(
@@ -788,6 +819,7 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   
   print(df_results)
   
+  
 }
 
 
@@ -800,14 +832,17 @@ true_r0
 ##!!---##############################################################!!---##
 
 #Data: Set seed 
-for (i in 1:seed_count) {
-  cat('Seed count; ', i)
-  set.seed(i)
-}
+# for (i in 1:seed_count) {
+#   cat('Seed count; ', i)
+#   set.seed(i)
+# }
+set.seed(seed_count)
+
 #Epidemic data - Neg Bin
-set.seed(1)
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data3 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+#sim_data4 = sim_data
+#sim_data = sim_data3
 
 #Epidemic data - Poisson 
 #sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
@@ -831,10 +866,9 @@ dist_type = 'Neg Bin,'
 #plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
 plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
 
-beta_mcmc = mcmc_params[2]
-beta_mcmc = unlist(beta_mcmc)
 #Seed
-#seed_count = seed_count + 1
+seed_count = seed_count + 1
+seed_count
 
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
