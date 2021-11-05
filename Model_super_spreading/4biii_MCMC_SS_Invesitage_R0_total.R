@@ -666,6 +666,130 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
               accept_rate1, accept_rate2, accept_rate3))
 }
 
+#*****************************
+#Plot results
+plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count){
+  
+  #Plot Set up
+  plot.new()
+  par(mfrow=c(3,4))
+  
+  #Extract params
+  alpha_mcmc = mcmc_params[1]
+  alpha_mcmc = unlist(alpha_mcmc)
+  
+  beta_mcmc = mcmc_params[2]
+  beta_mcmc = unlist(beta_mcmc)
+  
+  gamma_mcmc = mcmc_params[3]
+  gamma_mcmc = unlist(gamma_mcmc)
+  
+  r0_mcmc = mcmc_params[4]
+  r0_mcmc = unlist(r0_mcmc)
+  
+  #Stats
+  data_10_pc = 0.1*n
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
+  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Plots
+  #i.Infections
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #ii. MCMC
+  plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC SS Events, true alpha = ", alphaX))
+  abline(h = alphaX, col = 'red', lwd = 2)
+  plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC SS Events, true beta = ", betaX))
+  abline(h = betaX, col = 'blue', lwd = 2)
+  plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC SS Events, true gamma = ", gammaX), ylim=c(0,gammaX + 0.5))
+  abline(h = gammaX, col = 'chartreuse4', lwd = 2)
+  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
+  
+  #Mean data
+  #r0 Mean
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  plot2 = plot(seq_along(r0_mean), r0_mean,
+               ylim=c(0, true_r0 + 0.5),
+               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0))
+  print(plot2)
+  abline(h = true_r0, col = 'orange', lwd = 2)
+  
+  #alpha mean
+  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+  plot2 = plot(seq_along(alpha_mean), alpha_mean,
+               ylim=c(0, ceil(alphaX + alpha_mean)),
+               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX))
+  print(plot2)
+  abline(h = alphaX, col = 'red', lwd = 2)
+  
+  #beta mean
+  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+  plot2 = plot(seq_along(beta_mean), beta_mean,
+               ylim=c(0, ceil(betaX + beta_mean)),
+               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX))
+  print(plot2)
+  abline(h = betaX, col = 'blue', lwd = 2)
+  
+  #gamma Mean
+  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+  plot2 = plot(seq_along(gamma_mean), gamma_mean,
+               xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
+               ylim=c(0, round(gammaX + gamma_mean)))
+  print(plot2)
+  abline(h = gammaX, col = 'green', lwd = 2)
+  
+  #9,11,12; Histograms
+  hist(r0_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'R0 total', #ylab = 'Density', 
+       main = 'R0 total MCMC samples',
+       xlim=c(0, true_r0 + r0_mean),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = true_r0, col = 'orange', lwd = 2)
+  
+  #Beta vs gamma
+  plot(beta_mcmc, gamma_mcmc,
+       xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #Hist Beta 
+  hist(beta_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'beta', #ylab = 'Density', 
+       main = paste("Beta, True beta = ", betaX), 
+       xlim=c(0, betaX + beta_mean),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = betaX, col = 'blue', lwd = 2)
+  
+  #Hist Gamma 
+  hist(gamma_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'gamma', #ylab = 'Density', 
+       main = paste("Gamma, True gamma = ", gammaX),
+       xlim=c(0,gammaX + gamma_mean),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = gammaX, col = 'green', lwd = 2)
+  
+  #Results
+  df_results <- data.frame(
+    alpha = alphaX,
+    a_mc = a_mcmc_mean,
+    beta = betaX,
+    b_mc = b_mcmc_mean,
+    gamma = gammaX,
+    g_mc = g_mcmc_mean,
+    R0 = true_r0, 
+    R0_mc = r0_mcmc_mean,
+    accept_rate_a = round(mcmc_params[[5]],2),
+    a_rte_b = round(mcmc_params[[6]], 2),
+    a_rte_g = round(mcmc_params[[7]],2),
+    tot_time = total_time) 
+  
+  print(df_results)
+  
+}
+
 
 ############# --- INSERT PARAMETERS! --- ######################################
 alphaX = 0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
@@ -681,6 +805,7 @@ for (i in 1:seed_count) {
   set.seed(i)
 }
 #Epidemic data - Neg Bin
+set.seed(1)
 sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
@@ -703,11 +828,13 @@ print(time_elap)
 
 #Plotting
 dist_type = 'Neg Bin,'
-plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+#plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
 plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
 
-#what
-seed_count = seed_count + 1
+beta_mcmc = mcmc_params[2]
+beta_mcmc = unlist(beta_mcmc)
+#Seed
+#seed_count = seed_count + 1
 
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
@@ -841,118 +968,6 @@ mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4))
 }
-
-#*****************************
-#Plot results
-plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count){
-  
-  #Plot Set up
-  plot.new()
-  par(mfrow=c(3,4))
-  
-  #Extract params
-  alpha_mcmc = mcmc_params[1]
-  alpha_mcmc = unlist(alpha_mcmc)
-  
-  beta_mcmc = mcmc_params[2]
-  beta_mcmc = unlist(beta_mcmc)
-  
-  gamma_mcmc = mcmc_params[3]
-  gamma_mcmc = unlist(gamma_mcmc)
-  
-  r0_mcmc = mcmc_params[4]
-  r0_mcmc = unlist(r0_mcmc)
-  
-  #Stats
-  data_10_pc = 0.1*n
-  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
-  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
-  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
-  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
-  
-  #Plots
-  #i.Infections
-  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  
-  #ii. MCMC
-  plot.ts(alpha_mcmc, ylab = 'alpha', main = paste("MCMC SS Events, true alpha = ", alphaX))
-  abline(h = alphaX, col = 'red')
-  plot.ts(beta_mcmc, ylab = 'beta', main = paste("MCMC SS Events, true beta = ", betaX))
-  abline(h = betaX, col = 'blue')
-  plot.ts(gamma_mcmc,  ylab = 'gamma', main = paste("MCMC SS Events, true gamma = ", gammaX))
-  abline(h = gammaX, col = 'green')
-  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
-  
-  #Mean data
-  #r0 Mean
-  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
-  plot2 = plot(seq_along(r0_mean), r0_mean, xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0))
-  print(plot2)
-  abline(h = true_r0, col = 'orange')
-  
-  #alpha mean
-  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
-  plot2 = plot(seq_along(alpha_mean), alpha_mean, xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX))
-  print(plot2)
-  abline(h = alphaX, col = 'red')
-  
-  #beta mean
-  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
-  plot2 = plot(seq_along(beta_mean), beta_mean, xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX))
-  print(plot2)
-  abline(h = betaX, col = 'blue')
-  
-  #gamma Mean
-  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
-  plot2 = plot(seq_along(gamma_mean), gamma_mean, xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX))
-  print(plot2)
-  abline(h = gammaX, col = 'green')
-  
-  #9,11,12; Histograms
-  hist(r0_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'R0 total', #ylab = 'Density', 
-       main = 'R0 total MCMC samples',
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = true_r0, col = 'orange')
-  
-  #Beta vs gamma
-  plot(beta_mcmc, gamma_mcmc, xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma')
-  
-  #Hist Beta 
-  hist(beta_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'Beta', #ylab = 'Density', 
-       main = paste("Beta, True beta = ", betaX), 
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = betaX, col = 'blue')
-  
-  #Hist Gamma 
-  hist(gamma_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'gamma', #ylab = 'Density', 
-       main = paste("Gamma, True gamma = ", gammaX), 
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = gammaX, col = 'green')
-  
-  #Results
-  df_results <- data.frame(
-    alpha = alphaX,
-    a_mc = a_mcmc_mean,
-    beta = betaX,
-    b_mc = b_mcmc_mean,
-    gamma = gammaX,
-    g_mc = g_mcmc_mean,
-    R0 = true_r0, 
-    R0_mc = r0_mcmc_mean,
-    accept_rate_a = round(mcmc_params[[5]],2),
-    a_rte_b = round(mcmc_params[[6]], 2),
-    a_rte_g = round(mcmc_params[[7]],2),
-    tot_time = total_time) 
-  
-  print(df_results)
-  
-}
-
 
 
 ############# --- INSERT PARAMETERS! --- ######################################
