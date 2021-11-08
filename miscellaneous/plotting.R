@@ -79,3 +79,24 @@ hist(r0_total_mcmc, freq = FALSE, xlab = 'R0 total', ylab = 'Density',
 #             main = 'Empirical density of R0 total - MCMC samples')
 #print(hist3)
 #hist()
+
+
+#*************************************************************************
+#* Densities ****
+
+#Exponential
+x <- seq(from = 0, to = 10, by = 1)
+exp1 = rexp(n, 1)
+plot.ts(exp1)
+exp1 = dexp(x, 1)
+plot.ts(exp1)
+
+#Prior/Posterior/Likelihood
+x <- seq(from = -90, to = 90, by = 1)
+data <- dnorm(x, mean = 30, sd = 10)
+prior <- dnorm(x, mean = 10, sd = 5)
+posterior <- 0.5 * dnorm(x, mean = 10, sd = 5) + 0.5 * dnorm(x, mean = 30, sd = 10)
+
+plot(x, prior, type = "l", col = "red")
+lines(x, posterior, type = "l", col = "green")
+lines(x, data , type = "l", col = "blue")

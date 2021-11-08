@@ -593,8 +593,9 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
     prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
     prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1] #+ prior1 - prior2
-    
+    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior2
+
+    #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
       count_accept1 = count_accept1 + 1
@@ -612,10 +613,9 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     
     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    prior1 = dgamma(beta_dash, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1]#+ prior1 - prior2 
+    log_accept_prob = logl_new - logl_prev
     
+    #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
       count_accept2 = count_accept2 + 1
@@ -634,10 +634,9 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
     #Acceptance Probability
     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    #prior1 = dgamma(gamma_dash, shape = 1, scale = 1, log = TRUE)
-    #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #+ prior1 - prior2 
+    log_accept_prob = logl_new - logl_prev 
     
+    #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
       count_accept3 = count_accept3 + 1
@@ -666,9 +665,131 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
               accept_rate1, accept_rate2, accept_rate3))
 }
 
+#******** MCMC with prior *********** # 
+mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #burn_in = 2500
+  
+  'Returns mcmc samples of alpha & acceptance rate'
+  
+  #Set up
+  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
+  
+  alpha_vec[1] <- x0; beta_vec[1] <- x0;
+  gamma_vec[1] <- x0; r0_vec[1] <- x0;
+  
+  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0;
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    # #Print
+    # if(mod(i, 10) == 0){
+    #   print(i)
+    # }
+    # 
+    #******************************************************
+    #alpha
+    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma) 
+    #cat("alpha dash: ", alpha_dash, "\n")
+    
+    if(alpha_dash < 0){
+      alpha_dash = abs(alpha_dash)
+    }
+    
+    #log alpha
+    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior2
+    
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      alpha_vec[i] <- alpha_dash
+      count_accept1 = count_accept1 + 1
+    } else {
+      alpha_vec[i] <- alpha_vec[i-1]
+    }
+    
+    #************************************************************************
+    #beta
+    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
+    #cat("Beta dash: ", beta_dash, "\n")
+    if(beta_dash < 0){
+      beta_dash = abs(beta_dash)
+    }
+    
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    log_accept_prob = logl_new - logl_prev
+    
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      beta_vec[i] <- beta_dash
+      count_accept2 = count_accept2 + 1
+    } else {
+      beta_vec[i] <- beta_vec[i-1]
+    }
+    
+    #************************************************************************
+    #gamma
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma) 
+    
+    if(gamma_dash < 1){
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+    }
+    
+    #Acceptance Probability
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+    log_accept_prob = logl_new - logl_prev 
+    
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      gamma_vec[i] <- gamma_dash
+      count_accept3 = count_accept3 + 1
+    } else {
+      gamma_vec[i] <- gamma_vec[i-1]
+    }
+    
+    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
+    
+  }
+  #Final stats
+  #alpha
+  accept_rate1 = 100*count_accept1/n
+  cat("Acceptance rate1 = ",accept_rate1)
+  
+  #beta
+  accept_rate2 = 100*count_accept2/n
+  cat("Acceptance rate2 = ", accept_rate2)
+  
+  #gamma
+  accept_rate3 = 100*count_accept3/n
+  cat("Acceptance rate3 = ", accept_rate3)
+  
+  #Return alpha, acceptance rate
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+              accept_rate1, accept_rate2, accept_rate3))
+}
 #*****************************
 #Plot results
-plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count){
+plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior){
   
   #Plot Set up
   plot.new()
@@ -769,7 +890,7 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   #iv. Param Histograms (Plots 9,11,12)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
-       main = 'R0 total MCMC samples',
+       main = paste('R0 total MCMC samples. Prior = ', prior),
        xlim=c(0, r0_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
@@ -819,7 +940,6 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   
   print(df_results)
   
-  
 }
 
 
@@ -839,7 +959,7 @@ true_r0
 set.seed(seed_count)
 
 #Epidemic data - Neg Bin
-sim_data3 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 #sim_data4 = sim_data
 #sim_data = sim_data3
@@ -849,12 +969,13 @@ plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections coun
 #plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #MCMC 
-n = 30000
+n = 1000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
 sigma = 1
 sigma_b = 0.05
+prior = FALSE
 mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
@@ -864,7 +985,8 @@ print(time_elap)
 #Plotting
 dist_type = 'Neg Bin,'
 #plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
-plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
+
 
 #Seed
 seed_count = seed_count + 1
@@ -1033,6 +1155,7 @@ print('Start time:')
 print(start_time)
 sigma = 1
 sigma_b = 0.05
+#mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
 mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
@@ -1046,6 +1169,7 @@ print(time_elap)
 #Plotting
 dist_type = 'Poisson,'
 plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+
 
 seed_count = seed_count + 1
 
