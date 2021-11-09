@@ -5,6 +5,7 @@ library(MASS)
 library(pracma)
 setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
+source("plotting_functions.R")
 
 #Epidemic params
 num_days = 50
@@ -17,7 +18,7 @@ seed_count = 1
 
 
 ################################################################################
-# ALL THREE PARAMETERS AT ONCE
+# MCMC - ALL THREE PARAMETERS AT ONCE
 ################################################################################
 
 #********************************************************************
@@ -123,9 +124,10 @@ mcmc_super_spreading <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in = 
               accept_rate1, accept_rate2, accept_rate3))
 }
 
-#***********************************************************
-#******** MCMC with prior *********** # 
-#*#***********************************************************
+################################################################################
+# MCMC ALL THREE PARAMETERS + PRIORS
+################################################################################
+
 mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
@@ -181,7 +183,7 @@ mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #bur
       alpha_vec[i] <- alpha_vec[i-1]
     }
     #Store
-    like_a[i] = log_like_ss_lse(data,  alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    like_a[i] = exp(log_like_ss_lse(data,  alpha_vec[i], beta_vec[i-1], gamma_vec[i-1]))
     prior_alpha[i] = exp(-alpha_vec[i])
     
     #************************************************************************
@@ -209,7 +211,7 @@ mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #bur
       beta_vec[i] <- beta_vec[i-1]
     }
     #Store
-    like_b[i] = log_like_ss_lse(data,  alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+    like_b[i] = exp(log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1]))
     prior_beta[i] = exp(-beta_vec[i])
     
     #************************************************************************
@@ -238,8 +240,8 @@ mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #bur
     } else {
       gamma_vec[i] <- gamma_vec[i-1]
     }
-    #Priors for plotting
-    like_g[i] = log_like_ss_lse(data,  alpha_vec[i], beta_vec[i], gamma_vec[i])
+    #Store priors 
+    like_g[i] = exp(log_like_ss_lse(data,  alpha_vec[i], beta_vec[i], gamma_vec[i]))
     prior_gamma[i] = 1 + exp(-gamma_vec[i])
     
     #R0
@@ -265,8 +267,12 @@ mcmc_ss_prior <- function(data, n, sigma,  sigma_b, x0 = 1, prior = TRUE) { #bur
               like_a, like_b, like_g,
               prior_alpha, prior_beta, prior_gamma))
 }
-#*****************************
-#Plot results
+
+
+################################################################################
+# Plot Results
+################################################################################
+
 plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior){
   
   #Plot Set up
@@ -420,6 +426,7 @@ plot_mcmc_results_x4 <- function(sim_data, mcmc_params, true_r0, dist_type, tota
   
 }
 
+#****************
 #PLOT WITH PRIORS 
 plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior){
     
@@ -460,18 +467,29 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
     
     #alpha
     alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+    like_a_mean = cumsum(like_a)/seq_along(like_a)
+    prior_a_mean = cumsum(prior_a)/seq_along(prior_a)
     a_lim =  max(alphaX, max(alpha_mcmc))
     a_lim2 =  max(alphaX, alpha_mean)
     
     #beta
     beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+    like_b_mean = cumsum(like_b)/seq_along(like_b)
+    prior_b_mean = cumsum(prior_b)/seq_along(prior_b)
     b_lim = max(betaX, max(beta_mcmc))
     b_lim2 = max(betaX, beta_mean)
     
     #gamma
     gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+    like_g_mean = cumsum(like_g)/seq_along(like_g)
+    prior_g_mean = cumsum(prior_g)/seq_along(prior_g)
     g_lim =  max(gammaX, max(gamma_mcmc))
     g_lim2 =  max(gammaX, gamma_mean) 
+    
+    #Print ll
+    print(mean(like_a_mean))
+    print(mean(like_b_mean))
+    print(mean(like_g_mean))
     
     #***********
     #* Plots *
@@ -505,6 +523,10 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
     
     #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
     
+    #Title
+    text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+         line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
+    
     #iii. Cumulative mean plots
     #r0 Mean
     plot2 = plot(seq_along(r0_mean), r0_mean,
@@ -520,7 +542,9 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
                  xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
                  cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     print(plot2)
-    abline(h = alphaX, col = 'red', lwd = 2)
+    abline(h = alphaX, col = 'green', lwd = 2)
+    lines(seq_along(like_a_mean), like_a_mean, col = 'red')
+    lines(seq_along(prior_a_mean), prior_a_mean, col = 'blue')
     
     #beta mean
     plot2 = plot(seq_along(beta_mean), beta_mean,
@@ -528,7 +552,9 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
                  xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
                  cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     print(plot2)
-    abline(h = betaX, col = 'blue', lwd = 2)
+    abline(h = betaX, col = 'green', lwd = 2)
+    lines(seq_along(like_b_mean), like_b_mean, col = 'red')
+    lines(seq_along(prior_b_mean), prior_b_mean, col = 'blue')
     
     #gamma Mean
     plot2 = plot(seq_along(gamma_mean), gamma_mean,
@@ -537,6 +563,8 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
                  cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     print(plot2)
     abline(h = gammaX, col = 'green', lwd = 2)
+    lines(seq_along(like_g_mean), like_g_mean, col = 'red')
+    lines(seq_along(prior_g_mean), prior_g_mean, col = 'blue')
     
     #iv. Param Histograms (Plots 9,11,12)
     hist(r0_mcmc, freq = FALSE, breaks = 100,
@@ -636,8 +664,8 @@ print(time_elap)
 #Plotting 
 dist_type = 'Neg Bin,'
 #plot_mcmc_results_total(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
-plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
-
+#plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
+plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
 
 #Seed
 seed_count = seed_count + 1

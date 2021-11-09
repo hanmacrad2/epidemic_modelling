@@ -1030,7 +1030,7 @@ mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in
     prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev - alpha_dash + alpha_vec[i-1] #+ prior1 - prior2
     
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) { #if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    if(log(runif(1)) < log_accept_prob) { #if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
       count_accept1 = count_accept1 + 1
     } else {
@@ -1051,7 +1051,7 @@ mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in
     prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev - beta_dash + beta_vec[i-1]#+ prior1 - prior2 
     
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    if(log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
       count_accept2 = count_accept2 + 1
     } else {
@@ -1073,7 +1073,7 @@ mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in
     #prior2 = dgamma(gamma_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev - gamma_dash + gamma_vec[i-1] #+ prior1 - prior2 
     
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    if(log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
       count_accept3 = count_accept3 + 1
     } else {
@@ -1091,11 +1091,9 @@ mcmc_super_spreading_x4 <- function(data, n, sigma,  sigma_b, x0 = 1) { #burn_in
     
     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_vec[i-1])
     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    prior1 = dgamma(beta_new, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(beta_vec[i-1], shape = 1, scale = 1, log = TRUE)
     log_accept_prob = logl_new - logl_prev - beta_new + beta_vec[i-1]#+ prior1 - prior2 
     
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    if(log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_new
       count_accept4 = count_accept4 + 1
     } else {
@@ -1141,8 +1139,8 @@ for (i in 1:seed_count) {
 }
 
 #Epidemic data - Neg Bin
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #Epidemic data - Poisson 
 #sim_data = simulate_ss_poisson(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
@@ -1156,7 +1154,8 @@ print(start_time)
 sigma = 1
 sigma_b = 0.05
 #mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
-mcmc_params = mcmc_super_spreading(sim_data, n, sigma, sigma_b, x0 = 1)
+prior = TRUE
+mcmc_params = mcmc_super_spreading_x4(sim_data, n, sigma, sigma_b, x0 = 1)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
@@ -1168,7 +1167,7 @@ print(time_elap)
 
 #Plotting
 dist_type = 'Poisson,'
-plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+plot_mcmc_results_x4(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
 
 
 seed_count = seed_count + 1
