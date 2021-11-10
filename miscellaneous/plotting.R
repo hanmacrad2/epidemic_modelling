@@ -85,10 +85,15 @@ hist(r0_total_mcmc, freq = FALSE, xlab = 'R0 total', ylab = 'Density',
 #* Densities ****
 
 #Exponential
-x <- seq(from = 0, to = 10, by = 1)
-exp1 = rexp(n, 1)
-plot.ts(exp1)
+x <- seq(from = 0, to = 20, by = 0.5)
 exp1 = dexp(x, 1)
+plot.ts(exp1)
+lines(exp1, col = 'red')
+
+mode(exp1)
+
+
+exp1 = rexp(n, 1)
 plot.ts(exp1)
 
 #Prior/Posterior/Likelihood
