@@ -193,6 +193,7 @@ gammaX = 10
 true_r0 = alphaX + betaX*gammaX
 true_r0
 #Seed
+seed_count = 10
 seed_count = seed_count + 1
 ##---##############################################################---##
 set.seed(seed_count)
@@ -200,11 +201,11 @@ set.seed(seed_count)
 
 #Epidemic data - Neg Bin
 sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
 
 #WITH PRIOR
 #MCMC 
-n = 10000
+n = 30000
 sigma_a = 0.4*alphaX
 sigma_a
 sigma_b = 0.5*betaX 
@@ -221,17 +222,81 @@ time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
 print(time_elap)
 
+#Function
+mcmc_ss_mod_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
+  
+  #Plot Model Criticism
+  vec_mod_crit = mcmc_params[9]
+  vec_mod_crit = unlist(vec_mod_crit)
+  true_sum_inf = sum(sim_data)
+  
+  #P value
+  lt = length(which(vec_mod_crit < true_sum_inf))
+  print(lt)
+  gt = length(which(vec_mod_crit > true_sum_inf))
+  print(gt)
+  pvalue = min(lt, gt)/length(vec_mod_crit)
+  
+  #Check
+  if (lt < gt){
+    flag = 'lt (<)'
+  } else if (gt < lt){
+    flag = 'gt (>)'
+  }
+  
+  #Histogram
+  
+  #Remove small frequency bins
+  #h1$counts[h1$counts < 2] <- 0
+  h1 <- hist(vec_mod_crit, breaks=1000)
+  #h1$counts[h1$counts <= 2] <- 0
+  xmin <- h1$breaks[min(which(h1$counts != 0))] 
+  xmax <- h1$breaks[max(which(h1$counts != 0)) + 2] 
+  plot(h1,# breaks = 50, #freq = FALSE, breaks = 50,
+       xlim = c(xmin, xmax),
+       xlab = paste('Sum of Infecteds <', max_sum_val), ylab = 'Density',
+       main = paste('Model criticism Sum of infecteds, true R0 = ', true_r0, '.',
+                    'P value', flag, '=', pvalue))
+  abline(v = true_sum_inf, col = 'red', lwd = 2)
+
+}
+
+#Hist
+breaksX = rep(0, length(vec_mod_crit)+1)
+breaksX[1] = 20 #cat(20, breaksX)
+h1 <- hist(vec_mod_crit[vec_mod_crit < 5000], breaks = 50),
+            )
+
+
+plot(h1)
+
+#Model
+h1 = mcmc_ss_mod_criticism(mcmc_params, sim_data)
+h1$counts
+
+h1$breaks[min(which(h1$counts > 2))] 
+h1$breaks[max(which(h1$counts >2)) + 1] 
+
+#Plotting 
+plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
+
+
+#Outside function
 #Model Criticism
 vec_mod_crit = mcmc_params[9]
 vec_mod_crit = unlist(vec_mod_crit)
-p_value =
-
 true_sum_inf = sum(sim_data)
 true_sum_inf
-plot.ts(vec_mod_crit, ylab = 'Sum of Infecteds',
-        main = paste('Model criticism Sum of infecteds,
-                     true R0 = ', true_r0, 'p value = ', p_value))
-abline(v = true_sum_inf, col = 'red', lwd = 2)
 
-#Plotting 
-plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, joint)
+# lt = length(which(vec_mod_crit < true_sum_inf))
+gt = length(which(vec_mod_crit > true_sum_inf))
+pvalue = min(lt, gt)/length(vec_mod_crit)
+pvalue
+
+
+#Hist
+hist(vec_mod_crit, freq = FALSE, breaks = 100, xlab = 'Sum of Infecteds', ylab = 'Density',
+     include.lowest = FALSE,
+     main = paste('Model criticism Sum of infecteds, true R0 = ', true_r0, '.',
+                  'P value = ', pvalue))
+abline(v = true_sum_inf, col = 'red', lwd = 2)

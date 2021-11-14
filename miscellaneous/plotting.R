@@ -105,3 +105,23 @@ posterior <- 0.5 * dnorm(x, mean = 10, sd = 5) + 0.5 * dnorm(x, mean = 30, sd = 
 plot(x, prior, type = "l", col = "red")
 lines(x, posterior, type = "l", col = "green")
 lines(x, data , type = "l", col = "blue")
+
+
+#Plotting - Xavier
+beta=0.5
+gamma=10
+lambda=1
+
+#par(mfrow=c(2,1))
+
+#poisson-poisson compound
+data=rpois(1000,gamma*rpois(1000,beta*lambda))
+print(c(mean(data),var(data)))
+data[which(data>20)]=20
+hist(data,breaks = 0:20,)
+
+#negbin approximation
+data=rnbinom(1000,beta*lambda,1/(gamma+1))
+print(c(mean(data),var(data)))
+data[which(data>20)]=20
+hist(data,breaks = 0:20,)

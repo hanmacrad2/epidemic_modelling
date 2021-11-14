@@ -185,7 +185,7 @@ mcmc_ss_x4_prior <- function(data, n, sigma,  sigma_b, sigma_bg, prior, x0 = 1) 
 
 #****************
 #PLOT WITH PRIORS 
-plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint){
+plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint = TRUE){
   
   #Plot Set up
   plot.new()
