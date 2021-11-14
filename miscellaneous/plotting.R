@@ -118,7 +118,13 @@ lambda=1
 data=rpois(1000,gamma*rpois(1000,beta*lambda))
 print(c(mean(data),var(data)))
 data[which(data>20)]=20
-hist(data,breaks = 0:20,)
+h1 = hist(data,breaks = 0:20)
+plot(h1)
+h1$breaks
+
+h1 = hist(data, breaks = rev(0:20))
+plot(h1)
+h1$breaks
 
 #negbin approximation
 data=rnbinom(1000,beta*lambda,1/(gamma+1))
