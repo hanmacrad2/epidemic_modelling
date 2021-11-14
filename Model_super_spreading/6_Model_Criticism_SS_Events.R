@@ -186,172 +186,9 @@ mcmc_ss_mod_criticism <- function(data, n, sigma_a, sigma_b, sigma_bg, prior, x0
               vec_data_simulated))
 }
 
-mcmc_ss_x4_prior <- function(data, n, sigma,  sigma_b, sigma_bg, prior, x0 = 1) { #burn_in = 2500
-  
-  'Returns mcmc samples of alpha & acceptance rate'
-  
-  #Set up
-  cat('Prior = ', prior)
-  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
-  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
-  alpha_vec[1] <- x0; beta_vec[1] <- x0;
-  gamma_vec[1] <- x0; r0_vec[1] <- x0;
-  
-  #Priors + Likelihoods
-  like_a <- vector('numeric', n); like_b <- vector('numeric', n); 
-  like_g = vector('numeric', n); prior_gamma <- vector('numeric', n); 
-  prior_alpha <- vector('numeric', n); prior_beta <- vector('numeric', n); 
-  
-  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0; count_accept4 = 0;
-  
-  #MCMC chain
-  for(i in 2:n) {
-    
-    #******************************************************
-    #alpha
-    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma) 
-    #cat("alpha dash: ", alpha_dash, "\n")
-    
-    if(alpha_dash < 0){
-      alpha_dash = abs(alpha_dash)
-    }
-    
-    #log alpha
-    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
-    logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
-    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior2
-    
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
-    }
-    
-    #Metropolis Acceptance Step
-    #if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-    if(log(runif(1)) < log_accept_prob) {
-      alpha_vec[i] <- alpha_dash
-      count_accept1 = count_accept1 + 1
-    } else {
-      alpha_vec[i] <- alpha_vec[i-1]
-    }
-    #Store
-    like_a[i] = exp(log_like_ss_lse(data,  alpha_vec[i], beta_vec[i-1], gamma_vec[i-1]))
-    prior_alpha[i] = exp(-alpha_vec[i])
-    
-    #************************************************************************
-    #beta
-    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
-    #cat("Beta dash: ", beta_dash, "\n")
-    if(beta_dash < 0){
-      beta_dash = abs(beta_dash)
-    }
-    
-    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
-    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    log_accept_prob = logl_new - logl_prev
-    
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
-    }
-    
-    #Metropolis Acceptance Step
-    if(log(runif(1)) < log_accept_prob) {
-      beta_vec[i] <- beta_dash
-      count_accept2 = count_accept2 + 1
-    } else {
-      beta_vec[i] <- beta_vec[i-1]
-    }
-    
-    #************************************************************************
-    #gamma
-    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_bg) 
-    
-    if(gamma_dash < 1){
-      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
-    }
-    
-    #Acceptance Probability
-    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
-    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    log_accept_prob = logl_new - logl_prev 
-    
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
-    }
-    
-    #Metropolis Acceptance Step
-    if(log(runif(1)) < log_accept_prob) {
-      gamma_vec[i] <- gamma_dash
-      count_accept3 = count_accept3 + 1
-    } else {
-      gamma_vec[i] <- gamma_vec[i-1]
-    }
-    
-    #R0
-    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
-    
-    #*****************************************************
-    #Gamma-Beta
-    gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg)#Alter sigma_bg depending on acceptance rate. 
-    #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
-    
-    if(gamma_dash < 1){ #If less then 1
-      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
-    }
-    
-    #New beta 
-    beta_new = (r0_vec[i] - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
-    
-    if(beta_new >= 0){ #Only accept values of beta > 0
-      
-      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_dash)
-      logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
-      log_accept_prob = logl_new - logl_prev  
-      
-      #Priors
-      if (prior){
-        log_accept_prob = log_accept_prob - beta_dash + beta_vec[i]
-      }
-      
-      #Metropolis Step
-      if(log(runif(1)) < log_accept_prob) {
-        beta_vec[i] <- beta_new
-        count_accept4 = count_accept4 + 1
-      } 
-      
-    }
-    
-  }
-  #Final stats
-  #alpha
-  accept_rate1 = 100*count_accept1/n
-  cat("Acceptance rate1 = ",accept_rate1, '\n')
-  
-  #beta
-  accept_rate2 = 100*count_accept2/n
-  cat("Acceptance rate2 = ", accept_rate2, '\n')
-  
-  #gamma
-  accept_rate3 = 100*count_accept3/n
-  cat("Acceptance rate3 = ", accept_rate3, '\n')
-  
-  #Gamma-Beta
-  accept_rate4 = 100*count_accept4/n
-  cat("Acceptance rate4 = ", accept_rate4, '\n')
-  
-  #Return alpha, acceptance rate
-  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
-              accept_rate1, accept_rate2, accept_rate3,
-              accept_rate4))
-}
-
 #****************
 #MCMC Plots 4x4
-plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
+plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
                                 total_time, seed_count, prior, max_sum_val, model_crit = TRUE, joint = TRUE){
   
   #Plot Set up
@@ -485,12 +322,12 @@ plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
        main = paste("alpha, True alpha = ", alphaX), 
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #Prior
-  #x <- seq(from = 0, to = 10, by = 0.5)
-  #exp1 = dexp(x, 1)
-  #lines(exp1, col = 'purple')
   abline(v = alphaX, col = 'red', lwd = 2)
-  
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
+
   
   #Hist Beta 
   hist(beta_mcmc, freq = FALSE, breaks = 100,
@@ -498,9 +335,11 @@ plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
        main = paste("Beta, True beta = ", betaX), 
        xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #Prior
-  #lines(exp1, col = 'purple')
   abline(v = betaX, col = 'blue', lwd = 2)
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
   
   
   #Hist Gamma 
@@ -509,12 +348,11 @@ plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
        main = paste("Gamma, True gamma = ", gammaX),
        xlim=c(0, g_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #Prior
-  #x <- seq(from = 0, to = 20, by = 0.5)
-  #exp1 = 1 + dexp(x, 1)
-  #lines(exp1, col = 'purple')
   abline(v = gammaX, col = 'green', lwd = 2)
-  
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = 1 + dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
   
   #Final Mean Stats
   data_10_pc = 0.5*n #50%
@@ -526,7 +364,7 @@ plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
   #Joint distrbutions
   if (model_crit){
     
-    mcmc_ss_mod_criticism(mcmc_params, sim_data, max_sum_val)
+    model_criticism(mcmc_params, sim_data, max_sum_val)
   }
   
   #Joint distrbutions
@@ -574,8 +412,7 @@ plot_mcmc_mod_crit <- function(sim_data, mcmc_params, true_r0, dist_type,
 }
 
 #Model Criticism Function
-#Function
-mcmc_ss_mod_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
+model_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
   
   #Plot Model Criticism
   vec_mod_crit = mcmc_params[9]
@@ -597,11 +434,12 @@ mcmc_ss_mod_criticism <- function(mcmc_params, sim_data, max_sum_val) {
   }
   
   #Histogram
-  hist(vec_mod_crit[vec_mod_crit < 5000], breaks = 100, #freq = FALSE, breaks = 50,
+  hist(vec_mod_crit[vec_mod_crit < 5000], breaks = 100, #freq = FALSE, 
        #xlim = c(xmin, xmax),
        xlab = paste('Sum of Infecteds <', max_sum_val), ylab = 'Density',
        main = paste('Model criticism, true R0 = ', true_r0, '.',
-                    'P value', flag, '=', pvalue))
+                    'P value', flag, '=', pvalue),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_sum_inf, col = 'red', lwd = 2)
   
 }
@@ -613,7 +451,7 @@ gammaX = 10
 true_r0 = alphaX + betaX*gammaX
 true_r0
 #Seed
-seed_count = 10
+#seed_count = 10
 seed_count = seed_count + 1
 ##---##############################################################---##
 set.seed(seed_count)
@@ -645,6 +483,8 @@ print(time_elap)
 #Apply
 dist_type = 'Neg Bin,'
 max_sum_val = 8000
-#mcmc_ss_mod_criticism(mcmc_params, sim_data, max_sum_val)
 #plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
-plot_mcmc_mod_crit(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, max_sum_val)
+plot_mcmc_x4_II(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, max_sum_val)
+
+par(mfrow = c(1,1))
+model_criticism(mcmc_params, sim_data, max_sum_val)
