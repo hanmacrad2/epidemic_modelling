@@ -101,7 +101,7 @@ mcmc_ss_x4_prior <- function(data, n, sigma,  sigma_b, sigma_bg, prior, x0 = 1) 
     
     #************************************************************************
     #gamma
-    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma) 
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_bg) 
     
     if(gamma_dash < 1){
       gamma_dash = 2 - gamma_dash #abs(gamma_dash)
@@ -185,11 +185,17 @@ mcmc_ss_x4_prior <- function(data, n, sigma,  sigma_b, sigma_bg, prior, x0 = 1) 
 
 #****************
 #PLOT WITH PRIORS 
-plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior){
+plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint){
   
   #Plot Set up
   plot.new()
-  par(mfrow=c(3,4))
+  
+  if (joint){
+    par(mfrow=c(4,4))
+  } else {
+    par(mfrow=c(3,4))
+  }
+
   
   #Extract params
   alpha_mcmc = mcmc_params[1]
@@ -236,7 +242,7 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
   
   #ii. MCMC Trace Plots
   plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
-          main = paste("SS Evnts, true a = ", alphaX, '(green), ll(red), prior(blue)'),
+          main = paste("MCMC SS Events, true alpha = ", alphaX),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = alphaX, col = 'red', lwd = 2) #True = green
   #lines(seq_along(like_a), like_a, col = 'red')
@@ -313,9 +319,9 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #Prior
-  x <- seq(from = 0, to = 10, by = 0.5)
-  exp1 = dexp(x, 1)
-  lines(exp1, col = 'purple')
+  #x <- seq(from = 0, to = 10, by = 0.5)
+  #exp1 = dexp(x, 1)
+  #lines(exp1, col = 'purple')
   abline(v = alphaX, col = 'red', lwd = 2)
 
   
@@ -326,7 +332,7 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
        xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #Prior
-  lines(exp1, col = 'purple')
+  #lines(exp1, col = 'purple')
   abline(v = betaX, col = 'blue', lwd = 2)
 
   
@@ -337,9 +343,9 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
        xlim=c(0, g_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #Prior
-  x <- seq(from = 0, to = 20, by = 0.5)
-  exp1 = 1 + dexp(x, 1)
-  lines(exp1, col = 'purple')
+  #x <- seq(from = 0, to = 20, by = 0.5)
+  #exp1 = 1 + dexp(x, 1)
+  #lines(exp1, col = 'purple')
   abline(v = gammaX, col = 'green', lwd = 2)
 
   
@@ -349,6 +355,30 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
   b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
   g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
   r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Joint distrbutions
+  if (joint){
+    
+    #v. r0 vs beta
+    plot(beta_mcmc, r0_mcmc,
+         xlab = 'beta', ylab = 'R0', main = 'Beta vs R0',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. alpha vs beta
+    plot(alpha_mcmc, beta_mcmc,
+         xlab = 'alpha', ylab = 'beta', main = 'alpha vs Beta',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. alpha vs gamma
+    plot(alpha_mcmc, gamma_mcmc,
+         xlab = 'alpha', ylab = 'gamma', main = 'alpha vs gamma',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. beta vs gamma
+    plot(beta_mcmc, gamma_mcmc,
+         xlab = 'beta', ylab = 'gamma', main = 'Beta vs gamma',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  }
   
   #Results
   df_results <- data.frame(
@@ -371,16 +401,16 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-alphaX = 0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
-betaX = 0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+alphaX = 0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+betaX = 0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
 gammaX = 10
 true_r0 = alphaX + betaX*gammaX
 true_r0
 #Seed
 seed_count = seed_count + 1
-seed_count
 ##---##############################################################---##
 set.seed(seed_count)
+#set.seed(9)
 
 #Epidemic data - Neg Bin
 sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
@@ -394,14 +424,19 @@ plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections coun
 #WITHOUT PRIOR
 #MCMC 
 n = 30000
+sigma_a = 0.4*alphaX
+sigma_a
+sigma_b = 0.5*betaX 
+sigma_b
+sigma_bg = 0.6*gammaX
+sigma_bg
+prior = FALSE
+
+#MCMC
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-sigma = 1
-sigma_b = 0.05
-sigma_bg = 3 
-prior = FALSE
-mcmc_params = mcmc_ss_x4_prior(sim_data, n, sigma, sigma_b, sigma_bg, prior)
+mcmc_params1 = mcmc_ss_x4_prior(sim_data, n, sigma_a, sigma_b, sigma_bg, prior)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
@@ -409,7 +444,8 @@ print(time_elap)
 
 #Plotting 
 dist_type = 'Neg Bin,'
-plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
+joint = TRUE
+plot_mcmc_x4_priors(sim_data, mcmc_params1, true_r0, dist_type, time_elap, seed_count, prior, joint)
 
 
 #WITH PRIOR
@@ -418,19 +454,15 @@ n = 30000
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-sigma = 1
-sigma_b = 0.05
-sigma_bg = 3 
 prior = TRUE
-mcmc_params = mcmc_ss_x4_prior(sim_data, n, sigma, sigma_b, sigma_bg, prior)
+mcmc_params2 = mcmc_ss_x4_prior(sim_data, n, sigma, sigma_b, sigma_bg, prior)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
 print(time_elap)
 
 #Plotting 
-dist_type = 'Neg Bin,'
-plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
+plot_mcmc_x4_priors(sim_data, mcmc_params2, true_r0, dist_type, time_elap, seed_count, prior, joint)
 
 #Other plots
 #beta_gamma_flag = TRUE
