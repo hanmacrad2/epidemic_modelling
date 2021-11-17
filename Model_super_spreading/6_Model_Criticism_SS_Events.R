@@ -424,7 +424,8 @@ model_criticism <- function(mcmc_params, sim_data, max_sum_val) {
   print(lt)
   gt = length(which(vec_mod_crit > true_sum_inf))
   print(gt)
-  pvalue = min(lt, gt)/length(vec_mod_crit)
+  min_val = min(lt, gt)
+  pvalue = min_val/length(vec_mod_crit)
   
   #Check
   if (lt < gt){
@@ -434,7 +435,7 @@ model_criticism <- function(mcmc_params, sim_data, max_sum_val) {
   }
   
   #Histogram
-  hist(vec_mod_crit[vec_mod_crit < 5000], breaks = 100, #freq = FALSE, 
+  hist(vec_mod_crit[vec_mod_crit < max_sum_val], breaks = 100, #freq = FALSE, 
        #xlim = c(xmin, xmax),
        xlab = paste('Sum of Infecteds <', max_sum_val), ylab = 'Density',
        main = paste('Model criticism, true R0 = ', true_r0, '.',
@@ -445,14 +446,15 @@ model_criticism <- function(mcmc_params, sim_data, max_sum_val) {
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-alphaX = 0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
-betaX = 0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
-gammaX = 10
+alphaX = 0.7 #0.8 #0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+betaX = 0.025 #0.2 #0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+gammaX = 8 # 10
 true_r0 = alphaX + betaX*gammaX
 true_r0
 #Seed
-#seed_count = 10
+#seed_count = 13
 seed_count = seed_count + 1
+seed_count
 ##---##############################################################---##
 set.seed(seed_count)
 #set.seed(9)
@@ -466,9 +468,9 @@ plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infection
 n = 30000
 sigma_a = 0.4*alphaX
 sigma_a
-sigma_b = 0.5*betaX 
+sigma_b = 0.75*betaX 
 sigma_b
-sigma_bg = 0.6*gammaX
+sigma_bg = 0.85*gammaX
 sigma_bg
 start_time = Sys.time()
 print('Start time:')
@@ -486,5 +488,6 @@ max_sum_val = 8000
 #plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
 plot_mcmc_x4_II(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, max_sum_val)
 
+#Model Criticism
 par(mfrow = c(1,1))
 model_criticism(mcmc_params, sim_data, max_sum_val)
