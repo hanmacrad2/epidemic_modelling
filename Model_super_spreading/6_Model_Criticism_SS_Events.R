@@ -19,7 +19,7 @@ scale_gamma = 1
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
 
-mcmc_ss_mod_criticism <- function(data, n, sigma_a, sigma_b, sigma_bg, prior, x0 = 1) { #burn_in = 2500
+mcmc_ss_mod_criticism <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
@@ -94,7 +94,7 @@ mcmc_ss_mod_criticism <- function(data, n, sigma_a, sigma_b, sigma_bg, prior, x0
     
     #************************************************************************
     #gamma
-    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_bg) 
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_g) 
     
     if(gamma_dash < 1){
       gamma_dash = 2 - gamma_dash #abs(gamma_dash)
@@ -447,8 +447,8 @@ model_criticism <- function(mcmc_params, sim_data, max_sum_val) {
 
 ############# --- INSERT PARAMETERS! --- ######################################
 alphaX = 0.7 #0.8 #0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
-betaX = 0.025 #0.2 #0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
-gammaX = 8 # 10
+betaX = 0.05 #0.025 #0.2 #0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+gammaX = 10 #8
 true_r0 = alphaX + betaX*gammaX
 true_r0
 #Seed
@@ -462,21 +462,23 @@ set.seed(seed_count)
 #Epidemic data - Neg Bin
 sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
-
+sim_data2 = sim_data
 #WITH PRIOR
 #MCMC 
 n = 30000
 sigma_a = 0.4*alphaX
 sigma_a
-sigma_b = 0.75*betaX 
+sigma_b = 1.0*betaX 
 sigma_b
-sigma_bg = 0.85*gammaX
+sigma_g = 0.85*gammaX
+sigma_g
+sigma_bg = 1.5*gammaX
 sigma_bg
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
 prior = TRUE
-mcmc_params = mcmc_ss_mod_criticism(sim_data, n, sigma_a, sigma_b, sigma_bg, prior)
+mcmc_params = mcmc_ss_mod_criticism(sim_data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
@@ -484,7 +486,7 @@ print(time_elap)
 
 #Apply
 dist_type = 'Neg Bin,'
-max_sum_val = 8000
+max_sum_val = 5000
 #plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
 plot_mcmc_x4_II(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, max_sum_val)
 
