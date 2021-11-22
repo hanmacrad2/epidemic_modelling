@@ -253,3 +253,21 @@ line2user <- function(line, side) {
          `4` = grconvertX(1 + line * x_off, 'npc', 'user'),
          stop("Side must be 1, 2, 3, or 4", call.=FALSE))
 }
+
+
+#Brainstorm
+#Dataframe
+df_results <- data.frame(
+  alpha = 1,
+  bd = 2
+)
+df_results
+
+#Add row
+df_results[nrow(df_results) + 1,] = list(2, 3)
+df_results
+
+df <- tibble(x = 1:3, y = 3:1)
+df
+
+df > add_row(alpha = 3, bd = 1)
