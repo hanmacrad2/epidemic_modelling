@@ -174,15 +174,17 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
       if (!exists("df_summary_stats")) {
         
         flag_create = TRUE
-        df_summary_stats = get_summary_stats(list_summary_stats_i, flag_create)
+        df_summary_stats = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)#(list_summary_stats_i, flag_create)
         flag_create = FALSE
         
       } else {
-
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(list_summary_stats_i, flag_create)
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)
       }
       
       count_thin = count_thin + 1
+      
+      #Final line == original data
+      df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)
     }
     
     
@@ -204,7 +206,8 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
   accept_rate4 = 100*count_accept4/n
   cat("Acceptance rate4 = ", accept_rate4, '\n')
   
-  #Create list of p-values
+  #Create list of p-values of all the summary stats 
+  apply(df_summary_stats)
   list_p_vals = create_lst_p_vals(sim_data, df_summary_stats)
   
   #Return alpha, acceptance rate
@@ -218,34 +221,61 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
 get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag){
   
   'Get summary statisitcs of the simulated data'
-  #Summary stats
-  sumX = sum(sim_data)
-  medianX = median(sim_data)
-  modeX = mode(sim_data)
-  stdX = std(sim_data)
-  med_dif = median(diff(check))
-    
+  
+  #Simulate data
+  sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_vec_i, beta_vec_i, gamma_vec_i)
+  
+  'Original data as final comparion'
+  sim_data_params = sim_data
+  
     if (create_df_flag){
       #Df
       summary_stats_results = data.frame(
-        sumX = sum(sim_data),
-        medianX = median(sim_data),
-        modeX = mode(sim_data),
-        stdX = std(sim_data),
-        med_dif = median(diff(check)))
+        sumX = sum(sim_data_params),
+        medianX = median(sim_data_params),
+        modeX = mode(sim_data_params),
+        stdX = std(sim_data_params),
+        med_dif = median(diff(sim_data_params)))
     } else {
       #List
-      summary_stats_results = list(sum(sim_data), median(sim_data), mode(sim_data),
-                               std(sim_data), median(diff(check)))
+      summary_stats_results = list(sum(sim_data_params), median(sim_data_params), mode(sim_data_params),
+                               std(sim_data_params), median(diff(sim_data_params)))
     }
   
   summary_stats_results
   
 }
 
+#Get p values from summarys stats
+create_lst_p_vals <- function(sim_data, df_summary_stats) {
+  
+  #Original/brainstorm 
+  #Sum
+  true_sum_inf = sum(sim_data)
+  #P value
+  lt = length(which(vec_mod_crit < true_sum_inf))
+  gt = length(which(vec_mod_crit > true_sum_inf))
+  min_val = min(lt, gt)
+  pvalue = min_val/length(vec_mod_crit)
+  
+}
+
+#Get p value
+get_p_value <- function(vec, truth){ #Or is it apply?
+  
+  #P value
+  lt = length(which(vec < truth))
+  gt = length(which(vec > truth))
+  min_val = min(lt, gt)
+  pvalue = min_val/length(vec2)
+  
+  
+  
+}
+
 #Run for multiple
 #Get p values
-get_p_values <- function(n_reps, model_params){
+get_p_values_total <- function(n_reps, model_params){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
   different summary statistics'

@@ -256,18 +256,49 @@ line2user <- function(line, side) {
 
 
 #Brainstorm
+
+#********************
 #Dataframe
-df_results <- data.frame(
-  alpha = 1,
-  bd = 2
+df <- data.frame(
+  ab = c(1,5,7),
+  bc = c(2,3,4)
 )
-df_results
+df
 
 #Add row
-df_results[nrow(df_results) + 1,] = list(2, 3)
+df_results[nrow(df_results) + 1,] = list(4, 7)
 df_results
+
+#Apply to a row
+apply(df, 2, min)
+
+#Appply function to a row
+
+#Get p values from summarys stats
+check_p_val <- function(sim_data, vec2) {
+  
+  true_sum_inf = sum(sim_data)
+  print(true_sum_inf)
+  
+  #P value
+  lt = length(which(vec2 < true_sum_inf))
+  print(lt)
+  gt = length(which(vec2 > true_sum_inf))
+  print(gt)
+  min_val = min(lt, gt)
+  pvalue = min_val/length(vec2)
+  
+  print((pvalue))
+  
+}
+
+apply(df, 2, FUN = function(vec2) check_p_val(sim_data, vec2))
+
+apply(df_results,2,min)
 
 df <- tibble(x = 1:3, y = 3:1)
 df
 
 df > add_row(alpha = 3, bd = 1)
+
+

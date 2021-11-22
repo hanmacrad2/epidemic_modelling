@@ -186,38 +186,6 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
               vec_data_simulated))
 }
 
-#Get p values
-
-get_p_values <- function(r0, n_reps){
-  
-  #Initialise vector of p values
-  vec_sum = vector('numeric', n)
-  vec_ = vector('numeric', n)
-  vec_sum = vector('numeric', n)
-  vec_sum = vector('numeric', n)
-  vec_sum = vector('numeric', n)
-  vec_sum = vector('numeric', n)
-  
-  #Repeat for n reps
-  for(rep in 1:n_reps) {
-    
-    #Simulate data
-    sim_data = 
-      
-    #MCMC
-    model_criticism(mcmc_params, sim_data, max_sum_val)
-  #Model criticism
-  get
-    
-    
-  }
-  
-  #Dataframe of p values
-  df_results <- data.frame(
-    alpha = vec,
-    bd = vec
-  )
-}
 
 #Model Criticism Function
 model_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
