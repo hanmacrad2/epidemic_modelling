@@ -206,8 +206,8 @@ get_p_values <- function(r0, n_reps){
       
     #MCMC
     model_criticism(mcmc_params, sim_data, max_sum_val)
-    #Model criticism
-    get
+  #Model criticism
+  get
     
     
   }
@@ -250,6 +250,233 @@ model_criticism <- function(mcmc_params, sim_data, max_sum_val) {
                     'P value', flag, '=', pvalue),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_sum_inf, col = 'red', lwd = 2)
+  
+}
+
+
+
+#****************
+#MCMC Plots 4x4
+plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
+                                total_time, seed_count, prior, max_sum_val, model_crit = TRUE, joint = TRUE){
+  
+  #Plot Set up
+  plot.new()
+  
+  if (joint){
+    par(mfrow=c(4,4))
+  } else {
+    par(mfrow=c(3,4))
+  }
+  
+  
+  #Extract params
+  alpha_mcmc = mcmc_params[1]
+  alpha_mcmc = unlist(alpha_mcmc)
+  
+  beta_mcmc = mcmc_params[2]
+  beta_mcmc = unlist(beta_mcmc)
+  
+  gamma_mcmc = mcmc_params[3]
+  gamma_mcmc = unlist(gamma_mcmc)
+  
+  r0_mcmc = mcmc_params[4]
+  r0_mcmc = unlist(r0_mcmc)
+  
+  #Cumulative means + param sample limits
+  #r0
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  r0_lim = max(true_r0, max(r0_mcmc))
+  r0_lim2 = max(true_r0, r0_mean)
+  
+  #alpha
+  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+  a_lim =  max(alphaX, max(alpha_mcmc))
+  a_lim2 =  max(alphaX, alpha_mean)
+  
+  #beta
+  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+  b_lim = max(betaX, max(beta_mcmc))
+  b_lim2 = max(betaX, beta_mean)
+  
+  #gamma
+  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+  g_lim =  max(gammaX, max(gamma_mcmc))
+  g_lim2 =  max(gammaX, gamma_mean) 
+  
+  
+  #***********
+  #* Plots *
+  
+  #i.Infections
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #ii. MCMC Trace Plots
+  plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
+          main = paste("MCMC SS Events, true alpha = ", alphaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = alphaX, col = 'red', lwd = 2) #True = green
+  #lines(seq_along(like_a), like_a, col = 'red')
+  #lines(seq_along(prior_a), prior_a, col = 'blue')
+  
+  plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim),
+          main = paste("MCMC SS Events, true beta = ", betaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = betaX, col = 'blue', lwd = 2) #True = green
+  
+  plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
+          main = paste("MCMC SS Events, true gamma = ", gammaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = gammaX, col = 'green', lwd = 2) #True = green
+  
+  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
+  
+  #Title
+  text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+       line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
+  
+  #iii. Cumulative mean plots
+  #r0 Mean
+  plot2 = plot(seq_along(r0_mean), r0_mean,
+               ylim=c(0, r0_lim),
+               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = true_r0, col = 'orange', lwd = 2)
+  
+  #alpha mean
+  plot2 = plot(seq_along(alpha_mean), alpha_mean,
+               ylim=c(0, a_lim),
+               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = alphaX, col = 'red', lwd = 2)
+  #lines(seq_along(like_a_mean), like_a_mean, col = 'red')
+  #lines(seq_along(prior_a_mean), prior_a_mean, col = 'blue')
+  
+  #beta mean
+  plot2 = plot(seq_along(beta_mean), beta_mean,
+               ylim=c(0, b_lim),
+               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = betaX, col = 'blue', lwd = 2)
+  
+  #gamma Mean
+  plot2 = plot(seq_along(gamma_mean), gamma_mean,
+               xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
+               ylim=c(0, g_lim),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = gammaX, col = 'green', lwd = 2)
+  
+  #iv. Param Histograms (Plots 9,11,12)
+  hist(r0_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'R0 total', #ylab = 'Density', 
+       main = paste('R0 total MCMC samples. Prior = ', prior),
+       xlim=c(0, r0_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = true_r0, col = 'orange', lwd = 2)
+  
+  # #v. Beta vs gamma
+  # plot(beta_mcmc, gamma_mcmc,
+  #      xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
+  #      cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #Hist alpha 
+  hist(alpha_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'alpha', #ylab = 'Density', 
+       main = paste("alpha, True alpha = ", alphaX), 
+       xlim=c(0, a_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = alphaX, col = 'red', lwd = 2)
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
+
+  
+  #Hist Beta 
+  hist(beta_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'beta', #ylab = 'Density', 
+       main = paste("Beta, True beta = ", betaX), 
+       xlim=c(0, b_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = betaX, col = 'blue', lwd = 2)
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
+  
+  
+  #Hist Gamma 
+  hist(gamma_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'gamma', #ylab = 'Density', 
+       main = paste("Gamma, True gamma = ", gammaX),
+       xlim=c(0, g_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = gammaX, col = 'green', lwd = 2)
+  #Prior
+  # x <- seq(from = 0, to = 20, by = 0.05)
+  # exp1 = 1 + dexp(x, 1)
+  # lines(seq_along(exp1), exp1, type = 'l')
+  
+  #Final Mean Stats
+  data_10_pc = 0.5*n #50%
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
+  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Joint distrbutions
+  if (model_crit){
+    
+    model_criticism(mcmc_params, sim_data, max_sum_val)
+  }
+  
+  #Joint distrbutions
+  if (joint){
+    
+    # #v. r0 vs beta
+    # plot(beta_mcmc, r0_mcmc,
+    #      xlab = 'beta', ylab = 'R0', main = 'Beta vs R0',
+    #      cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. alpha vs beta
+    plot(alpha_mcmc, beta_mcmc,
+         xlab = 'alpha', ylab = 'beta', main = 'alpha vs Beta',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. alpha vs gamma
+    plot(alpha_mcmc, gamma_mcmc,
+         xlab = 'alpha', ylab = 'gamma', main = 'alpha vs gamma',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+    #v. beta vs gamma
+    plot(beta_mcmc, gamma_mcmc,
+         xlab = 'beta', ylab = 'gamma', main = 'Beta vs gamma',
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  }
+  
+  #Results
+  df_results <- data.frame(
+    alpha = alphaX,
+    a_mc = a_mcmc_mean,
+    beta = betaX,
+    b_mc = b_mcmc_mean,
+    gamma = gammaX,
+    g_mc = g_mcmc_mean,
+    R0 = true_r0, 
+    R0_mc = r0_mcmc_mean,
+    accept_rate_a = round(mcmc_params[[5]],2),
+    a_rte_b = round(mcmc_params[[6]], 2),
+    a_rte_g = round(mcmc_params[[7]],2),
+    a_rte_b_g = round(mcmc_params[[8]],2),
+    tot_time = total_time) 
+  
+  print(df_results)
   
 }
 
