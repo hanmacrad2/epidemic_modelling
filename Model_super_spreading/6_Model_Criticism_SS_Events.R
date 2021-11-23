@@ -39,7 +39,6 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
-
 mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
@@ -179,44 +178,39 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
     
     #Get Summary Statistics
     if(mod(i, thinning_factor) == 0){
+      #print('GETTING SUMMARY STATS')
       
       #If df of summary stats doesn't exist - create it
       if (!exists("df_summary_stats")) {
-        
+        #print('CREATE DF')
         flag_create = TRUE
         df_summary_stats = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
         flag_create = FALSE
+        #print('df df_summary_stats')
+        #print(df_summary_stats)
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i],
+                                                                           beta_vec[i], gamma_vec[i], flag_create, flag_true)
       }
       
       count_thin = count_thin + 1
       
-      #Final line == original data
-      flag_true = TRUE
-      df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
-    }
-    
-    
+      }
   }
+  
+  #True summary stats - set as final row for comparison 
+  flag_true = TRUE
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
+  print(df_summary_stats[nrow(df_summary_stats), ])
   
   #Final stats
   #alpha
   accept_rate1 = 100*count_accept1/n
-  cat("Acceptance rate1 = ",accept_rate1, '\n')
-  
-  #beta
   accept_rate2 = 100*count_accept2/n
-  cat("Acceptance rate2 = ", accept_rate2, '\n')
-  
-  #gamma
   accept_rate3 = 100*count_accept3/n
-  cat("Acceptance rate3 = ", accept_rate3, '\n')
-  
-  #Gamma-Beta
   accept_rate4 = 100*count_accept4/n
-  cat("Acceptance rate4 = ", accept_rate4, '\n')
+  #cat("Acceptance rate1 = ",accept_rate1, '\n')
   
   #Get p values - comparing  summary stat columns to true value 
   list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
@@ -249,19 +243,24 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
         maxX = max(sim_data_params),
         stdX = std(sim_data_params),
         val_75 = quantile(sim_data_params)[4][1][1],
-        val_87_5 = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[4][1][1]),
+        val_87_5 = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
         max_dif = max(abs(diff(sim_data_params))),
         med_dif = median(abs(diff(sim_data_params))),
-        mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1]))
+        mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
+        sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
+        sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
+        
       )
       
        } else {
       #List
       summary_stats_results = list(sum(sim_data_params), median(sim_data_params), max(sim_data_params),
                                std(sim_data_params), quantile(sim_data_params)[4][1][1], 
-                               median(diff(sim_data_params)), mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[4][1][1]),
+                               mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
                                max(abs(diff(sim_data_params))), median(abs(diff(sim_data_params))),
-                               mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1]))
+                               mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
+                               sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
+                               sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
                                )
     }
     
@@ -273,10 +272,10 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
 get_p_values <- function(column) {
   
   #Final val
-  cat('column length:', length(column), '\n')
-  print(column[1:10])
+  #cat('column length:', length(column), '\n')
+  #print(column[1:10])
   last_el = column[length(column)] #True value 
-  cat('last element = ', last_el, '\n')
+  #cat('last element = ', last_el, '\n')
   #P value
   lt = length(which(column < last_el))
   gt = length(which(column > last_el))
@@ -285,7 +284,7 @@ get_p_values <- function(column) {
   pvalue = pvalue/2
   
   #Return p value 
-  cat('p value = ', pvalue)
+  #cat('p value = ', pvalue)
   pvalue
   
 }
@@ -299,25 +298,28 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
   #Get model params
   alphaX = model_params[1]; betaX = model_params[2]
   gammaX = model_params[3]; r0 = model_params[4];
-  cat('r0 = ', r0); 
+  cat('r0 = ', r0, '\n'); 
   
   #Repeat for n reps
   for(rep in 1:n_reps) {
     
+    cat('\n rep =', rep, '\n')
     #Simulate data
     sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      
+    if(mod(rep, 100) == 0){
+      plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
+    }
     #MCMC
     mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor)
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
-    print(list_p_vals)
+    #cat('list_p_vals:', list_p_vals, '\n length =', length(list_p_vals))
     
-    if (!exists("df_p_vals")) {
-        
+    if (rep == 1) { #(!exists("df_p_vals")) {
+      cat('p value rep = ', rep)
       #Create df; sum etc
-      df_p_vals = data.frame(
-        sumX  = list_p_vals[1],
+      df_p_values = data.frame(sumX = 
+        list_p_vals[1],
         medianX = list_p_vals[2],
         maxX = list_p_vals[3],
         stdX = list_p_vals[4],
@@ -326,28 +328,32 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
         max_dif = list_p_vals[7],
         med_dif = list_p_vals[8],
         mean_upper_dif = list_p_vals[9],
+        sum_1st_half  = list_p_vals[10],
+        sum_2nd_half =  list_p_vals[11]
         
       )
-      
+      print('df_p_values')
+      print(df_p_values)
     } else {
       
-      df_p_vals[nrow(df_p_vals) + 1, ] = list_p_vals
+      df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
     }
     
   }
   
   #Plot df values
   #plot 3x3
-  df_p_vals
+  df_p_values
 
 }
 
 ############# --- RUN P VALUES --- ######################################
-n = 1000
-n_reps = 10
+n = 10000
+n_reps = 100
 thinning_factor = 10 #(1/1000)*n;
-cat('Start time:', Sys.time())
-get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
+start_time = Sys.time()
+cat('Start time:', start_time)
+df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 # par(mfrow = c(2,1))
@@ -362,6 +368,12 @@ df2 = data.frame(
   mean_upper = mean(quantile(sim_data)[4][1][1], quantile(sim_data)[4][1][1]),
   max_dif = max(abs(diff(sim_data))),
   med_dif = median(abs(diff(sim_data))),
-  mean_upper_dif = mean(c(quantile(abs(diff(sim_data)))[4][1][1], quantile(abs(diff(sim_data)))[5][1][1]))
+  mean_upper_dif = mean(c(quantile(abs(diff(sim_data)))[4][1][1], quantile(abs(diff(sim_data)))[5][1][1])),
+  sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
+  sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
   )
 df2
+
+sum_1st_half  = sum(which(column < quantile(sim_data)[3][1][1]))
+
+sum_2nd_half =  sum(which(column > quantile(sim_data)[3][1][1]))
