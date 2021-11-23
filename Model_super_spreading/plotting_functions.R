@@ -260,8 +260,8 @@ line2user <- function(line, side) {
 #********************
 #Dataframe
 df <- data.frame(
-  ab = c(1,5,7),
-  bc = c(2,3,4)
+  ab = c(1,5,7,8,9,5,11,3,1,4),
+  bc = c(2,3,4,2,6,8,9,10,2,8)
 )
 df
 
@@ -296,9 +296,85 @@ apply(df, 2, FUN = function(vec2) check_p_val(sim_data, vec2))
 
 apply(df_results,2,min)
 
-df <- tibble(x = 1:3, y = 3:1)
-df
+#*********************************************
+#Apply function #2
 
-df > add_row(alpha = 3, bd = 1)
+#Get p values from summarys stats
+compare_row_vals <- function(column) {
+  
+  #Final val
+  last_el = column[length(column)]
+  cat('last element = ', last_el)
+  #P value
+  lt = length(which(column < last_el))
+  gt = length(which(column > last_el))
+  min_val = min(lt, gt)
+  pvalue = min_val/length(column)
+  
+  #print(pvalue)
+  pvalue
+  
+}
+
+apply(df, 2, FUN = function(vec) compare_row_vals(vec))
 
 
+#*************
+#*Model Criticism
+#Model Criticism Function
+plot_model_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
+  
+  #Plot Model Criticism
+  vec_mod_crit = mcmc_params[9]
+  vec_mod_crit = unlist(vec_mod_crit)
+  true_sum_inf = sum(sim_data)
+  
+  #P value
+  lt = length(which(vec_mod_crit < true_sum_inf))
+  print(lt)
+  gt = length(which(vec_mod_crit > true_sum_inf))
+  print(gt)
+  min_val = min(lt, gt)
+  pvalue = min_val/length(vec_mod_crit)
+  
+  #Check
+  if (lt < gt){
+    flag = 'lt (<)'
+  } else if (gt < lt){
+    flag = 'gt (>)'
+  }
+  
+  #Histogram
+  hist(vec_mod_crit[vec_mod_crit < max_sum_val], breaks = 100, #freq = FALSE, 
+       #xlim = c(xmin, xmax),
+       xlab = paste('Sum of Infecteds <', max_sum_val), ylab = 'Density',
+       main = paste('Model criticism, true R0 = ', true_r0, '.',
+                    'P value', flag, '=', pvalue),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = true_sum_inf, col = 'red', lwd = 2)
+  
+}
+
+
+
+#****
+
+#Get p values - comparing  summary stat columns to true value 
+get_p_value <- function(column) {
+  
+  #Final val
+  last_el = column[length(column)] #True value 
+  cat('last element = ', last_el)
+  #P value
+  lt = length(which(column < last_el))
+  gt = length(which(column > last_el))
+  min_val = min(lt, gt)
+  pvalue = min_val/length(column)
+  pvalue = pvalue/2
+  
+  #Return p value 
+  pvalue
+  
+}
+
+apply(df, 2, FUN = function(vec) get_p_value(vec))

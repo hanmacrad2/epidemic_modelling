@@ -433,14 +433,9 @@ sigma_bg
 prior = FALSE
 
 #MCMC
-start_time = Sys.time()
-print('Start time:')
-print(start_time)
+cat('Start time:', Sys.time())
 mcmc_params1 = mcmc_ss_x4_prior(sim_data, n, sigma_a, sigma_b, sigma_bg, prior)
-end_time = Sys.time()
-time_elap = round(end_time - start_time, 2)
-print('Time elapsed:')
-print(time_elap)
+cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 #Plotting 
 dist_type = 'Neg Bin,'

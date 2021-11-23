@@ -17,37 +17,47 @@ scale_gamma = 1
 #seed_count = 1
 #par(mar=c(1,1,1,1))
 
+############# --- INSERT PARAMETERS! --- ######################################
+alphaX = 0.8 #0.7 #0.8 #0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
+betaX = 0.1 #0.05 #0.025 #0.2 #0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
+gammaX = 10 #8
+true_r0 = alphaX + betaX*gammaX
+true_r0
+model_params = c(alphaX, betaX, gammaX, true_r0)
+
+#Epidemic data - Neg Bin
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
+
+#MCMC - get p values 
+sigma_a = 0.4*alphaX
+sigma_b = 1.0*betaX 
+sigma_g = 0.85*gammaX
+sigma_bg = 1.5*gammaX
+sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
+
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
 
-mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior, x0 = 1) { #burn_in = 2500
+mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
-  #Set up
-  cat('Prior = ', prior)
+  #Initialise params
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
   alpha_vec[1] <- x0; beta_vec[1] <- x0;
   gamma_vec[1] <- x0; r0_vec[1] <- x0;
-  count_accept1 = 0; count_accept2 = 0; count_accept3 = 0; count_accept4 = 0;
-  thinning_factor = (1/1000)*n
-  #vec_data_simulated <- vector('numeric', n/thinning_factor)
-  count_thin = 1
-  #Set up summary stats df
-  df_summary_stats <- data.frame(
-   
-   
-  )
   
-  vec_sum = vector('numeric', n)
-  vec_median = vector('numeric', n)
-  vec_mode = vector('numeric', n)
-  vec_std = vector('numeric', n)
-  vec_med_diff = vector('numeric', n)
-  vec_n1 = vector('numeric', n)
-  vec_n2 = vector('numeric', n)
+  #Extract params
+  sigma_a = sigma[1]; sigma_b = sigma[2]
+  sigma_g = sigma[3]; sigma_bg = sigma[4];
+  
+  #Result vectors
+  count_accept1 = 0; count_accept2 = 0;
+  count_accept3 = 0; count_accept4 = 0; count_thin = 1
+  prior = TRUE; flag_true = FALSE
   
   #MCMC chain
   for(i in 2:n) {
@@ -174,21 +184,23 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
       if (!exists("df_summary_stats")) {
         
         flag_create = TRUE
-        df_summary_stats = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)#(list_summary_stats_i, flag_create)
+        df_summary_stats = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
         flag_create = FALSE
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
       }
       
       count_thin = count_thin + 1
       
       #Final line == original data
-      df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create)
+      flag_true = TRUE
+      df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
     }
     
     
   }
+  
   #Final stats
   #alpha
   accept_rate1 = 100*count_accept1/n
@@ -206,9 +218,8 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
   accept_rate4 = 100*count_accept4/n
   cat("Acceptance rate4 = ", accept_rate4, '\n')
   
-  #Create list of p-values of all the summary stats 
-  apply(df_summary_stats)
-  list_p_vals = create_lst_p_vals(sim_data, df_summary_stats)
+  #Get p values - comparing  summary stat columns to true value 
+  list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
@@ -218,7 +229,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior
 }
 
 #Get summary stats
-get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag){
+get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag, flag_true){
   
   'Get summary statisitcs of the simulated data'
   
@@ -226,56 +237,61 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
   sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_vec_i, beta_vec_i, gamma_vec_i)
   
   'Original data as final comparion'
-  sim_data_params = sim_data
+  if (flag_true){
+    sim_data_params = sim_data
+  }
   
     if (create_df_flag){
       #Df
       summary_stats_results = data.frame(
         sumX = sum(sim_data_params),
         medianX = median(sim_data_params),
-        modeX = mode(sim_data_params),
+        maxX = max(sim_data_params),
         stdX = std(sim_data_params),
-        med_dif = median(diff(sim_data_params)))
-    } else {
+        val_75 = quantile(sim_data_params)[4][1][1],
+        val_87_5 = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[4][1][1]),
+        max_dif = max(abs(diff(sim_data_params))),
+        med_dif = median(abs(diff(sim_data_params))),
+        mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1]))
+      )
+      
+       } else {
       #List
-      summary_stats_results = list(sum(sim_data_params), median(sim_data_params), mode(sim_data_params),
-                               std(sim_data_params), median(diff(sim_data_params)))
+      summary_stats_results = list(sum(sim_data_params), median(sim_data_params), max(sim_data_params),
+                               std(sim_data_params), quantile(sim_data_params)[4][1][1], 
+                               median(diff(sim_data_params)), mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[4][1][1]),
+                               max(abs(diff(sim_data_params))), median(abs(diff(sim_data_params))),
+                               mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1]))
+                               )
     }
-  
+    
   summary_stats_results
   
 }
 
-#Get p values from summarys stats
-create_lst_p_vals <- function(sim_data, df_summary_stats) {
+#Get p values - comparing  summary stat columns to true value 
+get_p_values <- function(column) {
   
-  #Original/brainstorm 
-  #Sum
-  true_sum_inf = sum(sim_data)
+  #Final val
+  cat('column length:', length(column), '\n')
+  print(column[1:10])
+  last_el = column[length(column)] #True value 
+  cat('last element = ', last_el, '\n')
   #P value
-  lt = length(which(vec_mod_crit < true_sum_inf))
-  gt = length(which(vec_mod_crit > true_sum_inf))
+  lt = length(which(column < last_el))
+  gt = length(which(column > last_el))
   min_val = min(lt, gt)
-  pvalue = min_val/length(vec_mod_crit)
+  pvalue = min_val/length(column)
+  pvalue = pvalue/2
+  
+  #Return p value 
+  cat('p value = ', pvalue)
+  pvalue
   
 }
 
-#Get p value
-get_p_value <- function(vec, truth){ #Or is it apply?
-  
-  #P value
-  lt = length(which(vec < truth))
-  gt = length(which(vec > truth))
-  min_val = min(lt, gt)
-  pvalue = min_val/length(vec2)
-  
-  
-  
-}
-
-#Run for multiple
-#Get p values
-get_p_values_total <- function(n_reps, model_params){
+#RUN FOR MULTIPLE REPS TO GET P VALUES
+get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
   different summary statistics'
@@ -285,15 +301,6 @@ get_p_values_total <- function(n_reps, model_params){
   gammaX = model_params[3]; r0 = model_params[4];
   cat('r0 = ', r0); 
   
-  #Initialise vector of p values
-  vec_sum = vector('numeric', n)
-  vec_median = vector('numeric', n)
-  vec_mode = vector('numeric', n)
-  vec_std = vector('numeric', n)
-  vec_med_diff = vector('numeric', n)
-  vec_n1 = vector('numeric', n)
-  vec_n2 = vector('numeric', n)
-  
   #Repeat for n reps
   for(rep in 1:n_reps) {
     
@@ -301,19 +308,25 @@ get_p_values_total <- function(n_reps, model_params){
     sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
       
     #MCMC
-    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior)
+    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor)
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
+    print(list_p_vals)
     
     if (!exists("df_p_vals")) {
-      
+        
       #Create df; sum etc
       df_p_vals = data.frame(
         sumX  = list_p_vals[1],
-        medianX = list_p_vals[3],
-        modeX = list_p_vals[4],
-        stdX = list_p_vals[5],
-        med_dif = list_p_vals[6],
+        medianX = list_p_vals[2],
+        maxX = list_p_vals[3],
+        stdX = list_p_vals[4],
+        val_75 = list_p_vals[5],
+        val_87_5 = list_p_vals[6],
+        max_dif = list_p_vals[7],
+        med_dif = list_p_vals[8],
+        mean_upper_dif = list_p_vals[9],
+        
       )
       
     } else {
@@ -325,99 +338,30 @@ get_p_values_total <- function(n_reps, model_params){
   
   #Plot df values
   #plot 3x3
+  df_p_vals
 
 }
 
+############# --- RUN P VALUES --- ######################################
+n = 1000
+n_reps = 10
+thinning_factor = 10 #(1/1000)*n;
+cat('Start time:', Sys.time())
+get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
+cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
-#Model Criticism Function
-plot_model_criticism <- function(mcmc_params, sim_data, max_sum_val) { 
-  
-  #Plot Model Criticism
-  vec_mod_crit = mcmc_params[9]
-  vec_mod_crit = unlist(vec_mod_crit)
-  true_sum_inf = sum(sim_data)
-  
-  #P value
-  lt = length(which(vec_mod_crit < true_sum_inf))
-  print(lt)
-  gt = length(which(vec_mod_crit > true_sum_inf))
-  print(gt)
-  min_val = min(lt, gt)
-  pvalue = min_val/length(vec_mod_crit)
-  
-  #Check
-  if (lt < gt){
-    flag = 'lt (<)'
-  } else if (gt < lt){
-    flag = 'gt (>)'
-  }
-  
-  #Histogram
-  hist(vec_mod_crit[vec_mod_crit < max_sum_val], breaks = 100, #freq = FALSE, 
-       #xlim = c(xmin, xmax),
-       xlab = paste('Sum of Infecteds <', max_sum_val), ylab = 'Density',
-       main = paste('Model criticism, true R0 = ', true_r0, '.',
-                    'P value', flag, '=', pvalue),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = true_sum_inf, col = 'red', lwd = 2)
-  
-}
-
-
-############# --- INSERT PARAMETERS! --- ######################################
-alphaX = 0.8 #0.7 #0.8 #0.7 #0.8 #0.7 #0.7 #1.1 #0.8 #1.1 #0.8 #1.1 # 0.8 #2 #0.9 #2 #2 #Without ss event, ~r0.
-betaX = 0.1 #0.05 #0.025 #0.2 #0.1 #0.2 #0.05 #0.1 #0.05 #0.2 #0.05 #0.2 #0.05 #0.2 #0.2 #0.05 #0.2 #0.05 #0.05
-gammaX = 10 #8
-true_r0 = alphaX + betaX*gammaX
-true_r0
-#Seed
-#seed_count = 13
-seed_count = seed_count + 1
-seed_count
-##---##############################################################---##
-set.seed(seed_count)
-#set.seed(9)
-
-#Epidemic data - Neg Bin
-sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
-#sim_data2 = sim_data
-#WITH PRIOR
-#MCMC 
-n = 30000
-sigma_a = 0.4*alphaX
-sigma_a
-sigma_b = 1.0*betaX 
-sigma_b
-sigma_g = 0.85*gammaX
-sigma_g
-sigma_bg = 1.5*gammaX
-sigma_bg
-start_time = Sys.time()
-print('Start time:')
-print(start_time)
-prior = TRUE
-
-######################
-#Get p values
-
-#Plot x4x4
-get_p_values(n_reps, model_params)
-
-# mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma_a, sigma_b, sigma_g, sigma_bg, prior)
-# end_time = Sys.time()
-# time_elap = round(end_time - start_time, 2)
-# print('Time elapsed:')
-# print(time_elap)
-# 
-# #Apply
-# dist_type = 'Neg Bin,'
-# max_sum_val = 5000
-# #plot_mcmc_x4_priors(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior)
-# plot_mcmc_x4_II(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count, prior, max_sum_val)
-# 
-# #Model Criticism
-# par(mfrow = c(1,1))
-# model_criticism(mcmc_params, sim_data, max_sum_val)
-# 
 # par(mfrow = c(2,1))
+
+#Check
+df2 = data.frame(
+  sumX = sum(sim_data),
+  medianX = median(sim_data),
+  maxX = max(sim_data),
+  stdX = std(sim_data),
+  val_75 = quantile(sim_data)[4][1][1],
+  mean_upper = mean(quantile(sim_data)[4][1][1], quantile(sim_data)[4][1][1]),
+  max_dif = max(abs(diff(sim_data))),
+  med_dif = median(abs(diff(sim_data))),
+  mean_upper_dif = mean(c(quantile(abs(diff(sim_data)))[4][1][1], quantile(abs(diff(sim_data)))[5][1][1]))
+  )
+df2
