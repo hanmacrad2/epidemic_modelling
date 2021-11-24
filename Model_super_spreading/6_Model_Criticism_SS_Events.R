@@ -247,8 +247,8 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
         max_dif = max(abs(diff(sim_data_params))),
         med_dif = median(abs(diff(sim_data_params))),
         mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
-        sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
-        sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
+        sum_1st_half  = sum(which(sim_data_params < quantile(sim_data_params)[3][1][1])),
+        sum_2nd_half =  sum(which(sim_data_params > quantile(sim_data_params)[3][1][1]))
         
       )
       
@@ -259,8 +259,8 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
                                mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
                                max(abs(diff(sim_data_params))), median(abs(diff(sim_data_params))),
                                mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
-                               sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
-                               sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
+                               sum_1st_half  = sum(which(sim_data_params < quantile(sim_data_params)[3][1][1])),
+                               sum_2nd_half =  sum(which(sim_data_params > quantile(sim_data_params)[3][1][1]))
                                )
     }
     
@@ -307,7 +307,7 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
     #Simulate data
     sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
     if(mod(rep, 100) == 0){
-      plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
+      plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Rep {}', rep, ', Daily Infections count, true R0 = ', true_r0))
     }
     #MCMC
     mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor)
@@ -347,33 +347,41 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
 
 }
 
+#Plot p values
+plot_p_vals <- function(df_p_vals){
+  
+  par(mfrow=c(3,4))
+  
+  for (i in c(1:11)){
+    
+    hist(df_p_values[,i], breaks = 100, #freq = FALSE, 
+         #xlim = c(xmin, xmax),
+         xlab = 'p value', ylab = 'Num Samples', col = 'green',
+         main = paste('', toupper(colnames(df_p_values)[i]),', R0:', true_r0),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    #abline(v = true_sum_inf, col = 'red', lwd = 2)
+  }
+}
+
 ############# --- RUN P VALUES --- ######################################
 n = 10000
 n_reps = 100
-thinning_factor = 10 #(1/1000)*n;
+thinning_factor = 50 #(1/1000)*n;
 start_time = Sys.time()
-cat('Start time:', start_time)
-df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
+print('Start time:')
+print(start_time)
+df_p_values2 = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
-# par(mfrow = c(2,1))
+#Plot
+plot_p_vals(df_p_values2)
 
-#Check
-df2 = data.frame(
-  sumX = sum(sim_data),
-  medianX = median(sim_data),
-  maxX = max(sim_data),
-  stdX = std(sim_data),
-  val_75 = quantile(sim_data)[4][1][1],
-  mean_upper = mean(quantile(sim_data)[4][1][1], quantile(sim_data)[4][1][1]),
-  max_dif = max(abs(diff(sim_data))),
-  med_dif = median(abs(diff(sim_data))),
-  mean_upper_dif = mean(c(quantile(abs(diff(sim_data)))[4][1][1], quantile(abs(diff(sim_data)))[5][1][1])),
-  sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
-  sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
-  )
-df2
+#Add columns
+col1 = c(0, 0, 0, 360, 0, 0,0,400, 0, 0, 339, 0, 291, 283, 311, 0, 0, 0, 333, 0, 332, 0, 0, 0, 0, 0, 335, 0, 0, 0, 0, 0, 0, 455, 320, 0, 250, 287, 346, 328, 370, 0, 336, 325, 0, 384, 298, 426, 0, 0, 334, 225, 0,
+        346, 0, 0, 378, 289, 366, 0, 0, 0, 353, 0, 339,  0, 337, 0, 434, 296, 351, 0, 287, 0, 0, 0, 299, 341, 0, 299, 414, 409, 0, 258, 0, 412, 354, 0, 347, 0, 370, 347, 0, 0, 324, 336, 0, 0, 0, 303, 0)
 
-sum_1st_half  = sum(which(column < quantile(sim_data)[3][1][1]))
+col2 = c(6, 0, 7, 915,1,365,99,774, 1, 7, 936, 1, 852, 863, 425, 19, 1, 942, 9, 906, 57, 19, 11, 1, 428, 940, 49, 354, 23, 10, 1, 451, 908, 179,
+         759, 850, 929, 908, 11, 843, 921, 56, 891, 870, 849, 50, 1, 896, 787, 118, 929, 1, 9, 897, 753, 909, 6, 23, 104, 840, 321, 936, 10, 938,
+         151, 614, 829, 924, 1, 464, 103, 9, 25, 767, 656, 383, 718, 564, 646, 553, 769, 515, 724, 888, 1, 928, 408, 7, 905, 498, 638, 1, 896,
+         878, 1, 1, 1, 509, 1)
 
-sum_2nd_half =  sum(which(column > quantile(sim_data)[3][1][1]))

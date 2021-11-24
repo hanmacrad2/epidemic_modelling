@@ -302,4 +302,23 @@ for (y_t in 1:1){
   
 }
 
+#Plotting p values
+#Check
+df2 = data.frame(
+  sumX = sum(sim_data),
+  medianX = median(sim_data),
+  maxX = max(sim_data),
+  stdX = std(sim_data),
+  val_75 = quantile(sim_data)[4][1][1],
+  mean_upper = mean(quantile(sim_data)[4][1][1], quantile(sim_data)[4][1][1]),
+  max_dif = max(abs(diff(sim_data))),
+  med_dif = median(abs(diff(sim_data))),
+  mean_upper_dif = mean(c(quantile(abs(diff(sim_data)))[4][1][1], quantile(abs(diff(sim_data)))[5][1][1])),
+  sum_1st_half  = sum(which(sim_data < quantile(sim_data)[3][1][1])),
+  sum_2nd_half =  sum(which(sim_data > quantile(sim_data)[3][1][1]))
+)
+df2
 
+sum_1st_half  = sum(which(column < quantile(sim_data)[3][1][1]))
+
+sum_2nd_half =  sum(which(column > quantile(sim_data)[3][1][1]))
