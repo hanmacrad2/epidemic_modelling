@@ -383,3 +383,21 @@ get_p_value <- function(column) {
 }
 
 apply(df, 2, FUN = function(vec) get_p_value(vec))
+
+
+#Plot Epidemics
+par(mfrow = c(2,4))
+
+
+#*Implement
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+aX = 0.8 #1.1 #Without ss event, ~r0.
+bX = 0.1 #0.2
+ss_mult = 10 #8
+#Epidemic data
+sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
+plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')

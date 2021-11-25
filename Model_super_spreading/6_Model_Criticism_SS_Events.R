@@ -7,7 +7,7 @@ library(tidyverse)
 library(tibble)
 setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
-source("plotting_functions.R")
+#source("plotting_functions.R")
 
 #Epidemic params
 num_days = 50
