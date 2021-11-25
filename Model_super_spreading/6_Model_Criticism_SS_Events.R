@@ -26,8 +26,8 @@ true_r0
 model_params = c(alphaX, betaX, gammaX, true_r0)
 
 #Epidemic data - Neg Bin
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Daily Infections count, true R0 = ', true_r0))
 
 #MCMC - get p values 
 sigma_a = 0.4*alphaX
@@ -83,8 +83,8 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
     }
     
     #Metropolis Acceptance Step
-    #if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-    if(log(runif(1)) < log_accept_prob) {
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    #if(log(runif(1)) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
       count_accept1 = count_accept1 + 1
     } else {
@@ -109,7 +109,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
     }
     
     #Metropolis Acceptance Step
-    if(log(runif(1)) < log_accept_prob) {
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
       count_accept2 = count_accept2 + 1
     } else {
@@ -135,7 +135,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
     }
     
     #Metropolis Acceptance Step
-    if(log(runif(1)) < log_accept_prob) {
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       gamma_vec[i] <- gamma_dash
       count_accept3 = count_accept3 + 1
     } else {
@@ -169,7 +169,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
       }
       
       #Metropolis Step
-      if(log(runif(1)) < log_accept_prob) {
+      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         beta_vec[i] <- beta_new
         count_accept4 = count_accept4 + 1
       } 
@@ -290,7 +290,7 @@ get_p_values <- function(column) {
 }
 
 #RUN FOR MULTIPLE REPS TO GET P VALUES
-get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
+get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, iter, flag_ss){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
   different summary statistics'
@@ -304,18 +304,21 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
+    
     #Simulate data
-    sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-    if(mod(rep, 100) == 0){
-      plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Rep {}', rep, ', Daily Infections count, true R0 = ', true_r0))
+    if (flag_ss){
+      sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+    } else {
+      sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
     }
+   
     #MCMC
     mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor)
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
     #cat('list_p_vals:', list_p_vals, '\n length =', length(list_p_vals))
     
-    if (rep == 1) { #(!exists("df_p_vals")) {
+    if (rep == 1) { 
       cat('p value rep = ', rep)
       #Create df; sum etc
       df_p_values = data.frame(sumX = 
@@ -334,15 +337,21 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
       )
       print('df_p_values')
       print(df_p_values)
+      
     } else {
       
       df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
     }
     
+    # if(mod(rep, 100) == 0){
+    #   write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
+    #   plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Rep {}', rep, ', Daily Infections count, true R0 = ', true_r0))
+    # }
+    
   }
   
-  #Plot df values
-  #plot 3x3
+  #Df
+  #write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
   df_p_values
 
 }
@@ -350,38 +359,40 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor){
 #Plot p values
 plot_p_vals <- function(df_p_vals){
   
-  par(mfrow=c(3,4))
+  'Plot histograms of the p values'
+  par(mfrow=c(3,4)) #c(3,4)
   
   for (i in c(1:11)){
     
-    hist(df_p_values[,i], breaks = 100, #freq = FALSE, 
+    hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
          xlab = 'p value', ylab = 'Num Samples', col = 'green',
-         main = paste('', toupper(colnames(df_p_values)[i]),', R0:', true_r0),
+         main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     #abline(v = true_sum_inf, col = 'red', lwd = 2)
   }
 }
 
 ############# --- RUN P VALUES --- ######################################
+iter = 3
 n = 10000
 n_reps = 100
 thinning_factor = 50 #(1/1000)*n;
+flag_ss = FALSE
+
+#Start
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-df_p_values2 = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor)
+df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, iter, flag_ss)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 #Plot
-plot_p_vals(df_p_values2)
+plot_p_vals(df_p_values)
 
-#Add columns
-col1 = c(0, 0, 0, 360, 0, 0,0,400, 0, 0, 339, 0, 291, 283, 311, 0, 0, 0, 333, 0, 332, 0, 0, 0, 0, 0, 335, 0, 0, 0, 0, 0, 0, 455, 320, 0, 250, 287, 346, 328, 370, 0, 336, 325, 0, 384, 298, 426, 0, 0, 334, 225, 0,
-        346, 0, 0, 378, 289, 366, 0, 0, 0, 353, 0, 339,  0, 337, 0, 434, 296, 351, 0, 287, 0, 0, 0, 299, 341, 0, 299, 414, 409, 0, 258, 0, 412, 354, 0, 347, 0, 370, 347, 0, 0, 324, 336, 0, 0, 0, 303, 0)
+#Save
+write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
 
-col2 = c(6, 0, 7, 915,1,365,99,774, 1, 7, 936, 1, 852, 863, 425, 19, 1, 942, 9, 906, 57, 19, 11, 1, 428, 940, 49, 354, 23, 10, 1, 451, 908, 179,
-         759, 850, 929, 908, 11, 843, 921, 56, 891, 870, 849, 50, 1, 896, 787, 118, 929, 1, 9, 897, 753, 909, 6, 23, 104, 840, 321, 936, 10, 938,
-         151, 614, 829, 924, 1, 464, 103, 9, 25, 767, 656, 383, 718, 564, 646, 553, 769, 515, 724, 888, 1, 928, 408, 7, 905, 498, 638, 1, 896,
-         878, 1, 1, 1, 509, 1)
+
+
 

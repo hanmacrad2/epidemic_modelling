@@ -67,18 +67,21 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
 # 
 # #********
 # #*Implement
-# num_days = 50
-# #lambda params
-# shape_gamma = 6
-# scale_gamma = 1
-# #params
-# alphaX = 0.8 #Without ss event, ~r0. 
-# betaX = 0.1
-# gammaX = 10
-# #Epidemic data
-# sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-# plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Daily Infections count')
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+alphaX = 0.8 #Without ss event, ~r0.
+betaX = 0.1
+gammaX = 10
+true_r0 = alphaX + betaX*gammaX
+true_r0
+#Epidemic data
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections', main = paste('Super - Spreading Events model - Daily Infections count, true R0 = ', true_r0))
 
+par(mfrow = c(2,1))
 #*******************************************************
 #Super-spreading simulation
 simulate_ss_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
@@ -161,6 +164,19 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   
   total_infecteds
 }
+
+#*Implement
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+aX = 0.8 #1.1 #Without ss event, ~r0.
+bX = 0.1 #0.2
+ss_mult = 10 #8
+#Epidemic data
+sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
+plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
 
 #*******************************************************************************
 #Model functions  - Super-spreading Model

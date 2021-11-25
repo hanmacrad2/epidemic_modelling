@@ -265,6 +265,11 @@ df <- data.frame(
 )
 df
 
+#Save
+write.csv(df, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
+iter = 3
+write.csv(df, file = paste("df_p_vals_.csv", iter), row.names = FALSE)
+
 #Add row
 df_results[nrow(df_results) + 1,] = list(4, 7)
 df_results
