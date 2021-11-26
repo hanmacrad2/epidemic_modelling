@@ -386,7 +386,24 @@ apply(df, 2, FUN = function(vec) get_p_value(vec))
 
 
 #Plot Epidemics
-par(mfrow = c(2,4))
+par(mfrow = c(4,3))
+
+# #*Implement
+num_days = 50
+#lambda params
+shape_gamma = 6
+scale_gamma = 1
+#params
+alphaX = 0.8 #Without ss event, ~r0.
+betaX = 0.1
+gammaX = 10
+true_r0 = alphaX + betaX*gammaX
+true_r0
+#Epidemic data
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections', col = 'blue', lwd = 2,
+        main = paste('Super Spreading Events Infs, R0 = ', true_r0))
+
 
 
 #*Implement
@@ -400,4 +417,11 @@ bX = 0.1 #0.2
 ss_mult = 10 #8
 #Epidemic data
 sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
-plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
+plot.ts(sim_data2, ylab = 'Daily Infections count', col = 'red',
+        main = 'Super Spreaders Infections')
+
+#Orig
+r0 = 1.8
+sim_data0 = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+plot.ts(sim_data0, ylab = 'Daily Infections', lwd = 2,
+        main = paste('Regular Infections, R0 = ', r0))

@@ -146,7 +146,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   ss_infecteds = vector('numeric', num_days)
   total_infecteds[1] = 2
   nss_infecteds[1] = 2
-  ss_infecteds[1] = 0
+  ss_infecteds[1] = 0 
   
   #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
   #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)

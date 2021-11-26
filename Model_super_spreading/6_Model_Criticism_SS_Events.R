@@ -277,11 +277,11 @@ get_p_values <- function(column) {
   last_el = column[length(column)] #True value 
   #cat('last element = ', last_el, '\n')
   #P value
-  lt = length(which(column < last_el))
-  gt = length(which(column > last_el))
+  lt = length(which(column <= last_el)) #Needs to be less than or equal to 
+  gt = length(which(column >= last_el)) 
   min_val = min(lt, gt)
   pvalue = min_val/length(column)
-  pvalue = pvalue/2
+  pvalue = pvalue*2
   
   #Return p value 
   #cat('p value = ', pvalue)
@@ -309,7 +309,8 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     if (flag_ss){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
     } else {
-      sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+      sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+      #sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
     }
    
     #MCMC
@@ -374,7 +375,7 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-iter = 3
+iter = 4
 n = 10000
 n_reps = 100
 thinning_factor = 50 #(1/1000)*n;
