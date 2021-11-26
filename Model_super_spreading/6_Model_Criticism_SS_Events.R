@@ -39,7 +39,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
-mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in = 2500
+mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, rep, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
@@ -203,6 +203,9 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
   flag_true = TRUE
   df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
   print(df_summary_stats[nrow(df_summary_stats), ])
+  #Save Summary stats 
+  df_name  <- paste0("df_summary_stats_", rep)
+  save(df_name, file = paste0(folder_results, '/', df_name, ".RData"))
   
   #Final stats
   #alpha
@@ -214,6 +217,9 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, x0 = 1) { #burn_in
   
   #Get p values - comparing  summary stat columns to true value 
   list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
+  #Save p values for rep
+  list_p_vals  <- paste0("list_p_vals_", rep)
+  save(list_p_vals, file = paste0(folder_results, '/', list_p_vals, ".RData"))
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
@@ -278,7 +284,7 @@ get_p_values <- function(column) {
   #cat('last element = ', last_el, '\n')
   #P value
   lt = length(which(column <= last_el)) #Needs to be less than or equal to 
-  gt = length(which(column >= last_el)) 
+  gt = length(which(column >= last_el)) #Needs to be greater than or equal to 
   min_val = min(lt, gt)
   pvalue = min_val/length(column)
   pvalue = pvalue*2
@@ -290,37 +296,46 @@ get_p_values <- function(column) {
 }
 
 #RUN FOR MULTIPLE REPS TO GET P VALUES
-get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, iter, flag_ss){
+get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
-  different summary statistics'
+  different summary statistics. Save result in type/iter/rep subfolder'
   
   #Get model params
   alphaX = model_params[1]; betaX = model_params[2]
   gammaX = model_params[3]; r0 = model_params[4];
+  #Data_type
+  flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   cat('r0 = ', r0, '\n'); 
   
   #Repeat for n reps
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
+    #Create folder to save results of the rep
+    folder_results_rep = paste0(folder_results, '/rep_', rep)
+    cat('\n folder_results_rep =', folder_results_rep, '\n')
+    ifelse(!dir.exists(file.path(folder_results_rep)), dir.create(file.path(folder_results_rep)), FALSE)
     
     #Simulate data
-    if (flag_ss){
+    if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-    } else {
+      save(sim_data, file = paste0(folder_results_rep, '/ss_data.RData'))
+    } else if (flag2){
+      sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+      save(sim_data, file = paste0(folder_results_rep, '/ssi_data.RData'))
+    } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-      #sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+      save(sim_data, file = paste0(folder_results_rep, '/base_data.RData'))
     }
    
     #MCMC
-    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor)
+    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep)
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
-    #cat('list_p_vals:', list_p_vals, '\n length =', length(list_p_vals))
     
     if (rep == 1) { 
-      cat('p value rep = ', rep)
+
       #Create df; sum etc
       df_p_values = data.frame(sumX = 
         list_p_vals[1],
@@ -344,15 +359,10 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
       df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
     }
     
-    # if(mod(rep, 100) == 0){
-    #   write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
-    #   plot.ts(sim_data, ylab = 'Daily Infections count', main = paste('Rep {}', rep, ', Daily Infections count, true R0 = ', true_r0))
-    # }
-    
   }
   
-  #Df
-  #write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
+  #Save
+  save(df_p_values, file = paste0(folder_results, '/total_p_values_iter', iter, '.Rdata' ))
   df_p_values
 
 }
@@ -375,25 +385,22 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-iter = 4
+model_type = 'ss_events'
+iter = 1
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', type, '/iter_', iter)
+
+#Repitions 
 n = 10000
 n_reps = 100
 thinning_factor = 50 #(1/1000)*n;
-flag_ss = FALSE
+flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
 
 #Start
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, iter, flag_ss)
+df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 #Plot
 plot_p_vals(df_p_values)
-
-#Save
-write.csv(df_p_values, file = paste('df_p_vals_', iter, '.csv'), iter, row.names = FALSE)
-
-
-
-

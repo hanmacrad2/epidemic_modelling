@@ -336,3 +336,19 @@ df_p_values2['sum_1st_half'] = col1
 
 df_p_values2['sum_2nd_half'] = col2
 mean(col2)
+
+#Addresses/Saving
+
+
+#Address
+model_type = 'ss_events'
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', type, '/iter_', iter, '/rep_', rep)
+folder_results
+ifelse(!dir.exists(file.path(folder_results)), dir.create(file.path(folder_results)), FALSE)
+#Save here
+
+#check exists
+if(!dir.exists(folder_results)){
+  print(TRUE)
+  dir.create(folder_results)
+}
