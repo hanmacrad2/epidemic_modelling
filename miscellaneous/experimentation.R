@@ -341,10 +341,11 @@ mean(col2)
 
 
 #Address
+rep = 1
 model_type = 'ss_events'
-folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', type, '/iter_', iter, '/rep_', rep)
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter, '/rep_', rep)
 folder_results
-ifelse(!dir.exists(file.path(folder_results)), dir.create(file.path(folder_results)), FALSE)
+ifelse(!dir.exists(file.path(folder_results)), dir.create(file.path(folder_results), recursive = TRUE), FALSE)
 #Save here
 
 #check exists
@@ -352,3 +353,10 @@ if(!dir.exists(folder_results)){
   print(TRUE)
   dir.create(folder_results)
 }
+
+#Load data
+out = readRDS('df_summary_stats_2.RData')
+
+out = readRDS(paste0(folder_results, '/rep_2/df_summary_stats_2.RData'))
+out
+

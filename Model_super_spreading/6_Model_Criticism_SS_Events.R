@@ -183,9 +183,9 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
       #If df of summary stats doesn't exist - create it
       if (!exists("df_summary_stats")) {
         #print('CREATE DF')
-        flag_create = TRUE
+        flag_create = TRUE #Create df
         df_summary_stats = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
-        flag_create = FALSE
+        flag_create = FALSE #Now set to false - so new values just added as a list 
         #print('df df_summary_stats')
         #print(df_summary_stats)
         
@@ -201,11 +201,13 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #True summary stats - set as final row for comparison 
   flag_true = TRUE
-  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i],
+                                                                     beta_vec[i], gamma_vec[i], flag_create, flag_true)
   print(df_summary_stats[nrow(df_summary_stats), ])
-  #Save Summary stats 
+  
+  #Save_RDS Summary stats 
   df_name  <- paste0("df_summary_stats_", rep)
-  save(df_name, file = paste0(folder_results, '/', df_name, ".RData"))
+  saveRDS(df_summary_stats, file = paste0(folder_results, '/', df_name, ".rds"))
   
   #Final stats
   #alpha
@@ -217,15 +219,15 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #Get p values - comparing  summary stat columns to true value 
   list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
-  #Save p values for rep
-  list_p_vals  <- paste0("list_p_vals_", rep)
-  save(list_p_vals, file = paste0(folder_results, '/', list_p_vals, ".RData"))
+  #saveRDS p values for rep
+  name_list_p_vals  <- paste0("list_p_vals_", rep)
+  saveRDS(list_p_vals, file = paste0(folder_results, '/', name_list_p_vals, ".rds"))
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3,
               accept_rate4,
-              list_p_vals))
+              list_p_vals, df_summary_stats))
 }
 
 #Get summary stats
@@ -278,16 +280,13 @@ get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, cr
 get_p_values <- function(column) {
   
   #Final val
-  #cat('column length:', length(column), '\n')
-  #print(column[1:10])
   last_el = column[length(column)] #True value 
-  #cat('last element = ', last_el, '\n')
   #P value
   lt = length(which(column <= last_el)) #Needs to be less than or equal to 
   gt = length(which(column >= last_el)) #Needs to be greater than or equal to 
   min_val = min(lt, gt)
   pvalue = min_val/length(column)
-  pvalue = pvalue*2
+  pvalue = pvalue #*2
   
   #Return p value 
   #cat('p value = ', pvalue)
@@ -299,7 +298,7 @@ get_p_values <- function(column) {
 get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
-  different summary statistics. Save result in type/iter/rep subfolder'
+  different summary statistics. saveRDS result in type/iter/rep subfolder'
   
   #Get model params
   alphaX = model_params[1]; betaX = model_params[2]
@@ -312,27 +311,29 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
-    #Create folder to save results of the rep
+    #Create folder to saveRDS results of the rep
     folder_results_rep = paste0(folder_results, '/rep_', rep)
     cat('\n folder_results_rep =', folder_results_rep, '\n')
-    ifelse(!dir.exists(file.path(folder_results_rep)), dir.create(file.path(folder_results_rep)), FALSE)
+    ifelse(!dir.exists(file.path(folder_results_rep)), dir.create(file.path(folder_results_rep), recursive = TRUE), FALSE)
     
     #Simulate data
     if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      save(sim_data, file = paste0(folder_results_rep, '/ss_data.RData'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/ss_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      save(sim_data, file = paste0(folder_results_rep, '/ssi_data.RData'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/ssi_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-      save(sim_data, file = paste0(folder_results_rep, '/base_data.RData'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/base_data.rds'))
     }
    
     #MCMC
-    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep)
+    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep, rep)
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
+    df_summary_stats = mcmc_params[10]
+    df_summary_stats = unlist(df_summary_stats)
     
     if (rep == 1) { 
 
@@ -361,9 +362,14 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     
   }
   
-  #Save
-  save(df_p_values, file = paste0(folder_results, '/total_p_values_iter', iter, '.Rdata' ))
-  df_p_values
+  #Ensure its a df
+  df_p_values = as.data.frame(df_p_values)
+  
+  #SaveRDS
+  saveRDS(df_p_values, file = paste0(folder_results, '/total_p_values_iter_', iter, '.rds' ))
+  
+  #Return
+  return(list(df_p_values, df_summary_stats))
 
 }
 
@@ -385,9 +391,9 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'ss_events'
+model_type = 'I_ss_events'
 iter = 1
-folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', type, '/iter_', iter)
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 
 #Repitions 
 n = 10000
@@ -399,8 +405,17 @@ flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) baslin
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-df_p_values = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep)
+results = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
-#Plot
+############ INSPECT OUTPUT #######################
+#Extract
+df_p_values = results[[1]]
+#df_p_values = unlist(df_p_values)
 plot_p_vals(df_p_values)
+
+#Df
+newdf1 <- as.data.frame(df_p_values)
+#Plot
+plot_p_vals(newdf1)
+
