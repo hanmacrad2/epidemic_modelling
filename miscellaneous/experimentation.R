@@ -377,3 +377,8 @@ if((1 < 5) & (mod(10, 5) == 0)) {
 if(!(1 > 5 & mod(10, 5) == 0)) {
   print('TRUE')
 }
+
+#Lists
+listc = c(1)
+listc = c(listc, 2)
+listc

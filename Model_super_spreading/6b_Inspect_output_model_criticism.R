@@ -1,6 +1,7 @@
 #INSPECT OUTPUT OF MODEL CRITICISM
 
 #Set up params
+source("~/GitHub/epidemic_modelling/helper_functions.R")
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/"
 
 #FUNCTIONS - GET DATA
@@ -60,3 +61,11 @@ plot_rep_results <- function(true_r0, model_type, sim_data_rep, df_sum_stats, li
 rep = 7 #14, 73
 get_rep_results(results_home, model_type, rep, true_r0)
 
+#Plot MCMC params
+#Plotting 
+dist_type = 'Neg Bin,'
+joint = TRUE
+plot_mcmc_x4_priors(sim_data, mcmc_params1, true_r0, dist_type, time_elap, seed_count, prior, joint)
+
+
+#Plot multiple simulated data and print in title the params 

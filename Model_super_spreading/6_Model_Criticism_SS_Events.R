@@ -60,7 +60,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #Create folder for mcmc results 
   folder_mcmc = paste0(folder_results, '/mcmc')
-  ifelse(!dir.exists(file.path(folder__mcmc)), dir.create(file.path(folder__mcmc), recursive = TRUE), FALSE)
+  ifelse(!dir.exists(file.path(folder_mcmc)), dir.create(file.path(folder_mcmc), recursive = TRUE), FALSE)
   
   #MCMC chain
   for(i in 2:n) {
