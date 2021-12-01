@@ -364,3 +364,8 @@ out
 v2 <- rainbow(4)
 names(v2) <- unique(v1)
 v2[v1]
+
+#Save/load data - Option II - WORKING :d 
+saveRDS(newdf3, 'newdf3.rds')
+#remove(newdf3)
+d3 <- readRDS('newdf3.rds')

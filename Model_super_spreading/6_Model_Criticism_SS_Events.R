@@ -285,7 +285,7 @@ get_p_values <- function(column) {
   lt = length(which(column <= last_el)) #Needs to be less than or equal to 
   gt = length(which(column >= last_el)) #Needs to be greater than or equal to 
   min_val = min(lt, gt)
-  pvalue = min_val/length(column)
+  pvalue = min_val/(length(column) - 1) #Last row is the real data
   pvalue = pvalue #*2
   
   #Return p value 
