@@ -369,3 +369,11 @@ v2[v1]
 saveRDS(newdf3, 'newdf3.rds')
 #remove(newdf3)
 d3 <- readRDS('newdf3.rds')
+
+#Booleans
+if((1 < 5) & (mod(10, 5) == 0)) {
+  print('yes')
+}
+if(!(1 > 5 & mod(10, 5) == 0)) {
+  print('TRUE')
+}

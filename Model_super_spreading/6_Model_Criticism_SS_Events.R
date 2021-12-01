@@ -39,7 +39,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
-mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, rep, x0 = 1) { #burn_in = 2500
+mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) { #burn_in = 2500
   
   'Returns mcmc samples of alpha & acceptance rate'
   
@@ -57,6 +57,10 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   count_accept1 = 0; count_accept2 = 0;
   count_accept3 = 0; count_accept4 = 0; count_thin = 1
   prior = TRUE; flag_true = FALSE
+  
+  #Create folder for mcmc results 
+  folder_mcmc = paste0(folder_results, '/mcmc')
+  ifelse(!dir.exists(file.path(folder__mcmc)), dir.create(file.path(folder__mcmc), recursive = TRUE), FALSE)
   
   #MCMC chain
   for(i in 2:n) {
@@ -177,22 +181,24 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
     }
     
     #Get Summary Statistics
-    if(mod(i, thinning_factor) == 0){
+    if((i > burn_in) & (mod(i, thinning_factor) == 0)){
       #print('GETTING SUMMARY STATS')
       
       #If df of summary stats doesn't exist - create it
       if (!exists("df_summary_stats")) {
         #print('CREATE DF')
         flag_create = TRUE #Create df
-        df_summary_stats = get_summary_stats(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true)
+        df_summary_stats = get_summary_stats(data, i, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
         flag_create = FALSE #Now set to false - so new values just added as a list 
-        #print('df df_summary_stats')
-        #print(df_summary_stats)
+      
+        #Get indices of iterations
+        list_mcmc_iters = c(i)
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i],
-                                                                           beta_vec[i], gamma_vec[i], flag_create, flag_true)
-      }
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, i, alpha_vec[i],
+                                                                           beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
+        list_mcmc_iters = c(list_mcmc_iters, i)
+        }
       
       count_thin = count_thin + 1
       
@@ -201,13 +207,15 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #True summary stats - set as final row for comparison 
   flag_true = TRUE
-  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, alpha_vec[i],
-                                                                     beta_vec[i], gamma_vec[i], flag_create, flag_true)
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, i, alpha_vec[i],
+                                                                     beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
   print(df_summary_stats[nrow(df_summary_stats), ])
   
   #Save_RDS Summary stats 
   df_name  <- paste0("df_summary_stats_", rep)
   saveRDS(df_summary_stats, file = paste0(folder_results, '/', df_name, ".rds"))
+  #Save mcmc iterations
+  saveRDS(list_mcmc_iters, file = paste0(folder_mcmc, '/i_mcmc_list_', rep, '.rds'))
   
   #Final stats
   #alpha
@@ -231,12 +239,14 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
 }
 
 #Get summary stats
-get_summary_stats <- function(sim_data, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag, flag_true){
+get_summary_stats <- function(sim_data, i, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag, flag_true, folder_mcmc){
   
   'Get summary statisitcs of the simulated data'
   
   #Simulate data
   sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_vec_i, beta_vec_i, gamma_vec_i)
+  #Save data
+  saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
   
   'Original data as final comparion'
   if (flag_true){
@@ -295,7 +305,7 @@ get_p_values <- function(column) {
 }
 
 #RUN FOR MULTIPLE REPS TO GET P VALUES
-get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep){
+get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep, burn_in){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
   different summary statistics. saveRDS result in type/iter/rep subfolder'
@@ -329,7 +339,10 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     }
    
     #MCMC
-    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep, rep)
+    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep, rep, burn_in)
+    #Save mcmc params 
+    saveRDS(mcmc_params, file = paste0(folder_results, '/mcmc_params_rep_', rep, '.rds' ))
+    
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
     df_summary_stats = mcmc_params[10]
@@ -391,13 +404,14 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'I_ss_events'
-iter = 1
+model_type = 'ss_events'
+iter = 2
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 
 #Repitions 
-n = 10000
+n = 10500
 n_reps = 100
+burn_in = 500
 thinning_factor = 50 #(1/1000)*n;
 flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
 
@@ -414,8 +428,4 @@ df_p_values = results[[1]]
 #df_p_values = unlist(df_p_values)
 plot_p_vals(df_p_values)
 
-#Df
-newdf1 <- as.data.frame(df_p_values)
-#Plot
-plot_p_vals(newdf1)
 

@@ -56,8 +56,7 @@ plot_rep_results <- function(true_r0, model_type, sim_data_rep, df_sum_stats, li
   
 }
 
-
-#Apply
+#Apply function to inspect specific reps
 rep = 7 #14, 73
 get_rep_results(results_home, model_type, rep, true_r0)
 
