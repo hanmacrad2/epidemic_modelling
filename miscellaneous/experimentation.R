@@ -360,3 +360,7 @@ out = readRDS('df_summary_stats_2.RData')
 out = readRDS(paste0(folder_results, '/rep_2/df_summary_stats_2.RData'))
 out
 
+#Colours 
+v2 <- rainbow(4)
+names(v2) <- unique(v1)
+v2[v1]

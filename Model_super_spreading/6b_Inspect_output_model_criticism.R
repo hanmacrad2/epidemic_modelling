@@ -1,7 +1,57 @@
 #INSPECT OUTPUT OF MODEL CRITICISM
 
-#Look at specific iterations
+#Set up params
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/"
+
+#FUNCTIONS - GET DATA
+get_rep_results <- function(results_home, model_type, rep, true_r0){
+  
+  #Results inspect
+  results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep_interest, '/')
+  
+  #Data
+  sim_data_rep <- readRDS(paste0(results_inspect, 'ss_data.rds'))
+  df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
+  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_', rep, '.rds'))
+  
+  #Plot results
+  plot_rep_results(true_r0, sim_data_rep, df_sum_stats, list_p_vals)
+  
+}
+
+#Plot results 
+plot_rep_results <- function(true_r0, sim_data_rep, df_sum_stats, list_p_vals){
+  
+ 'Plot sim data, summary stats and true summary stat for a given mcmc rep' 
+  #Setup
+  par(mfrow = c(3,4))
+  len_data = length(list_p_vals)
+  colorsX <- rainbow(len_data+1)
+  
+  #Sim_data
+  #i.Infections
+  plot.ts(sim_data_rep, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          col = colorsX[1],
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #Columns
+  for (i in c(1:len_data)){
+    
+    hist(df_sum_stats[,i], breaks = 100, #freq = FALSE, 
+         #xlim = c(xmin, xmax),
+         xlab = paste('', toupper(colnames(df_sum_stats)[i])),
+         ylab = 'Num Samples',
+         col = colorsX[i+1],
+         main = paste('', toupper(colnames(df_sum_stats)[i]),', R0:', true_r0),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    abline(v = list_p_vals[i], col = 'red', lwd = 2)
+  }
+  
+}
+
+#Apply
+
 
 #1. SS EVENTS  - MAKE FUNCTION
 rep_interest = 14
@@ -11,6 +61,7 @@ setwd(results_inspect)
 #Data
 d14 <- readRDS('df_summary_stats_14.rds')
 ss14 <- readRDS('ss_data.rds')
+list_p_vals14 <- readRDS(paste0(results_inspect, 'list_p_vals_73.rds'))
 
 #Data
 rep_interest = 73
@@ -19,6 +70,12 @@ results_inspect
 setwd(results_inspect)
 d73 <- readRDS('df_summary_stats_73.rds')
 ss73 <- readRDS('ss_data.rds')
+plot.ts(ss73)
+#p vals
+list_p_vals <- readRDS('list_p_vals_73.rds')
+
+
+
 
 
 
