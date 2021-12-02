@@ -27,7 +27,7 @@ trim_t <- function(x){
 rename_cols <- function(df, list_old, list_new) {
   df_new = df
   setnames(df_new, old = list_old, new = list_new)
-  cat('new_cols', names(df_new))
+  #cat('new_cols', names(df_new))
   df_new 
 }
 

@@ -382,3 +382,14 @@ if(!(1 > 5 & mod(10, 5) == 0)) {
 listc = c(1)
 listc = c(listc, 2)
 listc
+
+#Rename columns
+#Rename cols
+list_old = c('sumX', 'medianX', 'maxX', 'stdX', 'val_75', 'val_87_5')
+list_new = c('sum_inf_counts', 'median_inf_count', 'max_inf_count',
+             'std_inf_counts', 'val_75_infs_counts', 'val_87_5_infs_counts'  )
+df_p_vals_II = rename_cols(df_p_values, list_old, list_new)
+names(df_p_vals_II)
+
+#Plot
+plot_p_vals(df_p_vals_II)

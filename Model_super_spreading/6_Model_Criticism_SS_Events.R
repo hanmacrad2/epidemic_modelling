@@ -404,8 +404,8 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'ss_events'
-iter = 2
+model_type = 'base_ss_inf'
+iter = 1
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 
 #Repitions 
@@ -428,19 +428,7 @@ print(time_elap)
 
 ############ INSPECT OUTPUT #######################
 #Extract
-df_p_values = results[[1]]
+df_p_values2 = results[[1]]
 #df_p_values = unlist(df_p_values)
-plot_p_vals(df_p_values)
-
-#Rename cols
-list_old = c('sumX', 'medianX', 'maxX', 'stdX', 'val_75', 'val_87_5')
-list_new = c('sum_inf_counts', 'median_inf_count', 'max_inf_count',
-             'std_inf_counts', 'val_75_infs_counts', 'val_87_5_infs_counts'  )
-df_p_vals_II = rename_cols(df_p_values, list_old, list_new)
-names(df_p_vals_II)
-
-#Plot
-plot_p_vals(df_p_vals_II)
-
-
+plot_p_vals(df_p_values2)
 
