@@ -256,12 +256,12 @@ get_summary_stats <- function(sim_data, i, alpha_vec_i, beta_vec_i, gamma_vec_i,
     if (create_df_flag){
       #Df
       summary_stats_results = data.frame(
-        sumX = sum(sim_data_params),
-        medianX = median(sim_data_params),
-        maxX = max(sim_data_params),
-        stdX = std(sim_data_params),
-        val_75 = quantile(sim_data_params)[4][1][1],
-        val_87_5 = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
+        sum_inf_counts = sum(sim_data_params),
+        median_inf_count = median(sim_data_params),
+        max_inf_count = max(sim_data_params),
+        std_inf_counts = std(sim_data_params),
+        val_75_infs_counts = quantile(sim_data_params)[4][1][1],
+        val_87_5_infs_counts = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
         max_dif = max(abs(diff(sim_data_params))),
         med_dif = median(abs(diff(sim_data_params))),
         mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
@@ -351,13 +351,13 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     if (rep == 1) { 
 
       #Create df; sum etc
-      df_p_values = data.frame(sumX = 
+      df_p_values = data.frame(sum_inf_counts = 
         list_p_vals[1],
-        medianX = list_p_vals[2],
-        maxX = list_p_vals[3],
-        stdX = list_p_vals[4],
-        val_75 = list_p_vals[5],
-        val_87_5 = list_p_vals[6],
+        median_inf_count = list_p_vals[2],
+        max_inf_count = list_p_vals[3],
+        std_inf_counts = list_p_vals[4],
+        val_75_infs_counts = list_p_vals[5],
+        val_87_5_infs_counts = list_p_vals[6],
         max_dif = list_p_vals[7],
         med_dif = list_p_vals[8],
         mean_upper_dif = list_p_vals[9],
@@ -419,7 +419,7 @@ flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) baslin
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-results = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep)
+results = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
 cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 ############ INSPECT OUTPUT #######################
@@ -427,5 +427,16 @@ cat('Time elapsed:', round(Sys.time() - start_time, 2))
 df_p_values = results[[1]]
 #df_p_values = unlist(df_p_values)
 plot_p_vals(df_p_values)
+
+#Rename cols
+list_old = c('sumX', 'medianX', 'maxX', 'stdX', 'val_75', 'val_87_5')
+list_new = c('sum_inf_counts', 'median_inf_count', 'max_inf_count',
+             'std_inf_counts', 'val_75_infs_counts', 'val_87_5_infs_counts'  )
+df_p_vals_II = rename_cols(df_p_values, list_old, list_new)
+names(df_p_vals_II)
+
+#Plot
+plot_p_vals(df_p_vals_II)
+
 
 
