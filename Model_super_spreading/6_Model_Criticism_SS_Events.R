@@ -188,14 +188,14 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
       if (!exists("df_summary_stats")) {
         #print('CREATE DF')
         flag_create = TRUE #Create df
-        df_summary_stats = get_summary_stats(data, i, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
+        df_summary_stats = get_summary_stats_sim_dataX(data, i, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
         flag_create = FALSE #Now set to false - so new values just added as a list 
       
         #Get indices of iterations
         list_mcmc_iters = c(i)
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, i, alpha_vec[i],
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_sim_dataX(data, i, alpha_vec[i],
                                                                            beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
         list_mcmc_iters = c(list_mcmc_iters, i)
         }
@@ -207,7 +207,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #True summary stats - set as final row for comparison 
   flag_true = TRUE
-  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, i, alpha_vec[i],
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_sim_dataX(data, i, alpha_vec[i],
                                                                      beta_vec[i], gamma_vec[i], flag_create, flag_true, folder_mcmc)
   print(df_summary_stats[nrow(df_summary_stats), ])
   
@@ -239,7 +239,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
 }
 
 #Get summary stats
-get_summary_stats <- function(sim_data, i, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag, flag_true, folder_mcmc){
+get_summary_stats_sim_dataX <- function(sim_data, i, alpha_vec_i, beta_vec_i, gamma_vec_i, create_df_flag, flag_true, folder_mcmc){
   
   'Get summary statisitcs of the simulated data'
   
@@ -341,7 +341,7 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     #MCMC
     mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep, rep, burn_in)
     #Save mcmc params 
-    saveRDS(mcmc_params, file = paste0(folder_results, '/mcmc_params_rep_', rep, '.rds' ))
+    saveRDS(mcmc_params, file = paste0(folder_results_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
     list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
@@ -420,7 +420,11 @@ start_time = Sys.time()
 print('Start time:')
 print(start_time)
 results = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
-cat('Time elapsed:', round(Sys.time() - start_time, 2))
+end_time = Sys.time()
+time_elap = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elap)
+#cat('Time elapsed:', round(Sys.time() - start_time, 2))
 
 ############ INSPECT OUTPUT #######################
 #Extract

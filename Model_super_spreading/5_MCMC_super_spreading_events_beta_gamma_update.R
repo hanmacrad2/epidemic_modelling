@@ -188,6 +188,7 @@ mcmc_ss_x4_prior <- function(data, n, sigma,  sigma_b, sigma_bg, prior, x0 = 1) 
 plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint = TRUE){
   
   #Plot Set up
+  #par(mar=c(1,1,1,1))
   plot.new()
   
   if (joint){
@@ -261,9 +262,9 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
   #Title
-  text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
-       line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
-  
+  # text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+  #      line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
+  # 
   #iii. Cumulative mean plots
   #r0 Mean
   plot2 = plot(seq_along(r0_mean), r0_mean,
