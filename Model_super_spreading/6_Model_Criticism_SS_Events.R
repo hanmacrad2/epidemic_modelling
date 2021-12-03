@@ -336,6 +336,7 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
       saveRDS(sim_data, file = paste0(folder_results_rep, '/base_data.rds'))
+      cat('simulate_branching')
     }
    
     #MCMC
@@ -405,6 +406,7 @@ plot_p_vals <- function(df_p_vals){
 
 ############# --- RUN P VALUES --- ######################################
 model_type = 'base_ss_inf'
+flags_data_type = c(FALSE, FALSE, TRUE) #1) ss_events, 2) s_spreaders, 3) basline
 iter = 1
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 
@@ -413,7 +415,7 @@ n = 10500
 n_reps = 100
 burn_in = 500
 thinning_factor = 50 #(1/1000)*n;
-flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
+
 
 #Start
 start_time = Sys.time()
