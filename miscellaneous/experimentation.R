@@ -393,3 +393,14 @@ names(df_p_vals_II)
 
 #Plot
 plot_p_vals(df_p_vals_II)
+
+#P value
+true_val = column[length(column)] #True value 
+#P value
+lt = length(which(column < true_val))/(length(column) - 1) #proportion less than true value
+lt = lt + 0.5* length(which(column == true_val))(length(column) - 1) #+ 0.5*prop equal to true value
+gt = length(which(column > true_val))/(length(column) - 1)  #proportion greater than true value
+gt = gt + 0.5*length(which(column < true_val))/(length(column) - 1) #+ 0.5*prop equal to true value
+pvalue = min(lt, gt)
+
+pvalue = min_val/(length(column) - 1)

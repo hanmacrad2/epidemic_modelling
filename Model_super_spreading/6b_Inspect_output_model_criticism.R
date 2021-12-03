@@ -1,6 +1,7 @@
 #INSPECT OUTPUT OF MODEL CRITICISM
 
 #Set up params
+source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R")
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/"
 
@@ -13,14 +14,14 @@ get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
   print(results_inspect)
   
   #Data
-  sim_data_rep <- readRDS(paste0(results_inspect, 'ss_data.rds'))
+  sim_data_rep <- readRDS(paste0(results_inspect, 'base_data.rds')) #sim_data.rds
   cat('Sum sim data = ', sum(sim_data_rep))
   df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
   list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_', rep, '.rds'))
   mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
   
   #Plot p vals & summary stats
-  plot_rep_results(true_r0, model_type, sim_data_rep, df_sum_stats_new, list_p_vals, upper_quant, trim_flag) 
+  plot_rep_results(true_r0, model_type, sim_data_rep, df_sum_stats, list_p_vals, upper_quant, trim_flag) 
   
   #Plot MCMC results 
   plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', 3.0, rep, TRUE, TRUE)
@@ -66,7 +67,7 @@ plot_rep_results <- function(true_r0, model_type, sim_data_rep, df_sum_stats, li
   }
   
 }
-
+s
 ###################################
 #INSPECT MCMC
 get_mcmc_runs <- function(results_home, sim_data, mcmc_params, list_idx){
@@ -121,7 +122,7 @@ get_mcmc_i <- function(i, mcmc_params, sim_data_path, colourX){
 }
 
 #Apply function to inspect specific reps
-rep = 26 #14, 73
+rep = 9 #26 #14, 73
 upper_quant = 1.0
 trim_flag = FALSE
 list_i = seq(from = 1000, to = 10000, by = 1000)

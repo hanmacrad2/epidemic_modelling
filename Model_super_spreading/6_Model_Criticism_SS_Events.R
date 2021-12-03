@@ -329,13 +329,13 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
     #Simulate data
     if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      saveRDS(sim_data, file = paste0(folder_results_rep, '/ss_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      saveRDS(sim_data, file = paste0(folder_results_rep, '/ssi_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-      saveRDS(sim_data, file = paste0(folder_results_rep, '/base_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
       cat('simulate_branching')
     }
    
