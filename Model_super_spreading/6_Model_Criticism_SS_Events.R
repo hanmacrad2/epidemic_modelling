@@ -332,6 +332,7 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
       saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+      cat('simulate ss individs')
       saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
@@ -405,8 +406,8 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'base_ss_inf'
-flags_data_type = c(FALSE, FALSE, TRUE) #1) ss_events, 2) s_spreaders, 3) basline
+model_type = 'ss_ind_sse_inf'
+flags_data_type = c(FALSE, TRUE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
 iter = 1
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 
@@ -430,7 +431,7 @@ print(time_elap)
 
 ############ INSPECT OUTPUT #######################
 #Extract
-df_p_values2 = results[[1]]
+df_p_valuesB = results[[1]]
 #df_p_values = unlist(df_p_values)
-plot_p_vals(df_p_values2)
+plot_p_vals(df_p_valuesB)
 
