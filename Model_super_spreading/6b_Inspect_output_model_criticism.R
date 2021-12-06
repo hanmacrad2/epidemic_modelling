@@ -7,14 +7,14 @@ results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading
 
 #FUNCTIONS - GET DATA
 get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
-                            list_old, list_new, upper_quant, trim_flag, list_i){
+                            list_old, list_new, upper_quant, trim_flag, list_i, time_elap){
   
   #Results inspect
   results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
   print(results_inspect)
   
   #Data
-  sim_data_rep <- readRDS(paste0(results_inspect, 'base_data.rds')) #sim_data.rds
+  sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
   cat('Sum sim data = ', sum(sim_data_rep))
   df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
   list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_', rep, '.rds'))
@@ -24,7 +24,7 @@ get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
   plot_rep_results(true_r0, model_type, sim_data_rep, df_sum_stats, list_p_vals, upper_quant, trim_flag) 
   
   #Plot MCMC results 
-  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', 3.0, rep, TRUE, TRUE)
+  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
   get_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
   
 }
@@ -67,7 +67,7 @@ plot_rep_results <- function(true_r0, model_type, sim_data_rep, df_sum_stats, li
   }
   
 }
-s
+
 ###################################
 #INSPECT MCMC
 get_mcmc_runs <- function(results_home, sim_data, mcmc_params, list_idx){
@@ -122,9 +122,10 @@ get_mcmc_i <- function(i, mcmc_params, sim_data_path, colourX){
 }
 
 #Apply function to inspect specific reps
-rep = 9 #26 #14, 73
-upper_quant = 1.0
-trim_flag = FALSE
+rep = 34 #9 #26 #14, 73
+upper_quant = 0.99 #1.0
+trim_flag = FALSE #TRUE #
 list_i = seq(from = 1000, to = 10000, by = 1000)
 list_i
-get_rep_results(results_home, model_type, iter, rep, true_r0, list_old, list_new, upper_quant, trim_flag, list_i)
+get_rep_results(results_home, model_type, iter, rep, true_r0, list_old, list_new,
+                upper_quant, trim_flag, list_i, time_elap)
