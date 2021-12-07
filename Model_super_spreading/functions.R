@@ -178,8 +178,37 @@ ss_mult = 10 #8
 sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
 plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
 
+###################################################################################
+# MODELS!
+
+###############################
+# BASELINE
+
+#Likelihood (log)
+log_like <- function(y, r0_dash){
+  
+  #Params
+  num_days = length(y)
+  shape_gamma = 6
+  scale_gamma = 1
+  
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  logl = 0
+  
+  for (t in 2:num_days) {
+    
+    lambda = r0_dash*sum(y[1:t-1]*rev(prob_infect[1:t-1]))
+    logl = logl + y[t]*log(lambda) - lambda
+    
+  }
+  
+  logl
+  
+}
+
 #*******************************************************************************
-#Model functions  - Super-spreading Model
+#SUPER-SPREADING MODEL
 
 #Log Likelihood 
 log_like_ss <- function(x, alphaX, betaX, gammaX){

@@ -45,7 +45,7 @@ log_like <- function(y, r0_dash){
 
 #***********************************
 #MCMC
-MetropolisHastings_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
+mcmc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   
   'Returns mcmc samples of R0'
   
@@ -58,25 +58,25 @@ MetropolisHastings_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
   
   #MCMC chain
   for(i in 2:n) {
-    Y <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
-    if(Y < 0){
-      Y = abs(Y)
+    r0_dash <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
+    if(r0_dash < 0){
+      r0_dash = abs(r0_dash)
     }
     
     #Alpha
-    log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    log_alpha = log_like(data, r0_dash) - log_like(data, r0_vec[i-1]) - r0_dash + r0_vec[i-1] #exponential prior
+    #log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) 
     #Should include: Likelihood + prior + propogsal density x2 (Previous time step & Current time step)
     
     if (is.na(log_alpha)){
       print('na value')
-      sprintf("Y: %i", Y)
+      sprintf("r0_dash: %i", r0_dash)
     }
     if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
-      r0_vec[i] <- Y
+      r0_vec[i] <- r0_dash
       count_accept = count_accept + 1
     } else {
       r0_vec[i] <- r0_vec[i-1]
-      count_reject = count_reject + 1
     }
   }
   #Final stats
