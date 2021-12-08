@@ -39,16 +39,24 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 ################################################################################
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
-
-mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results, x0 = 1) {
+mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, flag_dt, x0 = 1) { #burn_in = 2500
   
-  'Returns mcmc samples of R0'
+  'Returns mcmc samples of alpha & acceptance rate'
   
-  #Set up
-  r0_vec <- vector('numeric', n); r0_vec[1] <- x0
-  U <- runif(n)
-  count_accept = 0;   flag_true = FALSE
-  #cat('flag_dt', flag_dt[3])
+  #Initialise params
+  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
+  alpha_vec[1] <- x0; beta_vec[1] <- x0;
+  gamma_vec[1] <- x0; r0_vec[1] <- x0;
+  
+  #Extract params
+  sigma_a = sigma[1]; sigma_b = sigma[2]
+  sigma_g = sigma[3]; sigma_bg = sigma[4];
+  
+  #Result vectors
+  count_accept1 = 0; count_accept2 = 0;
+  count_accept3 = 0; count_accept4 = 0;
+  prior = TRUE; flag_true = FALSE
   
   #Create folder for mcmc results 
   folder_mcmc = paste0(folder_results, '/mcmc')
@@ -56,28 +64,123 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
   
   #MCMC chain
   for(i in 2:n) {
-    r0_dash <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
-    if(r0_dash < 0){
-      r0_dash = abs(r0_dash)
+    
+    #******************************************************
+    #alpha
+    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma_a) 
+    #cat("alpha dash: ", alpha_dash, "\n")
+    
+    if(alpha_dash < 0){
+      alpha_dash = abs(alpha_dash)
     }
     
-    #Alpha
-    log_alpha = log_like(data, r0_dash) - log_like(data, r0_vec[i-1]) - r0_dash + r0_vec[i-1] #exponential prior
-    #log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    #log alpha
+    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
+    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior2
     
-    #Metropolis Step
-    if (is.na(log_alpha)){
-      print('na value')
-      sprintf("r0_dash: %i", r0_dash)
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
     }
-    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
-      r0_vec[i] <- r0_dash
-      count_accept = count_accept + 1
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      #if(log(runif(1)) < log_accept_prob) {
+      alpha_vec[i] <- alpha_dash
+      count_accept1 = count_accept1 + 1
     } else {
-      r0_vec[i] <- r0_vec[i-1]
+      alpha_vec[i] <- alpha_vec[i-1]
     }
     
-    #Summary Stats 
+    #************************************************************************
+    #beta
+    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
+    #cat("Beta dash: ", beta_dash, "\n")
+    if(beta_dash < 0){
+      beta_dash = abs(beta_dash)
+    }
+    
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+    log_accept_prob = logl_new - logl_prev
+    
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      beta_vec[i] <- beta_dash
+      count_accept2 = count_accept2 + 1
+    } else {
+      beta_vec[i] <- beta_vec[i-1]
+    }
+    
+    #************************************************************************
+    #gamma
+    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_g) 
+    
+    if(gamma_dash < 1){
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+    }
+    
+    #Acceptance Probability
+    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
+    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+    log_accept_prob = logl_new - logl_prev 
+    
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      gamma_vec[i] <- gamma_dash
+      count_accept3 = count_accept3 + 1
+    } else {
+      gamma_vec[i] <- gamma_vec[i-1]
+    }
+    
+    #R0
+    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
+    
+    #*****************************************************
+    #Gamma-Beta
+    gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg)#Alter sigma_bg depending on acceptance rate. 
+    #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
+    
+    if(gamma_dash < 1){ #If less then 1
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+    }
+    
+    #New beta 
+    beta_new = (r0_vec[i] - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
+    
+    if(beta_new >= 0){ #Only accept values of beta > 0
+      
+      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_dash)
+      logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
+      log_accept_prob = logl_new - logl_prev  
+      
+      #Priors
+      if (prior){
+        log_accept_prob = log_accept_prob - beta_dash + beta_vec[i]
+      }
+      
+      #Metropolis Step
+      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+        beta_vec[i] <- beta_new
+        count_accept4 = count_accept4 + 1
+      } 
+      
+    }
+    
+    #Get Summary Statistics
     if((i > burn_in) & (mod(i, thinning_factor) == 0)){
       #print('GETTING SUMMARY STATS')
       
@@ -85,35 +188,44 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
       if (!exists("df_summary_stats")) {
         #print('CREATE DF')
         flag_create = TRUE #Create df
-        df_summary_stats = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt, flag_create, flag_true, folder_mcmc)
+        df_summary_stats = get_summary_stats_sim_dataX(data, i, alpha_vec[i], beta_vec[i], gamma_vec[i], flag_dt, flag_create, flag_true, folder_mcmc)
         flag_create = FALSE #Now set to false - so new values just added as a list 
         
         #Get indices of iterations
         list_mcmc_iters = c(i)
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt,
-                                                                                     flag_create, flag_true, folder_mcmc)
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_sim_dataX(data, i, alpha_vec[i],
+                                                                                     beta_vec[i], gamma_vec[i], flag_dt, flag_create, flag_true, folder_mcmc)
         list_mcmc_iters = c(list_mcmc_iters, i)
       }
       
     }
   }
   
-  #Get Summary Statistics
   #True summary stats - set as final row for comparison 
   flag_true = TRUE
-  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt,
-                                                                           flag_create, flag_true, folder_mcmc)
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_sim_dataX(data, i, alpha_vec[i],
+                                                                               beta_vec[i], gamma_vec[i], flag_dt, flag_create, flag_true, folder_mcmc)
   print(df_summary_stats[nrow(df_summary_stats), ])
   
   #Save_RDS Summary stats 
-  saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
+  df_name  <- paste0("df_summary_stats_", rep)
+  saveRDS(df_summary_stats, file = paste0(folder_results, '/', df_name, ".rds"))
+  #Save mcmc iterations
   saveRDS(list_mcmc_iters, file = paste0(folder_mcmc, '/i_mcmc_list_', rep, '.rds'))
+  
+  #Final stats
+  #alpha
+  accept_rate1 = 100*count_accept1/n
+  accept_rate2 = 100*count_accept2/n
+  accept_rate3 = 100*count_accept3/n
+  accept_rate4 = 100*count_accept4/n
+  #cat("Acceptance rate1 = ",accept_rate1, '\n')
   
   #SINGLE P VALUE
   #Get p values - comparing  summary stat columns to true value 
-  list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
+  list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec)) 
   #saveRDS p values for rep
   name_list_p_vals  <- paste0("list_p_vals_", rep)
   saveRDS(list_p_vals, file = paste0(folder_results, '/', name_list_p_vals, ".rds"))
@@ -122,36 +234,33 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
   list_p_vals_list = apply(df_summary_stats, 2, FUN = function(vec) get_p_values_list(vec))
   saveRDS(list_p_vals_list, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
   
-  #Final stats
-  accept_rate = 100*(count_accept/n)
-  #cat("Acceptance rate = ", accept_rate) 
-  #r0_vec = r0_vec[burn_in:n]
-  
-  return(list(r0_vec, accept_rate, list_p_vals, df_summary_stats))
-  
+  #Return alpha, acceptance rate
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+              accept_rate1, accept_rate2, accept_rate3,
+              accept_rate4,
+              list_p_vals, df_summary_stats))
 }
 
 #Get summary stats
-get_summary_stats_baseX <- function(sim_data, i, r0_vec_i, flag_dt, create_df_flag, flag_true, folder_mcmc){
+get_summary_stats_sim_dataX <- function(sim_data, i, alpha_vec_i, beta_vec_i, gamma_vec_i, flag_dt, create_df_flag, flag_true, folder_mcmc){
   
   'Get summary statisitcs of the simulated data'
-  flag3 = flag_dt[3]
-  #cat('flag3', flag3)
-  r0 = model_params[4]
-  cat('r0 = ', r0)
+  
+  #Data_type
+  flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   
   #Simulate data
-  if (flag3){
+  if (flag1){
+    sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+  } else if (flag3){
+    r0 = alpha_vec_i + beta_vec_i*gamma_vec_i
     sim_data_params = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-    saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
-    #cat('simulate_branching')
   }
-
   
   #Save data
   saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
   
-  'Original data as final comparison'
+  'Original data as final comparion'
   if (flag_true){
     sim_data_params = sim_data
   }
@@ -196,11 +305,11 @@ get_p_values <- function(column) {
   #Final val
   last_el = column[length(column)] #True value 
   #P value
-  lt = length(which(column <= last_el)) #Needs to be less than or equal to 
-  gt = length(which(column >= last_el)) #Needs to be greater than or equal to 
+  lt = length(which(column < last_el)) #Needs to be less than or equal to? or Change to Strict?
+  gt = length(which(column > last_el))  #Needs to be greater than or equal to? or Change to Strict?
   min_val = min(lt, gt)
   pvalue = min_val/(length(column) - 1) #Last row is the real data
-  pvalue = pvalue #*2
+  #pvalue = pvalue #*2
   
   #Return p value 
   pvalue
@@ -223,7 +332,7 @@ get_p_values_list <- function(column){
 }
 
 #RUN FOR MULTIPLE REPS TO GET P VALUES
-get_p_values_total_base <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep, burn_in){
+get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, flag_dt, folder_results, rep, burn_in){
   
   'Run model criticism for n_reps iterations to get a sample of p values for a number of
   different summary statistics. saveRDS result in type/iter/rep subfolder'
@@ -255,24 +364,24 @@ get_p_values_total_base <- function(n, n_reps, model_params, sigma, thinning_fac
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
       saveRDS(sim_data, file = paste0(folder_results_rep, '/sim_data.rds'))
-      #cat('simulate_branching')
+      cat('simulate_branching')
     }
     
-    #MCMC  function(data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results, x0 = 1) {
-    mcmc_params = mcmc_r0_model_crit_x1_rep(sim_data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results_rep)
+    #MCMC
+    mcmc_params = mcmc_ss_mod_crit(sim_data, n, sigma, thinning_factor, folder_results_rep, rep, burn_in, flag_dt)
     #Save mcmc params 
     saveRDS(mcmc_params, file = paste0(folder_results_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
-    list_p_vals = mcmc_params[3]
+    list_p_vals = mcmc_params[9]
     list_p_vals = unlist(list_p_vals)
-    df_summary_stats = mcmc_params[4]
+    df_summary_stats = mcmc_params[10]
     df_summary_stats = unlist(df_summary_stats)
     
     if (rep == 1) { 
       
       #Create df; sum etc
       df_p_values = data.frame(sum_inf_counts = 
-                               list_p_vals[1],
+                                 list_p_vals[1],
                                median_inf_count = list_p_vals[2],
                                max_inf_count = list_p_vals[3],
                                std_inf_counts = list_p_vals[4],
@@ -324,8 +433,8 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'ss_events' #base_sim_base_inf' #'ss_ind_sse_inf'
-flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
+model_type = 'base_ss_inf' #'ss_ind_sse_inf'
+flags_data_type = c(FALSE, TRUE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
 iter = 1
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 print(folder_results)
@@ -341,7 +450,7 @@ thinning_factor = 50 #(1/1000)*n;
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-results = get_p_values_total_base(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
+results = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
@@ -350,10 +459,10 @@ print(time_elap)
 
 ############ INSPECT OUTPUT #######################
 #Extract
-df_p_valuesC = results[[1]]
+df_p_valuesB = results[[1]]
 #df_p_values = unlist(df_p_values)
-plot_p_vals(df_p_valuesC)
+plot_p_vals(df_p_valuesB)
 
 #Get p values
-#df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
-#plot_p_vals(df_pvals3)
+df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
+plot_p_vals(df_pvals3)

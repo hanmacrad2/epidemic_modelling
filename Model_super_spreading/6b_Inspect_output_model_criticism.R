@@ -121,8 +121,9 @@ get_mcmc_i <- function(i, mcmc_params, sim_data_path, colourX){
   
 }
 
-#Apply function to inspect specific reps
-rep = 34 #9 #26 #14, 73
+##############################################
+#APPLY FUNCTION TO INSPECT SPECIFIC REPS
+rep = 68 #23 #6 #34 #9 #26 #14, 73
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 1000, to = 10000, by = 1000)

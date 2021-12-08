@@ -225,10 +225,8 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   
   #SINGLE P VALUE
   #Get p values - comparing  summary stat columns to true value 
-  list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec))
-  #saveRDS p values for rep
-  name_list_p_vals  <- paste0("list_p_vals_", rep)
-  saveRDS(list_p_vals, file = paste0(folder_results, '/', name_list_p_vals, ".rds"))
+  list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec)) 
+  saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_', rep, ".rds"))
   
   #ALL RELATED P VALUES
   list_p_vals_list = apply(df_summary_stats, 2, FUN = function(vec) get_p_values_list(vec))
@@ -247,7 +245,7 @@ get_summary_stats_sim_dataX <- function(sim_data, i, alpha_vec_i, beta_vec_i, ga
   'Get summary statisitcs of the simulated data'
   
   #Simulate data
-  sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_vec_i, beta_vec_i, gamma_vec_i)
+  sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
   #Save data
   saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
   
@@ -295,12 +293,34 @@ get_p_values <- function(column) {
   
   #Final val
   last_el = column[length(column)] #True value 
+  cat('last_el;', last_el)
+  num_iters = length(column) - 1
   #P value
-  lt = length(which(column <= last_el)) #Needs to be less than or equal to 
-  gt = length(which(column >= last_el)) #Needs to be greater than or equal to 
+  prop_lt = length(which(column < last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  cat('prop_lt;', prop_lt)
+  prop_gt = length(which(column > last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  cat('prop_gt;', prop_gt)
+  pvalue = min(prop_lt, prop_gt)
+  cat('pvalue;', pvalue)
+  
+  #Return p value 
+  pvalue
+  
+}
+
+#Get p values - comparing  summary stat columns to true value 
+get_p_values_orig <- function(column) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  last_el = column[length(column)] #True value 
+  
+  #P value
+  lt = length(which(column < last_el)) #Needs to be less than or equal to? or Change to Strict?
+  gt = length(which(column > last_el))  #Needs to be greater than or equal to? or Change to Strict?
   min_val = min(lt, gt)
   pvalue = min_val/(length(column) - 1) #Last row is the real data
-  pvalue = pvalue #*2
+  #pvalue = pvalue #*2
   
   #Return p value 
   pvalue
@@ -424,17 +444,17 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'base_ss_inf' #'ss_ind_sse_inf'
-flags_data_type = c(FALSE, TRUE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
-iter = 1
+model_type = 'ss_events' #base_ss_inf' #'ss_ind_sse_inf'
+flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
+iter = 4
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 print(folder_results)
 
 #Repitions 
-n = 10500
+n = 3500
 n_reps = 100
 burn_in = 500
-thinning_factor = 50 #(1/1000)*n;
+thinning_factor = 100 #(1/1000)*n;
 
 
 #Start
@@ -450,10 +470,9 @@ print(time_elap)
 
 ############ INSPECT OUTPUT #######################
 #Extract
-df_p_valuesB = results[[1]]
-#df_p_values = unlist(df_p_values)
-plot_p_vals(df_p_valuesB)
+df_p_values = results[[1]]
+plot_p_vals(df_p_values)
 
 #Get p values
-df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
-plot_p_vals(df_pvals3)
+#df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
+#plot_p_vals(df_pvals3)

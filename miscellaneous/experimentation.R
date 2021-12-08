@@ -404,3 +404,33 @@ gt = gt + 0.5*length(which(column < true_val))/(length(column) - 1) #+ 0.5*prop 
 pvalue = min(lt, gt)
 
 pvalue = min_val/(length(column) - 1)
+
+###########################################
+#DATA FRAME
+df1 <- data.frame(ID = c(1, 2, 4, 6, 8, 4, 5),
+                  var1 = c(2, 3, 7, 6, 8, 4, 6),
+                  var2 = c(7, 12, 14, 16, 8, 4, 7))
+df1
+
+##################################################################################
+# Apply functions
+
+get_p_values <- function(column) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  last_el = column[length(column)] #True value 
+  num_iters = length(column) - 1
+  #P value
+  prop_lt = length(which(column < last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  prop_gt = length(which(column > last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  pvalue = min(prop_lt, prop_gt)
+  
+  #Return p value 
+  pvalue
+  
+}
+
+list_p_vals_list = apply(df1, 2, FUN = function(vec) get_p_values(vec))
+
+
