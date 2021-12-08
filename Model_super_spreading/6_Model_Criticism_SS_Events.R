@@ -294,16 +294,24 @@ get_p_values <- function(column) {
   #Final val
   last_el = column[length(column)] #True value 
   cat('last_el;', last_el)
+  print("")
   num_iters = length(column) - 1
   #P value
   prop_lt = length(which(column < last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
   cat('prop_lt;', prop_lt)
+  print("")
   prop_gt = length(which(column > last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
   cat('prop_gt;', prop_gt)
+  print("")
   pvalue = min(prop_lt, prop_gt)
   cat('pvalue;', pvalue)
+  print("")
+  cat('pvalue*2;', 2*pvalue)
+  print("")
+  print("****************")
   
   #Return p value 
+  pvalue = pvalue*2
   pvalue
   
 }
