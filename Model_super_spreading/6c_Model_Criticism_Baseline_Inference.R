@@ -40,7 +40,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 # MCMC - FOUR PARAMETER UPDATES
 ################################################################################
 
-mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results, x0 = 1) {
+mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, rep, folder_results, x0 = 1) {
   
   'Returns mcmc samples of R0'
   
@@ -48,7 +48,6 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
   r0_vec <- vector('numeric', n); r0_vec[1] <- x0
   U <- runif(n)
   count_accept = 0;   flag_true = FALSE
-  #cat('flag_dt', flag_dt[3])
   
   #Create folder for mcmc results 
   folder_mcmc = paste0(folder_results, '/mcmc')
@@ -85,14 +84,14 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
       if (!exists("df_summary_stats")) {
         #print('CREATE DF')
         flag_create = TRUE #Create df
-        df_summary_stats = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt, flag_create, flag_true, folder_mcmc)
+        df_summary_stats = get_summary_stats_baseX(data, i, r0_vec[i], flag_create, flag_true, folder_mcmc)
         flag_create = FALSE #Now set to false - so new values just added as a list 
         
         #Get indices of iterations
         list_mcmc_iters = c(i)
         
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt,
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i],
                                                                                      flag_create, flag_true, folder_mcmc)
         list_mcmc_iters = c(list_mcmc_iters, i)
       }
@@ -103,7 +102,7 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
   #Get Summary Statistics
   #True summary stats - set as final row for comparison 
   flag_true = TRUE
-  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i], flag_dt,
+  df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_baseX(data, i, r0_vec[i],
                                                                            flag_create, flag_true, folder_mcmc)
   print(df_summary_stats[nrow(df_summary_stats), ])
   
@@ -132,23 +131,12 @@ mcmc_r0_model_crit_x1_rep <- function(data, n, sigma, burn_in, thinning_factor, 
 }
 
 #Get summary stats
-get_summary_stats_baseX <- function(sim_data, i, r0_vec_i, flag_dt, create_df_flag, flag_true, folder_mcmc){
+get_summary_stats_baseX <- function(sim_data, i, r0_vec_i, create_df_flag, flag_true, folder_mcmc){
   
   'Get summary statisitcs of the simulated data'
-  flag3 = flag_dt[3]
-  #cat('flag3', flag3)
-  r0 = model_params[4]
-  cat('r0 = ', r0)
   
-  #Simulate data
-  if (flag3){
-    sim_data_params = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-    saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
-    #cat('simulate_branching')
-  }
-
-  
-  #Save data
+  #Data
+  sim_data_params = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
   saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
   
   'Original data as final comparison'
@@ -189,8 +177,38 @@ get_summary_stats_baseX <- function(sim_data, i, r0_vec_i, flag_dt, create_df_fl
   
 }
 
+
 #Get p values - comparing  summary stat columns to true value 
 get_p_values <- function(column) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  last_el = column[length(column)] #True value 
+  cat('last_el;', last_el)
+  print("")
+  num_iters = length(column) - 1
+  #P value
+  prop_lt = length(which(column < last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  cat('prop_lt;', prop_lt)
+  print("")
+  prop_gt = length(which(column > last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  cat('prop_gt;', prop_gt)
+  print("")
+  pvalue = min(prop_lt, prop_gt)
+  cat('pvalue;', pvalue)
+  print("")
+  cat('pvalue*2;', 2*pvalue)
+  print("")
+  print("****************")
+  
+  #Return p value 
+  pvalue = pvalue*2
+  pvalue
+  
+}
+
+#Get p values - comparing  summary stat columns to true value 
+get_p_values_orig <- function(column) {
   'Get p values - comparing  summary stat columns to true value'
   
   #Final val
@@ -258,8 +276,8 @@ get_p_values_total_base <- function(n, n_reps, model_params, sigma, thinning_fac
       #cat('simulate_branching')
     }
     
-    #MCMC  function(data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results, x0 = 1) {
-    mcmc_params = mcmc_r0_model_crit_x1_rep(sim_data, n, sigma, burn_in, thinning_factor, flag_dt, rep, folder_results_rep)
+    #MCMC  function(data, n, sigma, burn_in, thinning_factor, rep, folder_results, x0 = 1) {
+    mcmc_params = mcmc_r0_model_crit_x1_rep(sim_data, n, sigma, burn_in, thinning_factor, rep, folder_results_rep)
     #Save mcmc params 
     saveRDS(mcmc_params, file = paste0(folder_results_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
@@ -335,7 +353,6 @@ n = 10500
 n_reps = 100
 burn_in = 500
 thinning_factor = 50 #(1/1000)*n;
-
 
 #Start
 start_time = Sys.time()

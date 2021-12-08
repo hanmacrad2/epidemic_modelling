@@ -288,7 +288,7 @@ get_summary_stats_sim_dataX <- function(sim_data, i, alpha_vec_i, beta_vec_i, ga
 }
 
 #Get p values - comparing  summary stat columns to true value 
-get_p_values <- function(column) {
+get_p_values <- function(column) { 
   'Get p values - comparing  summary stat columns to true value'
   
   #Final val
@@ -452,18 +452,17 @@ plot_p_vals <- function(df_p_vals){
 }
 
 ############# --- RUN P VALUES --- ######################################
-model_type = 'ss_events' #base_ss_inf' #'ss_ind_sse_inf'
-flags_data_type = c(TRUE, FALSE, FALSE) #1) ss_events, 2) s_spreaders, 3) basline
-iter = 4
+model_type = 'ss_events' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
+iter = 5
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 print(folder_results)
 
 #Repitions 
-n = 3500
+n = 10500
 n_reps = 100
 burn_in = 500
 thinning_factor = 100 #(1/1000)*n;
-
 
 #Start
 start_time = Sys.time()
@@ -480,6 +479,38 @@ print(time_elap)
 #Extract
 df_p_values = results[[1]]
 plot_p_vals(df_p_values)
+
+########################################
+#RUN II
+model_type = 'base_sim_sse_inf' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+flags_data_type = c(FALSE, TRUE, TRUE) #1)ss_events, 2) ss_individuals, 3) basline
+iter = 1
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
+print(folder_results)
+
+#Repitions 
+n = 10500
+n_reps = 100
+burn_in = 500
+thinning_factor = 100 #(1/1000)*n;
+
+#Start
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+resultsII = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
+end_time = Sys.time()
+time_elapII = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elapII)
+#cat('Time elapsed:', round(Sys.time() - start_time, 2))
+
+############ INSPECT OUTPUT #######################
+#Extract
+df_p_valuesII = results[[1]]
+plot_p_vals(df_p_valuesII)
+
+
 
 #Get p values
 #df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))

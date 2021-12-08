@@ -740,6 +740,74 @@ plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
   
 }
 
+###############################################################################
+#FUNCTION TO PLOT 1x4 DASHBOARD OF MCMC RESULTS FOR BASE MODEL
+plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed_count){
+  
+  #Plot Set up
+  #par(mar=c(1,1,1,1))
+  plot.new()
+  par(mfrow=c(2,2))
+  
+  #Extract r0
+  r0_mcmc = mcmc_params[1]
+  r0_mcmc = unlist(r0_mcmc)
+  
+  #Cumulative means + param sample limits
+  #r0
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  r0_lim = max(true_r0, max(r0_mcmc))
+  r0_lim2 = max(true_r0, r0_mean)
+  
+  
+  #***********
+  #* Plots *
+  
+  #i.Infections
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts, ", "r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #ii. MCMC Trace Plots
+  plot.ts(r0_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
+          main = paste("MCMC SS Events, true r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = true_r0, col = 'orange', lwd = 2) #True = green
+  
+  #iii. Cumulative mean plots
+  #r0 Mean
+  plot2 = plot(seq_along(r0_mean), r0_mean,
+               ylim=c(0, r0_lim),
+               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = true_r0, col = 'orange', lwd = 2)
+  
+  #iv. Histogram
+  hist(r0_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'R0 total', #ylab = 'Density', 
+       main = paste('R0 total MCMC samples. Prior = ', prior),
+       xlim=c(0, r0_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = true_r0, col = 'orange', lwd = 2)
+  
+  #Final Mean Stats
+  data_10_pc = 0.5*n #50%
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Results
+  df_results <- data.frame(
+    R0 = true_r0, 
+    R0_mc = r0_mcmc_mean,
+    accept_rate_r0 = round(mcmc_params[[2]],2),
+    time_elap = round(time_elap,2)) 
+  
+  print(df_results)
+  
+}
+
+###############################################################################
+#FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
 plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint = TRUE){
   
   #Plot Set up
@@ -955,4 +1023,3 @@ plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total
   print(df_results)
   
 }
-
