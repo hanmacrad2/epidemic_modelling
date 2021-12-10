@@ -210,8 +210,7 @@ mcmc_ss_mod_crit <- function(data, n, sigma, thinning_factor, folder_results, re
   print(df_summary_stats[nrow(df_summary_stats), ])
   
   #Save_RDS Summary stats 
-  df_name  <- paste0("df_summary_stats_", rep)
-  saveRDS(df_summary_stats, file = paste0(folder_results, '/', df_name, ".rds"))
+  saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
   #Save mcmc iterations
   saveRDS(list_mcmc_iters, file = paste0(folder_mcmc, '/i_mcmc_list_', rep, '.rds'))
   
@@ -245,7 +244,7 @@ get_summary_stats_sim_dataX <- function(sim_data, i, alpha_vec_i, beta_vec_i, ga
   'Get summary statisitcs of the simulated data'
   
   #Simulate data
-  sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+  sim_data_params = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_vec_i, beta_vec_i, gamma_vec_i)
   #Save data
   saveRDS(sim_data_params, file = paste0(folder_mcmc, '/sim_data_iter_', i, '.rds' ))
   

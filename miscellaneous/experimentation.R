@@ -407,9 +407,9 @@ pvalue = min_val/(length(column) - 1)
 
 ###########################################
 #DATA FRAME
-df1 <- data.frame(ID = c(1, 2, 4, 6, 8, 4, 5),
-                  var1 = c(2, 3, 7, 6, 8, 4, 6),
-                  var2 = c(7, 12, 14, 16, 8, 4, 7))
+df1 <- data.frame(ID = c(1, 2, 4, 6, 8, 4, 5, 8),
+                  var1 = c(2, 3, 7, 6, 8, 4, 16, 9),
+                  var2 = c(7, 12, 14, 16, 8, 4, 2, 7))
 df1
 
 df2 <- data.frame(id1 = c(list_p_vals_list[1], list_p_vals_list[2], list_p_vals_list[1]),
@@ -453,3 +453,75 @@ for(i in seq(burn_in, 2000, by = thinning_factor)){
 list_gt1 = apply(df_pvals_ss, 2, FUN = function(vec) length(which(vec > 1.0)))
 list_gt1
 #:D None greater than zero
+
+
+list_p_vals = apply(df_summary_stats, 2, FUN = function(vec) get_p_values(vec)) 
+
+###########
+#APPLY FUNCTION WITH TWO VALUES 
+get_p_values <- function(column) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  last_el = column[length(column)] #True value 
+  num_iters = length(column) - 1
+  #P value
+  prop_lt = length(which(column < last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  prop_gt = length(which(column > last_el))/num_iters + 0.5*(length(which(column == last_el)) - 1)/num_iters
+  pvalue = min(prop_lt, prop_gt)
+  
+  #Return p value 
+  pvalue
+  
+}
+
+#Version II
+get_p_values <- function(col_sum_stat, col_true_val) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  num_iters = length(col_sum_stat)# - 1
+  #P value
+  prop_lt = length(which(col_sum_stat < col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  prop_gt = length(which(col_sum_stat > col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  pvalue = min(prop_lt, prop_gt)
+  
+  #Return p value 
+  pvalue
+  
+}
+
+#Two vars 
+#sapply(df1, myfxn,var2=var2)
+true_val = c(6, 13, 15, 14, 7, 6, 8)
+list_p_vals = apply(df1, 2, FUN = function(vec) get_p_values(vec), true_val = true_val) 
+list_p_vals
+
+list_p_vals = apply(df1, 2, get_p_values, true_val = true_value) 
+list_p_vals
+#to do
+apply(df1, function(x) f(x, 10))
+
+#SAPPLY
+sapply(1:ncol(df1), function(x) get_p_values(df1[,x], true_val))
+
+#Check
+getsum <- function(v1,v2) {
+ v1 + v2
+}
+a = sapply(1:ncol(df1), function(x) getsum(df1[,x], df1[,x]))
+
+#FINAL ATTEMPT
+df_true <- data.frame(ID = c(6),
+                  var1 = c(7),
+                  var2 = c(10))
+df_true
+
+df_true <- data.frame(ID = c(1, 2, 4, 6, 8, 4, 5, 8))
+df_true
+
+list_p_vals = sapply(1:ncol(df1), function(x) get_p_values(df1[,x], df_true[,x])) #df_summary_stats
+a
+
+#other
+list_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values(df_summary_stats[,x], df_true[,x])) 

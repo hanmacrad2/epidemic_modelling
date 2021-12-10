@@ -216,12 +216,84 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_result
 
 ######################################################
 #2.  MODEL CRITICISM - GET SUMMARY STATS
-get_mcmc_rep <- function(results_home, model_type, iter, rep){
+get_p_values <- function(col_sum_stat, col_true_val) {
+  'Get p values - comparing  summary stat columns to true value'
+  
+  #Final val
+  num_iters = length(col_sum_stat)# - 1
+  #P value
+  prop_lt = length(which(col_sum_stat < col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  prop_gt = length(which(col_sum_stat > col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  pvalue = min(prop_lt, prop_gt)
+  
+  #Return p value 
+  pvalue
+  
+}
+
+#Save all p vals
+get_p_values_list <- function(col_sum_stat, col_true_val){
+  'Save all associated p vals' 
+  
+  #Final val
+  num_iters = length(col_sum_stat)# - 1
+  #P value
+  prop_lt = length(which(col_sum_stat < col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  prop_gt = length(which(col_sum_stat > col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
+  pvalue = min(prop_lt, prop_gt)
+  eq_half = 0.5*(length(which(col_sum_stat == col_true_val)))
+  
+  #Return p value 
+  return(list(prop_lt, prop_gt, pvalue, eq_half))
+}
+
+#Get summary statisitcs
+get_summary_stats <- function(data, rep, flag_create){
+  
+  'Get summary statisitcs of the simulated data'
+  if (flag_create){
+    
+    #Df
+    summary_stats_results = data.frame(
+      sum_inf_counts = sum(data),
+      median_inf_count = median(data),
+      max_inf_count = max(data),
+      std_inf_counts = std(data),
+      val_75_infs_counts = quantile(data)[4][1][1],
+      val_87_5_infs_counts = mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
+      max_dif = max(abs(diff(data))),
+      med_dif = median(abs(diff(data))),
+      mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
+      sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
+      sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
+      
+    )
+    
+  } else {
+    #List
+    summary_stats_results = list(sum(data), median(data), max(data),
+                                 std(data), quantile(data)[4][1][1], 
+                                 mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
+                                 max(abs(diff(data))), median(abs(diff(data))),
+                                 mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
+                                 sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
+                                 sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
+    )
+  }
+  
+  summary_stats_results
+  
+}
+
+#GET SUMMARY STATS & P VALUES FOR ALL MCMC REPS
+get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
+  
+  'Get summary stats and p vals for all mcmc reps'
   
   for(rep in 1:n_reps) {
     
     #Get results
-    results_rep = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
+    results_rep = paste0(base_folder_current, "/rep_", rep, '/')
     print(results_rep)
     mcmc_params <- readRDS(paste0(results_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
@@ -233,7 +305,7 @@ get_mcmc_rep <- function(results_home, model_type, iter, rep){
     
     #Simulate data using thinned params
     for(i in seq(burn_in, n, by = thinning_factor)){
-      
+      S
       #Simulate data
       sim_data_model_crit = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_mcmc[i], beta_mcmc[i], gamma_mcmc[i])
       #Save data
@@ -243,65 +315,81 @@ get_mcmc_rep <- function(results_home, model_type, iter, rep){
       if (i == burn_in) { #first rep
         #print('CREATE DF')
         flag_create = TRUE
-        df_summary_stats = get_summary_stats_sim_dataX(data, rep, flag_create)
+        df_summary_stats = get_summary_stats(data, rep, flag_create)
         flag_create = FALSE 
       } else {
-        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats_sim_dataX(data, rep, flag_create)
+        df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(data, rep, flag_create)
       }
     }
+    #Save summary stats
+    saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
     
-    #Save rep summary stats
-    #save df_summary_stats!!!!!!!
-  }
-}
-
-#Get summary statisitcs
-get_summary_stats <- function(data, rep, flag_create){
-  
-  'Get summary statisitcs of the simulated data'
-  if (flag_create){
+    #p values
+    list_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values(df_summary_stats[,x], df_true[,x]))
+    saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_rep', rep, ".rds"))
     
-    #Df
-    summary_stats_results = data.frame(
-      sum_inf_counts = sum(sim_data_params),
-      median_inf_count = median(sim_data_params),
-      max_inf_count = max(sim_data_params),
-      std_inf_counts = std(sim_data_params),
-      val_75_infs_counts = quantile(sim_data_params)[4][1][1],
-      val_87_5_infs_counts = mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
-      max_dif = max(abs(diff(sim_data_params))),
-      med_dif = median(abs(diff(sim_data_params))),
-      mean_upper_dif = mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
-      sum_1st_half  = sum(which(sim_data_params < quantile(sim_data_params)[3][1][1])),
-      sum_2nd_half =  sum(which(sim_data_params > quantile(sim_data_params)[3][1][1]))
+    list_all_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values_list(df_summary_stats[,x], df_true[,x]))
+    saveRDS(list_all_p_vals, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
+    
+    #Save all 
+    if (i == burn_in) { 
       
-    )
+      #Create df; sum etc
+      df_p_values = data.frame(sum_inf_counts = 
+                                 list_p_vals[1],
+                               median_inf_count = list_p_vals[2],
+                               max_inf_count = list_p_vals[3],
+                               std_inf_counts = list_p_vals[4],
+                               val_75_infs_counts = list_p_vals[5],
+                               val_87_5_infs_counts = list_p_vals[6],
+                               max_dif = list_p_vals[7],
+                               med_dif = list_p_vals[8],
+                               mean_upper_dif = list_p_vals[9],
+                               sum_1st_half  = list_p_vals[10],
+                               sum_2nd_half =  list_p_vals[11]
+                               
+      )
+      print('df_p_values')
+      print(df_p_values)
+      
+    } else {
+      
+      df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
+    }
     
-  } else {
-    #List
-    summary_stats_results = list(sum(sim_data_params), median(sim_data_params), max(sim_data_params),
-                                 std(sim_data_params), quantile(sim_data_params)[4][1][1], 
-                                 mean(quantile(sim_data_params)[4][1][1], quantile(sim_data_params)[5][1][1]),
-                                 max(abs(diff(sim_data_params))), median(abs(diff(sim_data_params))),
-                                 mean(c(quantile(abs(diff(sim_data_params)))[4][1][1], quantile(abs(diff(sim_data_params)))[5][1][1])),
-                                 sum_1st_half  = sum(which(sim_data_params < quantile(sim_data_params)[3][1][1])),
-                                 sum_2nd_half =  sum(which(sim_data_params > quantile(sim_data_params)[3][1][1]))
-    )
   }
   
-  summary_stats_results
+  #Ensure its a df
+  df_p_values = as.data.frame(df_p_values)
+  
+  #SaveRDS
+  saveRDS(df_p_values, file = paste0(base_folder_current, '/total_p_values_iter_', iter, '.rds' ))
+  
+  #Return p values
+  df_p_values
   
 }
 
-#All P VALS
-get_summary_stats <- function(data, rep, flag_create){
+#Plot P VALUES
+
+#Plot p values
+plot_p_vals <- function(df_p_vals){
   
-  for(rep in 1:n_reps) {
-    SUM_STATS =
-    gET P VAL
+  'Plot histograms of the p values'
+  par(mfrow=c(3,4)) #c(3,4)
+  
+  for (i in c(1:11)){
+    
+    hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
+         #xlim = c(xmin, xmax),
+         xlab = 'p value', ylab = 'Num Samples', col = 'green',
+         main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    #abline(v = true_sum_inf, col = 'red', lwd = 2)
   }
 }
 
+###############
 #APPLY MCMC
 model_type = 'ss_events' #base_sim_sse_inf' #'ssi_sim_sse_inf'
 flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
@@ -316,3 +404,16 @@ burn_in = 500
 thinning_factor = 50 #(1/1000)*n;
 
 run_mcmc_reps(n, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
+
+###############
+#APPLY SUMMARY STATS + p vals
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+df_p_valuesI = get_sum_stats_p_values_total(base_folder_current, n_reps) 
+end_time = Sys.time()
+time_elap = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elap)
+
+plot_p_vals(df_p_valuesI)
