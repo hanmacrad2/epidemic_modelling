@@ -412,6 +412,10 @@ df1 <- data.frame(ID = c(1, 2, 4, 6, 8, 4, 5),
                   var2 = c(7, 12, 14, 16, 8, 4, 7))
 df1
 
+df2 <- data.frame(id1 = c(list_p_vals_list[1], list_p_vals_list[2], list_p_vals_list[1]),
+                  id2 = c(2*list_p_vals_list[1], 2*list_p_vals_list[2], 2*list_p_vals_list[1]))
+df2
+
 ##################################################################################
 # Apply functions
 
@@ -432,5 +436,20 @@ get_p_values <- function(column) {
 }
 
 list_p_vals_list = apply(df1, 2, FUN = function(vec) get_p_values(vec))
+list_p_vals_list
 
+burn_in 
 
+n = 5500
+v <- seq(burn_in, n, by = thinning_factor)
+v
+length(v)
+
+for(i in seq(burn_in, 2000, by = thinning_factor)){
+  print(i)
+}
+
+#Column vals > 1
+list_gt1 = apply(df_pvals_ss, 2, FUN = function(vec) length(which(vec > 1.0)))
+list_gt1
+#:D None greater than zero

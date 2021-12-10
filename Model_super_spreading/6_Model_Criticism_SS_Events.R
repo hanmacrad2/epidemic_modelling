@@ -363,8 +363,15 @@ get_p_values_total <- function(n, n_reps, model_params, sigma, thinning_factor, 
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   cat('r0 = ', r0, '\n'); 
   
+  #Start reps
+  if (flag2){
+    start = 81
+  } else {
+    start = 1
+  }
+  
   #Repeat for n reps
-  for(rep in 1:n_reps) {
+  for(rep in start:n_reps) {
     
     cat('\n rep =', rep, '\n')
     #Create folder to saveRDS results of the rep
@@ -482,8 +489,8 @@ plot_p_vals(df_p_values)
 
 ########################################
 #RUN II
-model_type = 'base_sim_sse_inf' #base_sim_sse_inf' #'ssi_sim_sse_inf'
-flags_data_type = c(FALSE, TRUE, TRUE) #1)ss_events, 2) ss_individuals, 3) basline
+model_type = 'ssi_sim_sse_inf' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+flags_data_type = c(FALSE, TRUE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
 iter = 1
 folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
 print(folder_results)
@@ -507,11 +514,39 @@ print(time_elapII)
 
 ############ INSPECT OUTPUT #######################
 #Extract
-df_p_valuesII = results[[1]]
+df_p_valuesII = resultsII[[1]]
 plot_p_vals(df_p_valuesII)
 
+########################################
+#RUN III
+model_type = 'base_sim_sse_inf' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+flags_data_type = c(FALSE, FALSE, TRUE) #1)ss_events, 2) ss_individuals, 3) basline
+iter = 1
+folder_results = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/', '', model_type, '/iter_', iter)
+print(folder_results)
 
+#Repitions 
+n = 10500
+n_reps = 100
+burn_in = 500
+thinning_factor = 100 #(1/1000)*n;
+
+#Start
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+resultsIII = get_p_values_total(n, n_reps, model_params, sigma, thinning_factor, flags_data_type, folder_results, rep, burn_in)
+end_time = Sys.time()
+time_elapIII = round(end_time - start_time, 2)
+print('Time elapsed:')
+print(time_elapIII)
+#cat('Time elapsed:', round(Sys.time() - start_time, 2))
+
+############ INSPECT OUTPUT #######################
+#Extract
+df_p_valuesIII = resultsIII[[1]]
+plot_p_vals(df_p_valuesIII)
 
 #Get p values
-#df_pvals3 <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
-#plot_p_vals(df_pvals3)
+df_pvals_ss <- readRDS(paste0(folder_results, '/total_p_values_iter_', iter, '.rds'))
+plot_p_vals(df_pvals_ss)

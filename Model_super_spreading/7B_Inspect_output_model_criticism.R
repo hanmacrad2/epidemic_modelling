@@ -3,8 +3,31 @@
 #Set up params
 source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R")
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism/"
+results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
 
+#FUNCTIONS - GET DATA
+get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_elap){
+  
+  'Get MCMC Results for the given rep'
+  
+  #Results inspect
+  results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
+  print(results_inspect)
+  
+  #Data
+  sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
+  cat('Sum sim data = ', sum(sim_data_rep))
+  mcmc_params <- readRDS(paste0(results_inspect, 'mcmc_params_rep_', rep, '.rds' ))
+  
+  #Plot MCMC results 
+  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
+  #get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
+  
+}
+
+
+
+#*******************************************
 ####################
 #FUNCTIONS - GET DATA
 get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
@@ -33,7 +56,7 @@ get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
 
 #BASE MODEL
 get_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
-                            upper_quant, trim_flag, list_i, time_elap){
+                                 upper_quant, trim_flag, list_i, time_elap){
   
   #Results inspect
   results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
@@ -58,9 +81,9 @@ get_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
 ##################
 #PLOT SUMMARY STATS
 plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats,
-                             list_p_vals, upper_quant, trim_flag){
+                               list_p_vals, upper_quant, trim_flag){
   
- 'Plot sim data, summary stats and true summary stat for a given mcmc rep' 
+  'Plot sim data, summary stats and true summary stat for a given mcmc rep' 
   #Setup
   par(mfrow = c(3,4))
   len_data = length(list_p_vals)
@@ -82,8 +105,8 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats,
       print('trimmed')
       X = upper_quantile(X, upper_quant)
     }
-   
-
+    
+    
     hist(X, breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
          xlab = paste('', toupper(colnames(df_sum_stats)[i]), '< 99th quantile'),
@@ -126,11 +149,11 @@ get_sim_data_i <- function(i, mcmc_params, sim_data_path, colourX){
   
   #Sim Data
   sim_data_mcmc_rep <- readRDS(paste0(sim_data_path, 'sim_data_iter_', i, '.rds'))
-
+  
   #Extract params
   alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
   alpha_i = round(alpha_mcmc[i], 2)
-    
+  
   beta_mcmc = mcmc_params[2];beta_mcmc = unlist(beta_mcmc)
   beta_i = round(beta_mcmc[i],2)
   
@@ -170,7 +193,7 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
   for (i in seq_along(list_idx)){
     #Sim Data
     sim_data_mcmc_rep <- readRDS(paste0(sim_data_path, 'sim_data_iter_', i, '.rds'))
-
+    
     r0_mcmc = mcmc_params[1]; r0_mcmc = unlist(r0_mcmc)
     r0_i = round(r0_mcmc[i], 2)
     
@@ -198,10 +221,13 @@ get_rep_results(results_home, model_type, iter, rep, true_r0,
 #INSPECT BASE MODEL INFERENCE
 rep = 19 #68 #23 #6 #34 #9 #26 #14, 73
 get_rep_results_base(results_home, model_type, iter, rep, true_r0,
-                upper_quant, trim_flag, list_i, time_elap)
+                     upper_quant, trim_flag, list_i, time_elap)
 
 
 ##############################
 #CODE ITERATION II 
 
 #MCMC
+rep = 50
+time_elap = 2.0
+get_mcmc_results(results_home, model_type, iter, rep, true_r0, time_elap)
