@@ -21,7 +21,7 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
   
   #Plot MCMC results 
   plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
-  #get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
+  get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
   
 }
 
@@ -41,7 +41,7 @@ get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
   sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
   cat('Sum sim data = ', sum(sim_data_rep))
   df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
-  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_', rep, '.rds'))
+  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_rep', rep, '.rds'))
   mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
   
   #Plot p vals & summary stats
@@ -208,10 +208,10 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
 
 ##############################################
 #APPLY FUNCTION TO INSPECT SPECIFIC REPS
-rep = 1 #3 #19 #68 #23 #6 #34 #9 #26 #14, 73
+rep = 8 #15, 86
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
-list_i = seq(from = 1000, to = 10000, by = 1000)
+list_i = seq(from = 500, to = 5000, by = 500)
 list_i
 get_rep_results(results_home, model_type, iter, rep, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)

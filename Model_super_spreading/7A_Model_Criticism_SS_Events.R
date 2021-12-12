@@ -169,7 +169,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
 
 ################
 #1i. REPEAT MCMC
-run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_results, burn_in){
+run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
   
   'Run mcmc for n_reps iterations and save'
   
@@ -186,30 +186,28 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_result
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
-    #Folder
-    folder_folder_rep = paste0(folder_results, '/rep_', rep)
-    cat('\n folder_folder_rep =', folder_folder_rep, '\n')
-    ifelse(!dir.exists(file.path(folder_folder_rep)), dir.create(file.path(folder_folder_rep), recursive = TRUE), FALSE)
+    folder_rep = paste0(base_folder, '/rep_', rep)
+    ifelse(!dir.exists(file.path(folder_rep)), dir.create(file.path(folder_rep), recursive = TRUE), FALSE)
     
     #Simulate data
     if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
       cat('simulate ss individs')
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
       cat('simulate_branching')
     }
     
     #MCMC
-    mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_folder_rep, rep, burn_in)
+    mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
     
     #SAVE MCMC PARAMS 
-    saveRDS(mcmc_params, file = paste0(folder_folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
+    saveRDS(mcmc_params, file = paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
   }
   
@@ -229,6 +227,7 @@ get_p_values <- function(col_sum_stat, col_true_val) {
   prop_lt = length(which(col_sum_stat < col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
   prop_gt = length(which(col_sum_stat > col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
   pvalue = min(prop_lt, prop_gt)
+  pvalue = pvalue*2
   
   #Return p value 
   pvalue
@@ -292,7 +291,7 @@ get_summary_stats <- function(data, flag_create){
 }
 
 ############
-#2B. TOTAL SUMMARY STATS
+#2B. TOTAL SUMMARY STATS 
 get_sum_stats_total <- function(base_folder_current, n_reps){
   
   'Get summary stats and p vals for all mcmc reps'
@@ -301,7 +300,7 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
     
     #Get results
     folder_rep = paste0(base_folder_current, "/rep_", rep, '/')
-    print(folder_rep)
+    cat('rep = ', rep)
     true_rep_sim = readRDS(paste0(folder_rep, '/sim_data.rds'))
     mcmc_params <- readRDS(paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
     #Get true summary statistics 
@@ -315,7 +314,7 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
     
     #Simulate data using thinned params
     for(i in seq(burn_in, n, by = thinning_factor)){
-      print(paste0("mcmc summary stat rep ", i))
+      #print(paste0("mcmc summary stat rep ", i))
       #Simulate data
       sim_data_model_crit = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_mcmc[i], beta_mcmc[i], gamma_mcmc[i])
       #Save data
@@ -323,7 +322,7 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
       
       #Get summary stats. 
       if (i == burn_in) { #first rep
-        cat('CREATE DF')
+        #cat('CREATE  df_summary_stats')
         flag_create = TRUE
         df_summary_stats = get_summary_stats(sim_data_model_crit, flag_create)
         flag_create = FALSE 
@@ -337,9 +336,9 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
     }
     
     #Save summary stats
-    saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
+    saveRDS(df_summary_stats, file = paste0(folder_rep, '/df_summary_stats_', rep, ".rds"))
     #Save ss iterations
-    saveRDS(list_ss_iters, file = paste0(base_folder_current, '/list_ss_iters_i', rep, '.rds'))  
+    saveRDS(list_ss_iters, file = paste0(folder_rep, '/list_ss_iters_i', rep, '.rds'))  
 
     }
 }
@@ -349,7 +348,7 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
 get_p_values_total <- function(base_folder_current, n_reps){
 
     for(rep in 1:n_reps) {
-      
+      cat('rep = ', rep)
       #Get results
       folder_rep = paste0(base_folder_current, "/rep_", rep, '/')
       cat('folder_rep', folder_rep)
@@ -360,12 +359,12 @@ get_p_values_total <- function(base_folder_current, n_reps){
       #Data
       df_summary_stats_rep <- readRDS(paste0(folder_rep, '/df_summary_stats_', rep, '.rds' ))
       
-      #p values
+      #Get p values
       list_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values(df_summary_stats_rep[,x], df_true_ss[,x]))
-      saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_rep', rep, ".rds"))
+      saveRDS(list_p_vals, file = paste0(folder_rep, '/list_p_vals_rep', rep, ".rds"))
       
       list_all_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values_list(df_summary_stats_rep[,x], df_true_ss[,x]))
-      saveRDS(list_all_p_vals, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
+      saveRDS(list_all_p_vals, file = paste0(folder_rep, '/list_all_p_vals_rep_', rep, ".rds"))
       
       #Save all 
       if (!exists("df_p_values")) {
@@ -447,10 +446,12 @@ n_reps = 100
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-df_p_valuesI = get_sum_stats_p_values_total(base_folder_current, n_reps) 
+get_sum_stats_total(base_folder_current, n_reps) 
+df_p_valuesI = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
 time_elap = round(end_time - start_time, 2)
 print('Time elapsed:')
 print(time_elap)
 
+#PLOT
 plot_p_vals(df_p_valuesI)
