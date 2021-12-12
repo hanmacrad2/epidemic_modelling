@@ -182,7 +182,7 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_result
   cat('r0 = ', r0, '\n'); 
   
   #Repeat for n repswhich(col_sum_stat < col_true_val) 
-  
+
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
@@ -210,16 +210,13 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_result
     
     #SAVE MCMC PARAMS 
     saveRDS(mcmc_params, file = paste0(folder_folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
-    
+  
   }
   
 }
 
 ######################################################
 #2.  MODEL CRITICISM - GET SUMMARY STATS
-
-############
-#1. P VALUES FUCNTION
 get_p_values <- function(col_sum_stat, col_true_val) {
   'Get p values - comparing  summary stat columns to true value'
   
@@ -251,12 +248,10 @@ get_p_values_list <- function(col_sum_stat, col_true_val){
   return(list(prop_lt, prop_gt, pvalue, eq_half))
 }
 
-#################
-#2. SUMMARY STATS
-
+#Get summary statisitcs
 get_summary_stats <- function(data, flag_create){
   
-  'Calculate summary statisitcs of the simulated data'
+  'Get summary statisitcs of the simulated data'
   if (flag_create){
     
     #Df
@@ -288,12 +283,11 @@ get_summary_stats <- function(data, flag_create){
   }
   
   summary_stats_results
- 
+  
 }
 
-############
-#2B. TOTAL SUMMARY STATS
-get_sum_stats_total <- function(base_folder_current, n_reps){
+#GET SUMMARY STATS & P VALUES FOR ALL MCMC REPS
+get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
   
   'Get summary stats and p vals for all mcmc reps'
   
@@ -333,76 +327,60 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
         df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(sim_data_model_crit, flag_create)
         list_ss_iters = c(list_ss_iters, i)
       }
-      
     }
-    
     #Save summary stats
     saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
-    #Save ss iterations
-    saveRDS(list_ss_iters, file = paste0(base_folder_current, '/list_ss_iters_i', rep, '.rds'))  
-
+    
+    #p values
+    list_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values(df_summary_stats[,x], df_true_ss[,x]))
+    saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_rep', rep, ".rds"))
+    
+    list_all_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values_list(df_summary_stats[,x], df_true_ss[,x]))
+    saveRDS(list_all_p_vals, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
+    
+    #Save all 
+    if (i == burn_in) { #first rep
+      
+      #Create df; sum etc
+      df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
+                               median_inf_count = list_p_vals[2],
+                               max_inf_count = list_p_vals[3],
+                               std_inf_counts = list_p_vals[4],
+                               val_75_infs_counts = list_p_vals[5],
+                               val_87_5_infs_counts = list_p_vals[6],
+                               max_dif = list_p_vals[7],
+                               med_dif = list_p_vals[8],
+                               mean_upper_dif = list_p_vals[9],
+                               sum_1st_half  = list_p_vals[10],
+                               sum_2nd_half =  list_p_vals[11]
+                               
+      )
+      print('df_p_values')
+      print(df_p_values)
+      
+    } else {
+      
+      df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
     }
-}
-
-############
-#3. GET P VALUES FOR ALL  REPS
-get_p_values_total <- function(base_folder_current, n_reps){
-
-    for(rep in 1:n_reps) {
-      
-      #Get results
-      folder_rep = paste0(base_folder_current, "/rep_", rep, '/')
-      cat('folder_rep', folder_rep)
-      true_rep_sim = readRDS(paste0(folder_rep, '/sim_data.rds'))
-      #Get true summary statistics 
-      df_true_ss = get_summary_stats(true_rep_sim, TRUE)
-      
-      #Data
-      df_summary_stats_rep <- readRDS(paste0(folder_rep, '/df_summary_stats_', rep, '.rds' ))
-      
-      #p values
-      list_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values(df_summary_stats_rep[,x], df_true_ss[,x]))
-      saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_rep', rep, ".rds"))
-      
-      list_all_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values_list(df_summary_stats_rep[,x], df_true_ss[,x]))
-      saveRDS(list_all_p_vals, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
-      
-      #Save all 
-      if (!exists("df_p_values")) {
-        df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
-                                 median_inf_count = list_p_vals[2],
-                                 max_inf_count = list_p_vals[3],
-                                 std_inf_counts = list_p_vals[4],
-                                 val_75_infs_counts = list_p_vals[5],
-                                 val_87_5_infs_counts = list_p_vals[6],
-                                 max_dif = list_p_vals[7],
-                                 med_dif = list_p_vals[8],
-                                 mean_upper_dif = list_p_vals[9],
-                                 sum_1st_half  = list_p_vals[10],
-                                 sum_2nd_half =  list_p_vals[11]
-                                 
-        )
-        print(paste0('df_p_values', df_p_values))
-        
-      } else {
-        df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
-      }
-        
-    }
+    
+  }
   
   #Ensure its a df
   df_p_values = as.data.frame(df_p_values)
   
   #SaveRDS
   saveRDS(df_p_values, file = paste0(base_folder_current, '/total_p_values_iter_', iter, '.rds' ))
+  #Save ss iterations
+  saveRDS(list_ss_iters, file = paste0(base_folder_current, '/list_ss_iters_i', rep, '.rds'))  
   
   #Return p values
   df_p_values
   
 }
 
-############
-#4.PLOT P VALUES
+#Plot P VALUES
+
+#Plot p values
 plot_p_vals <- function(df_p_vals){
   
   'Plot histograms of the p values'
