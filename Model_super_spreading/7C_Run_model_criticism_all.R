@@ -38,7 +38,7 @@ time_elapII = time_elapA + round(end_time - start_time, 2)
 print(paste0('Time elapsed total:', time_elapIII))
 
 #PLOT
-plot_p_vals(df_p_valuesII)
+plot_p_vals(df_p_values)
 
 ############################################################
 #RUN III - sse_inf_base_sim

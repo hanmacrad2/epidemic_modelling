@@ -252,7 +252,6 @@ get_p_values_list <- function(col_sum_stat, col_true_val){
 
 #################
 #2. SUMMARY STATS
-
 get_summary_stats <- function(data, flag_create){
   
   'Calculate summary statisitcs of the simulated data'
@@ -305,6 +304,8 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
     mcmc_params <- readRDS(paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
     #Get true summary statistics 
     df_true_ss = get_summary_stats(true_rep_sim, TRUE)
+    #Save 
+    saveRDS(df_true_ss, file = paste0(folder_rep, 'df_true_sum_stats_rep_', rep, '.rds' ))
     
     #Get parameters
     alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
@@ -450,9 +451,8 @@ get_sum_stats_total(base_folder_current, n_reps)
 df_p_valuesI = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
 time_elap = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
-print('Time elapsed:')
-print(time_elap)
+print(paste0('Time elapsed:', time_elap))
 
 #PLOT
 plot_p_vals(df_p_valuesI)
-plot_p_vals(df_p_vals_ss)
+plot_p_vals(df_p_vals_si)
