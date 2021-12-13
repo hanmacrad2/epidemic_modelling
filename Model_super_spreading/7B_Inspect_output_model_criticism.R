@@ -78,6 +78,48 @@ get_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
   
 } 
 
+#################
+#P VALUE DATASET 
+get_df_p_vals <- function(results_home, model_type, iter){
+  
+  #Results inspect
+  results_inspect = paste0(results_home, model_type, "/iter_", iter)
+  print(results_inspect)
+  
+  for(rep in 1:n_reps) {
+    
+    results_rep = paste0(results_inspect, "/rep_", rep, '/')
+    list_p_vals <- readRDS(paste0(results_rep, 'list_p_vals_rep', rep, '.rds'))
+    
+    if (rep == 10){
+      print(list_p_vals)
+    }
+    
+    if (rep == 1) {
+      df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
+                               median_inf_count = list_p_vals[2],
+                               max_inf_count = list_p_vals[3],
+                               std_inf_counts = list_p_vals[4],
+                               val_75_infs_counts = list_p_vals[5],
+                               val_87_5_infs_counts = list_p_vals[6],
+                               max_dif = list_p_vals[7],
+                               med_dif = list_p_vals[8],
+                               mean_upper_dif = list_p_vals[9],
+                               sum_1st_half  = list_p_vals[10],
+                               sum_2nd_half =  list_p_vals[11]
+                               
+      )
+      print(paste0('df_p_values', df_p_values))
+      
+    } else {
+      df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
+    }
+  }
+  
+  #Return p values
+  df_p_values
+}
+
 ##################
 #PLOT SUMMARY STATS
 plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats,
@@ -106,7 +148,7 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats,
       X = upper_quantile(X, upper_quant)
     }
     
-    
+    #Histogram
     hist(X, breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
          xlab = paste('', toupper(colnames(df_sum_stats)[i]), '< 99th quantile'),
@@ -208,18 +250,23 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
 
 ##############################################
 #APPLY FUNCTION TO INSPECT SPECIFIC REPS
-rep = 8 #15, 86
+model_type = 'sse_inf_sse_sim' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+rep = 17 #10 #8 #15, 86
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
-list_i = seq(from = 500, to = 5000, by = 500)
+list_i = seq(from = 500, to = 5500, by = 500)
 list_i
+#time_elap = 1.12
 get_rep_results(results_home, model_type, iter, rep, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
 
-###############################################
+#df_p_vals_ss = get_df_p_vals(results_home, model_type, iter)
+
+##############################################################################
+
 #INSPECT BASE MODEL INFERENCE
-rep = 19 #68 #23 #6 #34 #9 #26 #14, 73
+#rep = 19 #68 #23 #6 #34 #9 #26 #14, 73
 get_rep_results_base(results_home, model_type, iter, rep, true_r0,
                      upper_quant, trim_flag, list_i, time_elap)
 

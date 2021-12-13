@@ -449,9 +449,10 @@ print(start_time)
 get_sum_stats_total(base_folder_current, n_reps) 
 df_p_valuesI = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
-time_elap = round(end_time - start_time, 2)
+time_elap = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
 print('Time elapsed:')
 print(time_elap)
 
 #PLOT
 plot_p_vals(df_p_valuesI)
+plot_p_vals(df_p_vals_ss)
