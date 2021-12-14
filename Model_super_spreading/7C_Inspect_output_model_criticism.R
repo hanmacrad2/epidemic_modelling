@@ -5,35 +5,18 @@ source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R")
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
 
-#FUNCTIONS - GET DATA
-get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_elap){
-  
-  'Get MCMC Results for the given rep'
-  
-  #Results inspect
-  results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
-  print(results_inspect)
-  
-  #Data
-  sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
-  cat('Sum sim data = ', sum(sim_data_rep))
-  mcmc_params <- readRDS(paste0(results_inspect, 'mcmc_params_rep_', rep, '.rds' ))
-  
-  #Plot MCMC results 
-  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
-  get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
-  
-}
-
-
 
 #*******************************************
 ####################
 #FUNCTIONS - GET DATA
-get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
+display_rep_results <- function(results_home, model_type, iter, rep, true_r0,
                             upper_quant, trim_flag, list_i, time_elap){
   
-  #Results inspect
+  #P values
+  df_p_vals_tot = get_df_p_vals(results_home, model_type, iter)
+  plot_p_vals(df_p_vals_tot)
+  
+  #Specific rep results inspect
   results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
   print(results_inspect)
   
@@ -56,7 +39,7 @@ get_rep_results <- function(results_home, model_type, iter, rep, true_r0,
 }
 
 #BASE MODEL
-get_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
+display_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
                                  upper_quant, trim_flag, list_i, time_elap){
   
   #Results inspect
@@ -124,6 +107,24 @@ get_df_p_vals <- function(results_home, model_type, iter){
 }
 
 df_p_vals_si = get_df_p_vals(results_home, model_type, iter)
+
+###################
+#PLOT P VALUES
+plot_p_vals <- function(df_p_vals){
+  
+  'Plot histograms of the p values'
+  par(mfrow=c(3,4)) #c(3,4)
+  
+  for (i in c(1:11)){
+    
+    hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
+         #xlim = c(xmin, xmax),
+         xlab = 'p value', ylab = 'Num Samples', col = 'green',
+         main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    #abline(v = true_sum_inf, col = 'red', lwd = 2)
+  }
+}
 
 ##################
 #PLOT SUMMARY STATS
@@ -254,18 +255,39 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
   
 }
 
+#GET MCMC DATA
+get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_elap){
+  
+  'Get MCMC Results for the given rep'
+  
+  #Results inspect
+  results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
+  print(results_inspect)
+  
+  #Data
+  sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
+  cat('Sum sim data = ', sum(sim_data_rep))
+  mcmc_params <- readRDS(paste0(results_inspect, 'mcmc_params_rep_', rep, '.rds' ))
+  
+  #Plot MCMC results 
+  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
+  get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
+  
+}
+
+
 ##############################################
 #SSE MODEL - INSPECT SPECIFIC REPS
-model_type = 'sse_inf_ssi_sim' #sse_inf_sse_sim' #base_sim_sse_inf'
+model_type = 'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
 rep = 16 #33 #16 #87 #17 #10 #8 #15, 86
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-get_rep_results(results_home, model_type, iter, rep, true_r0,
+display_rep_results(results_home, model_type, iter, rep, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
 ##############################################################################
 #BASE MODEL - INSPECT SPECIFIC REPS
 #rep = 19 #68 #23 #6 #34 #9 #26 #14, 73
-get_rep_results_base(results_home, model_type, iter, rep, true_r0,
+display_rep_results_base(results_home, model_type, iter, rep, true_r0,
                      upper_quant, trim_flag, list_i, time_elap)
