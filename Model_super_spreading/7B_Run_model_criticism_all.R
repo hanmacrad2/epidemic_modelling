@@ -15,7 +15,7 @@ base_folder_current = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/s
 print(base_folder_current)
 
 #Repitions 
-n = 5500
+n_mcmc = 5500
 n_reps = 100
 burn_in = 500
 thinning_factor = 50 #(1/1000)*n;

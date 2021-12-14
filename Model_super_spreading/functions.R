@@ -808,7 +808,7 @@ plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed
 
 ###############################################################################
 #FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
-plot_mcmc_x4_priors <- function(sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint = TRUE){
+plot_mcmc_x4_priors <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_time, seed_count, prior, joint = TRUE){
   
   #Plot Set up
   #par(mar=c(1,1,1,1))

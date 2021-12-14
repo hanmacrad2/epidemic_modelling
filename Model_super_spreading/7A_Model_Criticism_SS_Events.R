@@ -213,6 +213,8 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, 
   
 }
 
+#*******************************************************#******************************************
+#*
 ######################################################
 #2.  MODEL CRITICISM - GET SUMMARY STATS
 

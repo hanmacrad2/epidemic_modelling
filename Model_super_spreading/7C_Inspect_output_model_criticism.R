@@ -5,13 +5,10 @@ source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R")
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
 
-
-#*******************************************
-####################
-#FUNCTIONS - GET DATA
-display_rep_results <- function(results_home, model_type, iter, rep, true_r0,
+#*##########################################################
+#1. GET & DISPLAY TOTAL REP RESULTS 
+display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, true_r0,
                             upper_quant, trim_flag, list_i, time_elap){
-  
   #P values
   df_p_vals_tot = get_df_p_vals(results_home, model_type, iter)
   plot_p_vals(df_p_vals_tot)
@@ -23,17 +20,18 @@ display_rep_results <- function(results_home, model_type, iter, rep, true_r0,
   #Data
   sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
   cat('Sum sim data = ', sum(sim_data_rep))
-  df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
-  df_true_sum_stats <- readRDS(paste0(results_inspect, 'df_true_sum_stats_rep_', rep, '.rds' ))
-  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_rep', rep, '.rds'))
   mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
+  df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
+  df_true_sum_stats <- readRDS(paste0(results_inspect, 'df_true_ss_rep_', rep, '.rds' ))
+  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_rep', rep, '.rds'))
+  print(df_true_sum_stats)
   
   #Plot p vals & summary stats
   plot_rep_sum_stats(true_r0, model_type, sim_data_rep, df_sum_stats, df_true_sum_stats, list_p_vals, upper_quant, trim_flag) 
   print(list_p_vals)
   
   #Plot MCMC results 
-  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
+  plot_mcmc_x4_priors(n_mcmc, sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
   get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
   
 }
@@ -73,7 +71,6 @@ get_df_p_vals <- function(results_home, model_type, iter){
   for(rep in 1:n_reps) {
     
     results_rep = paste0(results_inspect, "/rep_", rep, '/')
-    print(paste0('results rep', results_rep))
     
     list_p_vals <- readRDS(paste0(results_rep, 'list_p_vals_rep', rep, '.rds'))
     
@@ -106,7 +103,7 @@ get_df_p_vals <- function(results_home, model_type, iter){
   df_p_values
 }
 
-df_p_vals_si = get_df_p_vals(results_home, model_type, iter)
+#df_p_vals_si = get_df_p_vals(results_home, model_type, iter)
 
 ###################
 #PLOT P VALUES
@@ -156,14 +153,13 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
     
     #Histogram
     hist(X, breaks = 100, #freq = FALSE, 
-         xlab = paste('', toupper(colnames(df_sum_stats)[i]), '< 99th quantile'),
+         xlab = paste('', toupper(colnames(df_sum_stats)[i]), ', T:', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)),
          ylab = 'Num Samples',
          col = colorsX[i+1],
          main = paste('', toupper(colnames(df_sum_stats)[i]),', p value:', round(list_p_vals[i],3)),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     abline(v = df_true_sum_stats[nrow(df_true_sum_stats), i], col = colors_line[i], lwd = 2.5) #This should be true value, not p value
-    
-    #WRONG - TRUE VALUE!
+
   }
   
 }
@@ -278,12 +274,16 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 
 ##############################################
 #SSE MODEL - INSPECT SPECIFIC REPS
+time_elap = 1.15
 model_type = 'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
-rep = 16 #33 #16 #87 #17 #10 #8 #15, 86
+iter = 1
+df_sseI = get_df_p_vals(results_home, model_type, iter)
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-display_rep_results(results_home, model_type, iter, rep, true_r0,
+#Rep specific
+rep = 3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
 ##############################################################################
