@@ -257,6 +257,10 @@ get_p_values_list <- function(col_sum_stat, col_true_val){
 get_summary_stats <- function(data, flag_create){
   
   'Calculate summary statisitcs of the simulated data'
+  #Summary stats params
+  start_half2 = (length(data)/2)+1
+  stop_half2 = length(data)
+  
   if (flag_create){
     
     #Df
@@ -271,7 +275,7 @@ get_summary_stats <- function(data, flag_create){
       med_dif = median(abs(diff(data))),
       mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
       sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
-      sum_2nd_half =  sum(data[(length(data)/2)+1:length(data)]) #sum(which(data > quantile(data)[3][1][1]))
+      sum_2nd_half =  sum(data[start_half2:stop_half2]) #sum(which(data > quantile(data)[3][1][1]))
     )
     
   } else {
@@ -281,8 +285,8 @@ get_summary_stats <- function(data, flag_create){
                                  mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
                                  max(abs(diff(data))), median(abs(diff(data))),
                                  mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
-                                 sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
-                                 sum_2nd_half =  sum(data[(length(data)/2)+1:length(data)]) #sum(which(data > quantile(data)[3][1][1]))
+                                 sum(data[1:(length(data)/2)]),
+                                 sum(data[start_half2:stop_half2]) #sum(which(data > quantile(data)[3][1][1]))
     )
   }
   
@@ -339,6 +343,7 @@ get_sum_stats_total <- function(base_folder_current, n_reps){
     
     #Save summary stats
     saveRDS(df_summary_stats, file = paste0(folder_rep, '/df_summary_stats_', rep, ".rds"))
+    #print(paste0('df_summary_stats', df_summary_stats))
     #Save ss iterations
     saveRDS(list_ss_iters, file = paste0(folder_rep, '/list_ss_iters_i', rep, '.rds'))  
 

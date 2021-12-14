@@ -3,7 +3,7 @@
 #Setup
 source("functions.R")
 source("7A_Model_Criticism_SS_Events.R")
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
+#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
 results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
 
 ############################################################
@@ -55,7 +55,7 @@ plot_p_vals(df_p_valuesI)
 # model_type = 'sse_inf_ssi_sim' #'sse_inf_sse_sim' 'sse_inf_base_sim'
 # flags_data_type = c(FALSE, TRUE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
 # iter = 1
-# base_folder_current = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/', '', model_type, '/iter_', iter)
+# base_folder_current = paste0(results_home, model_type, '/iter_', iter) 
 # print(base_folder_current)
 # 
 # #Repitions 
@@ -92,7 +92,7 @@ plot_p_vals(df_p_valuesI)
 model_type = 'sse_inf_base_sim' #'sse_inf_sse_sim' 'sse_inf_base_sim'
 flags_data_type = c(FALSE, FALSE, TRUE) #1)ss_events, 2) ss_individuals, 3) basline
 iter = 1
-base_folder_current = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/', '', model_type, '/iter_', iter)
+base_folder_current = paste0(results_home, model_type, '/iter_', iter) 
 print(base_folder_current)
 
 #Repitions 

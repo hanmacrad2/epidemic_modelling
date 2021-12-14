@@ -23,7 +23,7 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
   cat('Sum sim data = ', sum(sim_data_rep))
   mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
   df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
-  df_true_sum_stats <- readRDS(paste0(results_inspect, 'df_true_ss_rep_', rep, '.rds' ))
+  df_true_sum_stats <- readRDS(paste0(results_inspect, 'df_true_sum_stats_rep_', rep, '.rds' ))
   list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_rep', rep, '.rds'))
   print(df_true_sum_stats)
   
@@ -141,10 +141,13 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
           main = paste(rep, "Day Infts SS Evnts, SS model, ", "R0 = ", true_r0), #model_type
           col = colorsX[1],
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  print(trim_flag)
+
+  #print('df_sum_stats:')
+  #print(df_sum_stats)
+  
   #Columns
   for (i in c(1:len_data)){
-    
+    print(paste0('i = ', i))
     X = df_sum_stats[,i] # df_sum_stats[1:nrow(df_sum_stats),i]
     
     if (trim_flag){
@@ -152,9 +155,13 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
       X = upper_quantile(X, upper_quant)
     }
     
+    print(paste0('Col i = ', colnames(df_sum_stats)[i]))
+    print(paste0('True val i = ', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)))
+    print(paste0('X = ', X))
+    
     #Histogram
     hist(X, breaks = 100, #freq = FALSE, 
-         xlab = paste('', toupper(colnames(df_sum_stats)[i]), ', T:', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)),
+         xlab = paste0('', toupper(colnames(df_sum_stats)[i]), ', T:', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)),
          ylab = 'Num Samples',
          col = colorsX[i+1],
          main = paste('', toupper(colnames(df_sum_stats)[i]),', p value:', round(list_p_vals[i],3)),
@@ -284,7 +291,7 @@ df_sseI = get_df_p_vals(results_home, model_type, iter)
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-rep = 3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+rep = 9 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
