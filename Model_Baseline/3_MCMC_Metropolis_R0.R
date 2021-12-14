@@ -45,7 +45,7 @@ log_like <- function(y, r0_dash){
 
 #***********************************
 #MCMC
-mcmc_r0 <- function(data, n, sigma, x0 = 1, burn_in = 2500) {
+mcmc_r0 <- function(data, n, sigma, x0 = 1, burn_in) {
   
   'Returns mcmc samples of R0'
   

@@ -139,12 +139,9 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
   
   #i. Sim_data - Infections
   plot.ts(sim_data_rep, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(rep, "Day Infts SS Evnts, SS model, ", "R0 = ", true_r0), #model_type
+          main = paste(rep, "Infts,", model_type, "R0 = ", true_r0), #model_type
           col = colorsX[1],
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-
-  #print('df_sum_stats:')
-  #print(df_sum_stats)
   
   #Columns
   for (i in c(1:len_data)){
@@ -156,9 +153,9 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
       X = upper_quantile(X, upper_quant)
     }
     
-    print(paste0('Col i = ', colnames(df_sum_stats)[i]))
-    print(paste0('True val i = ', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)))
-    print(paste0('X = ', X))
+    # print(paste0('Col i = ', colnames(df_sum_stats)[i]))
+    # print(paste0('True val i = ', round(df_true_sum_stats[nrow(df_true_sum_stats), i], 2)))
+    # print(paste0('X = ', X))
     
     #Histogram
     hist(X, breaks = 100, #freq = FALSE, 
@@ -284,15 +281,15 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 ##############################################
 #SSE MODEL - INSPECT SPECIFIC REPS
 time_elap = 1.15
-model_type = 'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
+model_type = 'sse_inf_base_sim'  #'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
 iter = 1
-df_sseI = get_df_p_vals(results_home, model_type, iter)
-
+df_baseI = get_df_p_vals(results_home, model_type, iter)
+plot_p_vals(df_p_valuesIII)
 #Rep specific
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-rep = 10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+rep = 13 #18 #10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
