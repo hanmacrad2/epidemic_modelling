@@ -270,9 +270,8 @@ get_summary_stats <- function(data, flag_create){
       max_dif = max(abs(diff(data))),
       med_dif = median(abs(diff(data))),
       mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
-      sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
-      sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
-      
+      sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
+      sum_2nd_half =  sum(data[(length(data)/2)+1:length(data)]) #sum(which(data > quantile(data)[3][1][1]))
     )
     
   } else {
@@ -282,8 +281,8 @@ get_summary_stats <- function(data, flag_create){
                                  mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
                                  max(abs(diff(data))), median(abs(diff(data))),
                                  mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
-                                 sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
-                                 sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
+                                 sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
+                                 sum_2nd_half =  sum(data[(length(data)/2)+1:length(data)]) #sum(which(data > quantile(data)[3][1][1]))
     )
   }
   

@@ -136,9 +136,7 @@ simulate_ss_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX
 #*******************************************************
 #Super-spreaders simulation
 simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
-  'Simulate an epidemic with Superspreading events
-  prop_ss = Proportion of superspreading days
-  magnitude_ss = increased rate of superspreading event'
+  'Simulate an epidemic with Superspreading individuals'
   
   #Set up
   total_infecteds = vector('numeric', num_days)
@@ -146,7 +144,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   ss_infecteds = vector('numeric', num_days)
   total_infecteds[1] = 2
   nss_infecteds[1] = 2
-  ss_infecteds[1] = 0 
+  ss_infecteds[1] = 1 
   
   #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
   #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)

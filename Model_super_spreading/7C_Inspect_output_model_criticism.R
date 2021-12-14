@@ -2,8 +2,9 @@
 
 #Set up params
 source("functions.R")
-source("~/GitHub/epidemic_modelling/helper_functions.R")
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
+source("~/GitHub/epidemic_modelling/helper_functions.R") 
+#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
+results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTS 
@@ -278,10 +279,11 @@ time_elap = 1.15
 model_type = 'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
 iter = 1
 df_sseI = get_df_p_vals(results_home, model_type, iter)
+
+#Rep specific
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-#Rep specific
 rep = 3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
