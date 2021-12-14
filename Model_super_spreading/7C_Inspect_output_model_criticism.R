@@ -20,7 +20,8 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
   
   #Data
   sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
-  cat('Sum sim data = ', sum(sim_data_rep))
+  print(paste0('Sim data rep ', rep, '='))
+  print(sim_data_rep)
   mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
   df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
   df_true_sum_stats <- readRDS(paste0(results_inspect, 'df_true_sum_stats_rep_', rep, '.rds' ))
@@ -291,7 +292,7 @@ df_sseI = get_df_p_vals(results_home, model_type, iter)
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
-rep = 9 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+rep = 10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
