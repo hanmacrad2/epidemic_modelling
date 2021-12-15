@@ -788,7 +788,7 @@ plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
 
 ###############################################################################
 #FUNCTION TO PLOT 1x4 DASHBOARD OF MCMC RESULTS FOR BASE MODEL
-plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed_count){
+plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type){
   
   #Plot Set up
   #par(mar=c(1,1,1,1))
@@ -811,11 +811,12 @@ plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed
   
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, "Day Infts SS Evnts, ", "r0 = ", true_r0),
+          main = paste(seed_count, "Infts,", model_type, "R0 = ", true_r0), #model_type
+          #main = paste(seed_count, "Infts SS Evnts, ", "r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots
-  plot.ts(r0_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
+  plot.ts(r0_mcmc, ylab = 'alpha', #ylim=c(0, a_lim),
           main = paste("MCMC SS Events, true r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = true_r0, col = 'orange', lwd = 2) #True = green
@@ -823,7 +824,7 @@ plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed
   #iii. Cumulative mean plots
   #r0 Mean
   plot2 = plot(seq_along(r0_mean), r0_mean,
-               ylim=c(0, r0_lim),
+               #ylim=c(0, r0_lim),
                xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
@@ -832,8 +833,8 @@ plot_mcmc_results_r0 <- function(sim_data, mcmc_params, true_r0, time_elap, seed
   #iv. Histogram
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
-       main = paste('R0 total MCMC samples. Prior = ', prior),
-       xlim=c(0, r0_lim),
+       main = paste('R0 total MCMC samples'), #. Prior = ', prior),
+       #xlim=c(0, r0_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
   

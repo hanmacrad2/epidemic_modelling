@@ -40,30 +40,6 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
   
 }
 
-#BASE MODEL
-display_rep_results_base <- function(results_home, model_type, iter, rep, true_r0,
-                                 upper_quant, trim_flag, list_i, time_elap){
-  
-  #Results inspect
-  results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
-  print(results_inspect)
-  
-  #Data
-  sim_data_rep <- readRDS(paste0(results_inspect, 'sim_data.rds')) 
-  cat('Sum sim data = ', sum(sim_data_rep))
-  df_sum_stats <- readRDS(paste0(results_inspect, 'df_summary_stats_', rep, '.rds'))
-  list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_', rep, '.rds'))
-  mcmc_params <- readRDS(paste0(results_inspect, '/mcmc_params_rep_', rep, '.rds' ))
-  
-  #Plot p vals & summary stats
-  plot_rep_results(true_r0, model_type, sim_data_rep, df_sum_stats, list_p_vals, upper_quant, trim_flag) 
-  
-  #Plot MCMC results 
-  plot_mcmc_results_r0(sim_data_rep, mcmc_params, true_r0, time_elap, rep)
-  get_mcmc_runs_base_model(results_home, sim_data_rep, mcmc_params, list_i)
-  
-} 
-
 #################
 #P VALUE DATASET 
 get_df_p_vals <- function(results_home, model_type, iter){
@@ -225,40 +201,6 @@ get_sim_data_i <- function(i, mcmc_params, sim_data_path, colourX){
   
 }
 
-#BASE MODEL - Simulations from MCMC 
-get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, list_idx){
-  
-  #Results inspect
-  sim_data_path = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/mcmc/')
-  print(sim_data_path)
-  
-  #Plot
-  colorsX <- rainbow(length(list_idx)+1)
-  par(mfrow=c(3,4))
-  
-  #i. Sim infections data (True for the rep)
-  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste0(rep, ", ", model_type, ', R0:', true_r0), #model_type
-          col = colorsX[1],
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  
-  #Loop - Get mcmc rep
-  for (i in seq_along(list_idx)){
-    #Sim Data
-    sim_data_mcmc_rep <- readRDS(paste0(sim_data_path, 'sim_data_iter_', i, '.rds'))
-    
-    r0_mcmc = mcmc_params[1]; r0_mcmc = unlist(r0_mcmc)
-    r0_i = round(r0_mcmc[i], 2)
-    
-    #Plot
-    plot.ts(sim_data_mcmc_rep, xlab = 'Time', ylab = 'Daily Infections count',
-            main = paste0("It_", i, ', R0 inferred:', r0_i), #model_type
-            col = colourX, lwd = 2,
-            cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  }
-  
-}
-
 #GET MCMC DATA
 get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_elap){
   
@@ -281,7 +223,7 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 
 
 ##############################################
-#SSE MODEL - INSPECT SPECIFIC REPS
+#MODELs x3 APPLY - INSPECT SPECIFIC REPS
 time_elap = 1.15
 model_type = 'sse_inf_sse_sim' #'sse_inf_base_sim'  #'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
 iter = 1
@@ -290,10 +232,6 @@ n_reps = 100
 
 #SSE
 df_sseI = get_df_p_vals(results_home, model_type, iter)
-
-#Base
-#df_baseI = get_df_p_vals(results_home, model_type, iter)
-plot_p_vals(df_baseI)
 
 #Rep specific
 upper_quant = 0.99 #1.0
@@ -305,8 +243,3 @@ rep = 10 #18 #10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 
-##############################################################################
-#BASE MODEL - INSPECT SPECIFIC REPS
-rep = 17 #19 #68 #23 #6 #34 #9 #26 #14, 73
-display_rep_results_base(results_home, model_type, iter, rep, true_r0,
-                     upper_quant, trim_flag, list_i, time_elap)
