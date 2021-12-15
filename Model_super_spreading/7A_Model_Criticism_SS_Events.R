@@ -183,7 +183,7 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, 
   
   #Repeat for n repswhich(col_sum_stat < col_true_val) 
   
-  for(rep in 1:n_reps) {
+  for(rep in 42:n_reps) {
     
     cat('\n rep =', rep, '\n')
     folder_rep = paste0(base_folder, '/rep_', rep)

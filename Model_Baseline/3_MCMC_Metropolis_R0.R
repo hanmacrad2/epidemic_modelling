@@ -79,16 +79,15 @@ mcmc_r0 <- function(data, n, sigma, x0 = 1, burn_in) {
       r0_vec[i] <- r0_vec[i-1]
     }
   }
-  #Final stats
-  total_iters = count_accept + count_reject
-  accept_rate = 100*(count_accept/(count_accept+count_reject))
-  print("Total iterations = ")
-  print(total_iters)
-  print("Acceptance rate = ")
-  print(accept_rate)
   
+  #r0_vec
   r0_vec = r0_vec[burn_in:n]
-  r0_vec
+  
+  #Final stats
+  accept_rate = 100*(count_accept/n)
+  print(paste0("Acceptance rate = ",accept_rate))
+  
+  return(list(r0_vec, accept_rate))
 }
 
 #Apply MCMC

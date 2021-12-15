@@ -142,7 +142,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   total_infecteds = vector('numeric', num_days)
   nss_infecteds = vector('numeric', num_days)
   ss_infecteds = vector('numeric', num_days)
-  total_infecteds[1] = 2
+  total_infecteds[1] = 3
   nss_infecteds[1] = 2
   ss_infecteds[1] = 1 
   
@@ -203,6 +203,54 @@ log_like <- function(y, r0_dash){
   
   logl
   
+}
+
+#######################
+# BASE MCMC
+mcmc_r0 <- function(data, n, sigma, burn_in, x0 = 1) {
+  
+  'Returns mcmc samples of R0'
+  #Data
+  print('sim data')
+  print(data)
+  
+  #Set up
+  r0_vec <- vector('numeric', n)
+  r0_vec[1] <- x0
+  U <- runif(n)
+  count_accept = 0
+  
+  #MCMC chain
+  for(i in 2:n) {
+    r0_dash <- r0_vec[i-1] + rnorm(1, sd = sigma) #, mean = 0, sd = sigma_opt)
+    if(r0_dash < 0){
+      r0_dash = abs(r0_dash)
+    }
+    
+    #Alpha
+    log_alpha = log_like(data, r0_dash) - log_like(data, r0_vec[i-1]) - r0_dash + r0_vec[i-1] #exponential prior
+    #log_alpha = log_like(data, Y) - log_like(data, r0_vec[i-1]) + dgamma(Y, shape = 1, scale = 1, log = TRUE) - dgamma(r0_vec[i-1], shape = 1, scale = 1, log = TRUE) 
+    #Should include: Likelihood + prior + propogsal density x2 (Previous time step & Current time step)
+    
+    if (is.na(log_alpha)){
+      print('na value')
+      sprintf("r0_dash: %i", r0_dash)
+    }
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+      r0_vec[i] <- r0_dash
+      count_accept = count_accept + 1
+    } else {
+      r0_vec[i] <- r0_vec[i-1]
+    }
+  }
+  #Final stats
+  accept_rate = 100*(count_accept/n)
+  print(paste0("Acceptance rate = ",accept_rate))
+  
+  r0_vec = r0_vec[burn_in:n]
+  r0_vec
+  
+  return(list(r0_vec, accept_rate))
 }
 
 #*******************************************************************************
