@@ -225,13 +225,13 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 ##############################################
 #MODELs x3 APPLY - INSPECT SPECIFIC REPS
 time_elap = 1.15
-model_type = 'sse_inf_sse_sim' #'sse_inf_base_sim'  #'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
+model_type = 'sse_inf_ssi_sim' #sse_inf_sse_sim' #'sse_inf_base_sim'  #'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
 iter = 1
 n_mcmc = 5500
 n_reps = 100
 
 #SSE
-df_sseI = get_df_p_vals(results_home, model_type, iter)
+df_ssiI = get_df_p_vals(results_home, model_type, iter)
 
 #Rep specific
 upper_quant = 0.99 #1.0
@@ -239,7 +239,7 @@ trim_flag = FALSE #TRUE #
 list_i = seq(from = 500, to = 5500, by = 500)
 
 #Rep
-rep = 10 #18 #10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+rep = 9 #24 #10 #18 #10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 

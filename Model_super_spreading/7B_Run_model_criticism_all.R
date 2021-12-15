@@ -73,14 +73,14 @@ print(paste0('Time elapsed mcmc :', time_elapA))
 
 ###############
 #APPLY SUMMARY STATS + p vals
-n_reps = 100
+n_reps = 69 #100
 start_time = Sys.time()
 print(paste0('Start time:', start_time))
 get_sum_stats_total(base_folder_current, n_reps)
 df_p_valuesII = get_p_values_total(base_folder_current, n_reps)
 end_time = Sys.time()
 #time_elapII = time_elapA + round(end_time - start_time, 2)
-print(paste0('Time elapsed total:', time_elapIII))
+#print(paste0('Time elapsed total:', time_elapIII))
 
 #PLOT
 plot_p_vals(df_p_valuesII)
