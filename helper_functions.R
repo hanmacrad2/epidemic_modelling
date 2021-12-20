@@ -1,6 +1,41 @@
 #R - helper functions
 library(data.table)
 
+################
+#TIME
+
+print_time <- function(start_time, end_time){
+  'Print difference between end & start time'
+  
+  time_elap = round(end_time - start_time, 2)
+  print(paste0('Time elapsed:'), time_elap)
+  
+}
+
+get_time <- function(start_time, end_time){
+  'Print difference between end & start time'
+  
+  time_elap = round(end_time - start_time, 2)
+  print(paste0('Time elapsed:'), time_elap)
+  time_elap
+  
+}
+
+get_timeII <- function(start_time, end_time, timeI){
+  'Print difference between end & start time'
+  
+  time_elap = round(end_time - start_time, 2) + timeI
+  print(paste0('Time elapsed:'), time_elap)
+  time_elap
+  
+}
+
+#TIME
+#time_elapI = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
+
+################
+# DATA
+
 #Trim data for a histogram between the lb quartile and upper bound quartile
 trim_q <- function(x, lb, ub){
   'Trim data for a histogram between the lb quartile and upper bound quartile'

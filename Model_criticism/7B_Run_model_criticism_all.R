@@ -1,50 +1,64 @@
 #RUN ALL COMBINATIONS
 
 #Setup
-source("functions.R")
-source("7A_Model_Criticism_SS_Events.R")
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
+setwd("~/GitHub/epidemic_modelling")
+source("epidemic_functions.R")
+source("helper_functions.R")
+source("Model_criticism/7A_Model_Criticism_SS_Events.R")
+results_home =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_I"
 
-############################################################
-# RUN I
-###############
-#APPLY MCMC
-model_type = 'sse_inf_sse_sim' #base_sim_sse_inf' #'ssi_sim_sse_inf'
-flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline  
-iter = 3
- base_folder_current = paste0(results_home, model_type, '/iter_', iter) 
-print(base_folder_current)
-
-#Repitions 
+#RESULT REPITIONS
 n_mcmc = 5500
 n_reps = 500
 burn_in = 500
 thinning_factor = 5 #0 #(1/1000)*n;
 
+############# --- MCMC --- #############################
+alphaX = 0.8 #0.7 #0.8 #0.7 
+betaX = 0.1 #0.05 #0.025 #0.2 #0.1 
+gammaX = 10 #8 #TRY WITH SMALLER GAMMA
+true_r0 = alphaX + betaX*gammaX
+true_r0
+model_params = c(alphaX, betaX, gammaX, true_r0)
+
+#MCMC - sigma
+sigma_a = 0.4*alphaX
+sigma_b = 1.0*betaX 
+sigma_g = 0.85*gammaX
+sigma_bg = 1.5*gammaX
+sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
+
+#########################################################
+# RUN I
+
+###############
+#APPLY MCMC
+model_type = 'sse_inf_sse_sim' #base_sim_sse_inf' #'ssi_sim_sse_inf'
+flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline  
+iter = 1
+base_folder_current = paste0(results_home, model_type, '/iter_', iter) 
+print(base_folder_current)
+
 #START MCMC
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-run_mcmc_reps(n, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
+run_mcmc_reps_ss(n_mcmc, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
 end_time = Sys.time()
-total_time_elap = round(end_time - start_time, 2)
-print('Time elapsed:')
-print(time_elap)
+timei = get_time(start_time, end_time)
+
 
 ###############
 #APPLY SUMMARY STATS + p vals
 start_time = Sys.time()
-print('Start time:')
-print(start_time)
+print(paste0('Time elapsed:'), start_time)
 get_sum_stats_total(base_folder_current, thinning_factor, n_reps, n_mcmc) 
 df_p_valuesI = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
-time_elapI = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
-print(paste0('Time elapsed:', time_elapI))
+timeI = get_timeII(start_time, end_time, timei)
 
 #PLOT
 plot_p_vals(df_p_valuesI)
-#plot_p_vals(df_p_vals_si)
 
 ############################################################
 #RUN II - sse_inf_ssi_sim
@@ -59,10 +73,10 @@ print(base_folder_current)
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-#run_mcmc_reps(n, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
+run_mcmc_reps_ss(n_mcmc, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
 end_time = Sys.time()
-time_elapA = round(end_time - start_time, 2)
-print(paste0('Time elapsed mcmc :', time_elapA))
+timeii = get_time(start_time, end_time)
+
 
 ###############
 #APPLY SUMMARY STATS + p vals
@@ -71,8 +85,7 @@ print(paste0('Start time:', start_time))
 get_sum_stats_total(base_folder_current, thinning_factor, n_reps, n_mcmc) 
 df_p_valuesII = get_p_values_total(base_folder_current, n_reps)
 end_time = Sys.time()
-time_elapII = time_elapA + round(end_time - start_time, 2)
-print(paste0('Time elapsed total:', time_elapIII))
+timeII = get_timeII(start_time, end_time, timeii)
 
 #PLOT
 plot_p_vals(df_p_valuesII)
@@ -90,10 +103,9 @@ print(base_folder_current)
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-#run_mcmc_reps(n, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
+run_mcmc_reps_ss(n_mcmc, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
 end_time = Sys.time()
-time_elapA = round(end_time - start_time, 2)
-print(paste0('Time elapsed mcmc :', time_elapA))
+timeiii = get_time(start_time, end_time)
 
 ###############
 #APPLY SUMMARY STATS + p vals
@@ -103,8 +115,7 @@ get_sum_stats_total(base_folder_current, thinning_factor, n_reps, n_mcmc)
 df_p_valuesIII = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
 print(end_time)
-time_elapIII = time_elapA + round(end_time - start_time, 2)
-print(paste0('Time elapsed total:', time_elapIII))
+timeIII = get_timeII(start_time, end_time, timeiii)
 
 #PLOT
 plot_p_vals(df_p_valuesIII)

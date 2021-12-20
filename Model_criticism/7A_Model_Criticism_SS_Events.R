@@ -1,12 +1,8 @@
-#Aim: Model Criticism of Super-Spreading Events Model
+#####################################################
+#AIM: MODEL CRITICISM of SUPER-SPREADING EVENTS MODEL
 
 #SETUP
-library(MASS)
-library(pracma)
-setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
-source("functions.R")
-#library(tidyverse)
-#library(tibble)
+setwd("~/GitHub/epidemic_modelling")
 
 #Epidemic params
 num_days = 50
@@ -34,6 +30,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
   
   'Returns mcmc samples of alpha & acceptance rate'
+  print('MCMC SUPERSPREADING')
   
   #Initialise params
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
@@ -169,7 +166,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
 
 ################
 #1i. REPEAT MCMC
-run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
+run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
   
   'Run mcmc for n_reps iterations and save'
   
@@ -192,20 +189,21 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, 
     #Simulate data
     if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+      print('simulate ss events model')
       saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      cat('simulate ss individs')
+      print('simulate ss individuals model')
       saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
       saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
-      cat('simulate_branching')
+      print('simulate base model')
     }
     
     #MCMC
     mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
-    
+      
     #SAVE MCMC PARAMS 
     saveRDS(mcmc_params, file = paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
     
@@ -432,9 +430,3 @@ plot_p_vals <- function(df_p_vals){
     abline(v = 0.05, col = 'red', lwd = 2)
   }
 }
-
-#
-#Final val
-num_iters = length(col_sum_stat)# - 1
-#P value
-prop_lt = length(which(col_sum_stat < col_true_val))/num_iters
