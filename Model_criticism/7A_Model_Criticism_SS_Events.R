@@ -3,10 +3,10 @@
 #SETUP
 library(MASS)
 library(pracma)
-library(tidyverse)
-library(tibble)
 setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
+#library(tidyverse)
+#library(tibble)
 
 #Epidemic params
 num_days = 50
@@ -169,7 +169,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
 
 ################
 #1i. REPEAT MCMC
-run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_results, burn_in){
+run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
   
   'Run mcmc for n_reps iterations and save'
   
@@ -181,42 +181,45 @@ run_mcmc_reps <- function(n, n_reps, model_params, sigma, flag_dt, folder_result
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   cat('r0 = ', r0, '\n'); 
   
-  #Repeat for n repswhich(col_sum_stat < col_true_val) 
-
+  #Repeat for n reps
+  
   for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
-    #Folder
-    folder_folder_rep = paste0(folder_results, '/rep_', rep)
-    cat('\n folder_folder_rep =', folder_folder_rep, '\n')
-    ifelse(!dir.exists(file.path(folder_folder_rep)), dir.create(file.path(folder_folder_rep), recursive = TRUE), FALSE)
+    folder_rep = paste0(base_folder, '/rep_', rep)
+    ifelse(!dir.exists(file.path(folder_rep)), dir.create(file.path(folder_rep), recursive = TRUE), FALSE)
     
     #Simulate data
     if (flag1){
       sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag2){
       sim_data = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
       cat('simulate ss individs')
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
     } else if (flag3) {
       sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
-      saveRDS(sim_data, file = paste0(folder_folder_rep, '/sim_data.rds'))
+      saveRDS(sim_data, file = paste0(folder_rep, '/sim_data.rds'))
       cat('simulate_branching')
     }
     
     #MCMC
-    mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_folder_rep, rep, burn_in)
+    mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
     
     #SAVE MCMC PARAMS 
-    saveRDS(mcmc_params, file = paste0(folder_folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
-  
+    saveRDS(mcmc_params, file = paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
+    
   }
   
 }
 
+#*******************************************************#******************************************
+#*
 ######################################################
 #2.  MODEL CRITICISM - GET SUMMARY STATS
+
+############
+#1. P VALUES FUCNTION
 get_p_values <- function(col_sum_stat, col_true_val) {
   'Get p values - comparing  summary stat columns to true value'
   
@@ -226,6 +229,7 @@ get_p_values <- function(col_sum_stat, col_true_val) {
   prop_lt = length(which(col_sum_stat < col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
   prop_gt = length(which(col_sum_stat > col_true_val))/num_iters + 0.5*(length(which(col_sum_stat == col_true_val)))/num_iters
   pvalue = min(prop_lt, prop_gt)
+  pvalue = pvalue*2
   
   #Return p value 
   pvalue
@@ -248,10 +252,15 @@ get_p_values_list <- function(col_sum_stat, col_true_val){
   return(list(prop_lt, prop_gt, pvalue, eq_half))
 }
 
-#Get summary statisitcs
+#################
+#2. SUMMARY STATS
 get_summary_stats <- function(data, flag_create){
   
-  'Get summary statisitcs of the simulated data'
+  'Calculate summary statisitcs of the simulated data'
+  #Summary stats params
+  start_half2 = (length(data)/2)+1
+  stop_half2 = length(data)
+  
   if (flag_create){
     
     #Df
@@ -265,9 +274,8 @@ get_summary_stats <- function(data, flag_create){
       max_dif = max(abs(diff(data))),
       med_dif = median(abs(diff(data))),
       mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
-      sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
-      sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
-      
+      sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
+      sum_2nd_half =  sum(data[start_half2:stop_half2]) #sum(which(data > quantile(data)[3][1][1]))
     )
     
   } else {
@@ -277,17 +285,18 @@ get_summary_stats <- function(data, flag_create){
                                  mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
                                  max(abs(diff(data))), median(abs(diff(data))),
                                  mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
-                                 sum_1st_half  = sum(which(data < quantile(data)[3][1][1])),
-                                 sum_2nd_half =  sum(which(data > quantile(data)[3][1][1]))
+                                 sum(data[1:(length(data)/2)]),
+                                 sum(data[start_half2:stop_half2]) #sum(which(data > quantile(data)[3][1][1]))
     )
   }
   
   summary_stats_results
-  
+ 
 }
 
-#GET SUMMARY STATS & P VALUES FOR ALL MCMC REPS
-get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
+############
+#2B. TOTAL SUMMARY STATS 
+get_sum_stats_total <- function(base_folder_current, thinning_factor, n_reps, n_mcmc){
   
   'Get summary stats and p vals for all mcmc reps'
   
@@ -295,11 +304,13 @@ get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
     
     #Get results
     folder_rep = paste0(base_folder_current, "/rep_", rep, '/')
-    print(folder_rep)
+    cat('rep = ', rep)
     true_rep_sim = readRDS(paste0(folder_rep, '/sim_data.rds'))
     mcmc_params <- readRDS(paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
     #Get true summary statistics 
     df_true_ss = get_summary_stats(true_rep_sim, TRUE)
+    #Save 
+    saveRDS(df_true_ss, file = paste0(folder_rep, 'df_true_sum_stats_rep_', rep, '.rds' ))
     
     #Get parameters
     alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
@@ -308,8 +319,8 @@ get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
     r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
     
     #Simulate data using thinned params
-    for(i in seq(burn_in, n, by = thinning_factor)){
-      print(paste0("mcmc summary stat rep ", i))
+    for(i in seq(burn_in, n_mcmc, by = thinning_factor)){
+      #print(paste0("mcmc summary stat rep ", i))
       #Simulate data
       sim_data_model_crit = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alpha_mcmc[i], beta_mcmc[i], gamma_mcmc[i])
       #Save data
@@ -317,7 +328,7 @@ get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
       
       #Get summary stats. 
       if (i == burn_in) { #first rep
-        cat('CREATE DF')
+        #cat('CREATE  df_summary_stats')
         flag_create = TRUE
         df_summary_stats = get_summary_stats(sim_data_model_crit, flag_create)
         flag_create = FALSE 
@@ -327,108 +338,103 @@ get_sum_stats_p_values_total <- function(base_folder_current, n_reps){
         df_summary_stats[nrow(df_summary_stats) + 1, ] = get_summary_stats(sim_data_model_crit, flag_create)
         list_ss_iters = c(list_ss_iters, i)
       }
+      
     }
+    
     #Save summary stats
-    saveRDS(df_summary_stats, file = paste0(folder_results, '/df_summary_stats_', rep, ".rds"))
-    
-    #p values
-    list_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values(df_summary_stats[,x], df_true_ss[,x]))
-    saveRDS(list_p_vals, file = paste0(folder_results, '/list_p_vals_rep', rep, ".rds"))
-    
-    list_all_p_vals = sapply(1:ncol(df_summary_stats), function(x) get_p_values_list(df_summary_stats[,x], df_true_ss[,x]))
-    saveRDS(list_all_p_vals, file = paste0(folder_results, '/list_all_p_vals_rep_', rep, ".rds"))
-    
-    #Save all 
-    if (i == burn_in) { #first rep
-      
-      #Create df; sum etc
-      df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
-                               median_inf_count = list_p_vals[2],
-                               max_inf_count = list_p_vals[3],
-                               std_inf_counts = list_p_vals[4],
-                               val_75_infs_counts = list_p_vals[5],
-                               val_87_5_infs_counts = list_p_vals[6],
-                               max_dif = list_p_vals[7],
-                               med_dif = list_p_vals[8],
-                               mean_upper_dif = list_p_vals[9],
-                               sum_1st_half  = list_p_vals[10],
-                               sum_2nd_half =  list_p_vals[11]
-                               
-      )
-      print('df_p_values')
-      print(df_p_values)
-      
-    } else {
-      
-      df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
+    saveRDS(df_summary_stats, file = paste0(folder_rep, '/df_summary_stats_', rep, ".rds"))
+    #print(paste0('df_summary_stats', df_summary_stats))
+    #Save ss iterations
+    saveRDS(list_ss_iters, file = paste0(folder_rep, '/list_ss_iters_i', rep, '.rds'))  
+
     }
-    
-  }
+}
+
+############
+#3. GET P VALUES FOR ALL  REPS
+get_p_values_total <- function(base_folder_current, n_reps){
+
+    for(rep in 1:n_reps) {
+      cat('rep = ', rep)
+      #Get results
+      folder_rep = paste0(base_folder_current, "/rep_", rep, '/')
+      cat('folder_rep', folder_rep)
+      true_rep_sim = readRDS(paste0(folder_rep, '/sim_data.rds'))
+      #Get true summary statistics 
+      df_true_ss = get_summary_stats(true_rep_sim, TRUE)
+      
+      #Data
+      df_summary_stats_rep <- readRDS(paste0(folder_rep, '/df_summary_stats_', rep, '.rds' ))
+      
+      #Get p values
+      list_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values(df_summary_stats_rep[,x], df_true_ss[,x]))
+      saveRDS(list_p_vals, file = paste0(folder_rep, '/list_p_vals_rep', rep, ".rds"))
+      
+      list_all_p_vals = sapply(1:ncol(df_summary_stats_rep), function(x) get_p_values_list(df_summary_stats_rep[,x], df_true_ss[,x]))
+      saveRDS(list_all_p_vals, file = paste0(folder_rep, '/list_all_p_vals_rep_', rep, ".rds"))
+      
+      #Save all 
+      if (!exists("df_p_values")) {
+        df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
+                                 median_inf_count = list_p_vals[2],
+                                 max_inf_count = list_p_vals[3],
+                                 std_inf_counts = list_p_vals[4],
+                                 val_75_infs_counts = list_p_vals[5],
+                                 val_87_5_infs_counts = list_p_vals[6],
+                                 max_dif = list_p_vals[7],
+                                 med_dif = list_p_vals[8],
+                                 mean_upper_dif = list_p_vals[9],
+                                 sum_1st_half  = list_p_vals[10],
+                                 sum_2nd_half =  list_p_vals[11]
+                                 
+        )
+        print(paste0('df_p_values', df_p_values))
+        
+      } else {
+        df_p_values[nrow(df_p_values) + 1, ] = list_p_vals
+      }
+        
+    }
   
   #Ensure its a df
   df_p_values = as.data.frame(df_p_values)
   
   #SaveRDS
   saveRDS(df_p_values, file = paste0(base_folder_current, '/total_p_values_iter_', iter, '.rds' ))
-  #Save ss iterations
-  saveRDS(list_ss_iters, file = paste0(base_folder_current, '/list_ss_iters_i', rep, '.rds'))  
   
   #Return p values
   df_p_values
   
 }
 
-#Plot P VALUES
-
-#Plot p values
+############
+#4.PLOT P VALUES
 plot_p_vals <- function(df_p_vals){
   
   'Plot histograms of the p values'
   par(mfrow=c(3,4)) #c(3,4)
   
+  #Prop lt than 0.05
+  num_iters = length(df_p_vals[,1])
+  
   for (i in c(1:11)){
+    
+    #Prop lt 0.05
+    val_05 = 0.05
+    percent_lt_05 = (length(which(df_p_vals[,i] < val_05))/num_iters)*100
     
     hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
-         xlab = 'p value', ylab = 'Num Samples', col = 'green',
+         xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
+         ylab = 'Num Samples', col = 'green',
          main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    #abline(v = true_sum_inf, col = 'red', lwd = 2)
+    abline(v = 0.05, col = 'red', lwd = 2)
   }
 }
 
-###############
-#APPLY MCMC
-model_type = 'ss_events' #base_sim_sse_inf' #'ssi_sim_sse_inf'
-flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
-iter = 1
-base_folder_current = paste0('~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/', '', model_type, '/iter_', iter)
-print(base_folder_current)
-
-#Repitions 
-n = 5500
-n_reps = 100
-burn_in = 500
-thinning_factor = 50 #(1/1000)*n;
-start_time = Sys.time()
-print('Start time:')
-print(start_time)
-#run_mcmc_reps(n, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
-end_time = Sys.time()
-total_time_elap = round(end_time - start_time, 2)
-print('Time elapsed:')
-print(time_elap)
-
-###############
-#APPLY SUMMARY STATS + p vals
-n_reps = 100
-start_time = Sys.time()
-print('Start time:')
-print(start_time)
-df_p_valuesI = get_sum_stats_p_values_total(base_folder_current, n_reps) 
-end_time = Sys.time()
-time_elap = round(end_time - start_time, 2)
-print('Time elapsed:')
-print(time_elap)
-
-plot_p_vals(df_p_valuesI)
+#
+#Final val
+num_iters = length(col_sum_stat)# - 1
+#P value
+prop_lt = length(which(col_sum_stat < col_true_val))/num_iters
