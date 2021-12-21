@@ -5,7 +5,7 @@ setwd("~/GitHub/epidemic_modelling")
 source("epidemic_functions.R")
 source("helper_functions.R")
 source("Model_criticism/7A_Model_Criticism_SS_Events.R")
-results_home =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_I"
+results_home =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_I/"
 
 #RESULT REPITIONS
 n_mcmc = 5500
@@ -119,3 +119,6 @@ timeIII = get_timeII(start_time, end_time, timeiii)
 
 #PLOT
 plot_p_vals(df_p_valuesIII)
+
+##########################
+#REMOVE START REP FROM RUNS_MCMC

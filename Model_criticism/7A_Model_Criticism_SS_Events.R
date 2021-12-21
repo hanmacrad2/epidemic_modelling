@@ -25,7 +25,7 @@ sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 
 
-######################################################
+##############################
 #1. MCMC
 mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
   
@@ -164,7 +164,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
               accept_rate1, accept_rate2, accept_rate3, accept_rate4))
 }
 
-################
+##############################
 #1i. REPEAT MCMC
 run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
   
@@ -176,11 +176,17 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
   
   #Data_type
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
-  cat('r0 = ', r0, '\n'); 
+  cat('r0 = ', r0, '\n');
+  
+  if (flag1){
+    start_rep = 291
+  } else {
+    start_rep = 1
+  }
   
   #Repeat for n reps
   
-  for(rep in 1:n_reps) {
+  for(rep in start_rep:n_reps) {
     
     cat('\n rep =', rep, '\n')
     folder_rep = paste0(base_folder, '/rep_', rep)
@@ -213,10 +219,10 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
 
 #*******************************************************#******************************************
 #*
-######################################################
+########################################
 #2.  MODEL CRITICISM - GET SUMMARY STATS
 
-############
+##############################
 #1. P VALUES FUCNTION
 get_p_values <- function(col_sum_stat, col_true_val) {
   'Get p values - comparing  summary stat columns to true value'
@@ -292,7 +298,7 @@ get_summary_stats <- function(data, flag_create){
  
 }
 
-############
+##############################
 #2B. TOTAL SUMMARY STATS 
 get_sum_stats_total <- function(base_folder_current, thinning_factor, n_reps, n_mcmc){
   
@@ -348,7 +354,7 @@ get_sum_stats_total <- function(base_folder_current, thinning_factor, n_reps, n_
     }
 }
 
-############
+##############################
 #3. GET P VALUES FOR ALL  REPS
 get_p_values_total <- function(base_folder_current, n_reps){
 
@@ -405,7 +411,7 @@ get_p_values_total <- function(base_folder_current, n_reps){
   
 }
 
-############
+#############################
 #4.PLOT P VALUES
 plot_p_vals <- function(df_p_vals){
   
