@@ -1,4 +1,4 @@
-#RUN ALL COMBINATIONS
+#RUN ALL COMBINATIONS (SS Events & BASE)
 
 #Setup
 setwd("~/GitHub/epidemic_modelling")

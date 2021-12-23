@@ -178,15 +178,15 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   cat('r0 = ', r0, '\n');
   
-  if (flag1){
-    start_rep = 291
-  } else {
-    start_rep = 1
-  }
+  # if (flag1){
+  #   start_rep = 291
+  # } else {
+  #   start_rep = 1
+  # }
   
   #Repeat for n reps
   
-  for(rep in start_rep:n_reps) {
+  for(rep in 1:n_reps) {
     
     cat('\n rep =', rep, '\n')
     folder_rep = paste0(base_folder, '/rep_', rep)
@@ -272,7 +272,7 @@ get_summary_stats <- function(data, flag_create){
       sum_inf_counts = sum(data),
       median_inf_count = median(data),
       max_inf_count = max(data),
-      std_inf_counts = std(data),
+      sd_inf_counts = sd(data),
       val_75_infs_counts = quantile(data)[4][1][1],
       val_87_5_infs_counts = mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
       max_dif = max(abs(diff(data))),
@@ -285,7 +285,7 @@ get_summary_stats <- function(data, flag_create){
   } else {
     #List
     summary_stats_results = list(sum(data), median(data), max(data),
-                                 std(data), quantile(data)[4][1][1], 
+                                 sd(data), quantile(data)[4][1][1], 
                                  mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
                                  max(abs(diff(data))), median(abs(diff(data))),
                                  mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
@@ -382,7 +382,7 @@ get_p_values_total <- function(base_folder_current, n_reps){
         df_p_values = data.frame(sum_inf_counts = list_p_vals[1],
                                  median_inf_count = list_p_vals[2],
                                  max_inf_count = list_p_vals[3],
-                                 std_inf_counts = list_p_vals[4],
+                                 sd_inf_counts = list_p_vals[4],
                                  val_75_infs_counts = list_p_vals[5],
                                  val_87_5_infs_counts = list_p_vals[6],
                                  max_dif = list_p_vals[7],

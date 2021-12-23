@@ -6,7 +6,7 @@ source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R") 
 source("7A_Model_Criticism_SS_Events.R")
 #results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
+#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTS 
@@ -237,11 +237,11 @@ plot_p_vals(df_sseI)
 
 #Rep specific
 upper_quant = 0.99 #1.0
-trim_flag = TRUE #FALSE # #
+trim_flag = FALSE #TRUE # # #
 list_i = seq(from = 500, to = 5500, by = 500)
 
 #Rep
-rep = 3 #9 #24 #10 #18 #10 #6 #8 #2 #12 #98 #87 #3 #20 #3 #16 #33 #16 #87 #17 #10 #8 #15, 86
+rep = 7 #1 #34 #26 #54
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap)
 

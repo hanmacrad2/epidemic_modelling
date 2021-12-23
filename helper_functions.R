@@ -8,7 +8,8 @@ print_time <- function(start_time, end_time){
   'Print difference between end & start time'
   
   time_elap = round(end_time - start_time, 2)
-  print(paste0('Time elapsed:'), time_elap)
+  print('Time elapsed:') 
+  print(time_elap)
   
 }
 
@@ -16,8 +17,8 @@ get_time <- function(start_time, end_time){
   'Print difference between end & start time'
   
   time_elap = round(end_time - start_time, 2)
-  print(paste0('Time elapsed:'), time_elap)
-  time_elap
+  print('Time elapsed:') 
+  print(time_elap)
   
 }
 
@@ -25,8 +26,8 @@ get_timeII <- function(start_time, end_time, timeI){
   'Print difference between end & start time'
   
   time_elap = round(end_time - start_time, 2) + timeI
-  print(paste0('Time elapsed:'), time_elap)
-  time_elap
+  print('Time elapsed:') 
+  print(time_elap)
   
 }
 
