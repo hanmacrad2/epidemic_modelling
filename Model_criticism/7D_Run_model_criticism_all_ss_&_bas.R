@@ -10,8 +10,9 @@ results_folder =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_critic
 
 #####################################################******************************************************
 #RUN INFERENCE: SS EVENTS
-inference_type = 'ss_events_infer'
-results_home =  paste0(resuls_folder, inference_type)
+inference_type = 'ss_events_infer/'
+results_home =  paste0(results_folder, inference_type)
+print(results_home)
 
 #RESULT REPITIONS
 n_mcmc = 5500
@@ -136,8 +137,9 @@ plot_p_vals(df_p_valuesIII)
 #*
 #*******************************************************************************************************
 #RUN INFERENCE: BASE MODEL
-inference_type = 'base_infer'
-results_home =  paste0(resuls_folder, inference_type)
+inference_type = 'base_infer/'
+results_home =  paste0(results_folder, inference_type)
+print(results_home)
 
 #########################################################
 # RUN I
