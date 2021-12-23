@@ -5,8 +5,7 @@ setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
 source("functions.R")
 source("~/GitHub/epidemic_modelling/helper_functions.R") 
 source("7A_Model_Criticism_SS_Events.R")
-#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
-#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
+results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_05k_I/"
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTS 
@@ -92,16 +91,25 @@ plot_p_vals <- function(df_p_vals){
   'Plot histograms of the p values'
   par(mfrow=c(3,4)) #c(3,4)
   
+  #Prop lt than 0.05
+  num_iters = length(df_p_vals[,1])
+  
   for (i in c(1:11)){
+    
+    #Prop lt 0.05
+    val_05 = 0.05
+    percent_lt_05 = (length(which(df_p_vals[,i] < val_05))/num_iters)*100
     
     hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
-         xlab = 'p value', ylab = 'Num Samples', col = 'green',
+         xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
+         ylab = 'Num Samples', col = 'green',
          main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    #abline(v = true_sum_inf, col = 'red', lwd = 2)
+    abline(v = 0.05, col = 'red', lwd = 2)
   }
 }
+
 
 ##################
 #PLOT SUMMARY STATS

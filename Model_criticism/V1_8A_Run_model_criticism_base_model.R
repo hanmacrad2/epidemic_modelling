@@ -1,9 +1,8 @@
 #Setup
 source("functions.R")
 source("7A_Model_Criticism_SS_Events.R")
-#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
-#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/base/"
+
+#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/base/"
 source("7A_Model_Criticism_SS_Events.R")
 source("7B_Run_model_criticism_all.R")
 source("7C_Inspect_output_model_criticism.R")
