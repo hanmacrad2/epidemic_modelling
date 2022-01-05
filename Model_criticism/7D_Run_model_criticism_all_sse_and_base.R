@@ -15,6 +15,7 @@ results_home =  paste0(results_folder, inference_type)
 print(results_home)
 
 #RESULT REPITIONS
+iter = 1
 n_mcmc = 5500
 n_reps = 1000
 burn_in = 500
@@ -43,7 +44,6 @@ sigma_base = 0.5
 #APPLY MCMC
 model_type = 'sse_inf_sse_sim' #base_sim_sse_inf' #'ssi_sim_sse_inf'
 flags_data_type = c(TRUE, FALSE, FALSE) #1)ss_events, 2) ss_individuals, 3) basline
-iter = 1
 base_folder_current = paste0(results_home, model_type, '/iter_', iter)
 print(base_folder_current)
 # 

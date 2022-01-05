@@ -1,11 +1,14 @@
 #INSPECT OUTPUT OF MODEL CRITICISM
 
 #Set up params
-setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
-source("functions.R")
-source("~/GitHub/epidemic_modelling/helper_functions.R") 
-source("7A_Model_Criticism_SS_Events.R")
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_05k_I/"
+setwd("~/GitHub/epidemic_modelling")
+source("epidemic_functions.R")
+source("helper_functions.R")
+source("Model_criticism/7A_Model_Criticism_SS_Events.R")
+source("Model_criticism/7D_Run_model_criticism_all_sse_and_base.R")
+#source("Model_criticism/7D_Run_model_criticism_all_sse_and_base.R")
+#See 7D
+#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_05k_I/"
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTS 
@@ -100,11 +103,23 @@ plot_p_vals <- function(df_p_vals){
     val_05 = 0.05
     percent_lt_05 = (length(which(df_p_vals[,i] < val_05))/num_iters)*100
     
+    if (i == 1){
+      
+      hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
+           #xlim = c(xmin, xmax),
+           xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
+           ylab = 'Num Samples', col = 'green',
+           main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0, ', n reps:', num_iters),
+           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+      abline(v = 0.05, col = 'red', lwd = 2)
+      
+    }
+    
     hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
          #xlim = c(xmin, xmax),
          xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
          ylab = 'Num Samples', col = 'green',
-         main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0),
+         main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0, ', n reps:', num_iters),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     abline(v = 0.05, col = 'red', lwd = 2)
   }
@@ -232,11 +247,9 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 
 ##############################################
 #MODELs x3 APPLY - INSPECT SPECIFIC REPS
-time_elap = 1.15
+#time_elap = 1.15
+#iter = 3
 model_type = 'sse_inf_sse_sim' #'sse_inf_ssi_sim' ' #'sse_inf_base_sim'  #'sse_inf_sse_sim' #'sse_inf_ssi_sim' #' #base_sim_sse_inf'
-iter = 3
-n_mcmc = 5500
-n_reps = 100
 
 #SSE
 df_sseI = get_df_p_vals(results_home, model_type, iter)
