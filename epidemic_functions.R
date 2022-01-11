@@ -78,8 +78,8 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
 # true_r0 = alphaX + betaX*gammaX
 # true_r0
 # #Epidemic data
-# sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-# plot.ts(sim_data, ylab = 'Daily Infections', main = paste('Super - Spreading Events model - Daily Infections count, true R0 = ', true_r0))
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+#plot.ts(sim_data, ylab = 'Daily Infections', main = paste('Super - Spreading Events model - Daily Infections count, true R0 = ', true_r0))
 # par(mfrow = c(2,1))
 
 #*******************************************************
@@ -173,8 +173,8 @@ aX = 0.8 #1.1 #Without ss event, ~r0.
 bX = 0.1 #0.2
 ss_mult = 10 #8
 #Epidemic data
-sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
-plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
+#sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
+#plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
 
 ###################################################################################
 # MODELS!
@@ -802,43 +802,41 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   #Cumulative means + param sample limits
   #r0
   r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
-  r0_lim = max(true_r0, max(r0_mcmc))
-  r0_lim2 = max(true_r0, r0_mean)
-  
   
   #***********
   #* Plots *
   
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, "Infts,", model_type, "R0 = ", true_r0), #model_type
+          main = paste(seed_count, "Orig Infts,", model_type, ", R0 = ", true_r0), #model_type
           #main = paste(seed_count, "Infts SS Evnts, ", "r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots
+  r0_min = min(min(r0_mcmc), true_r0)
+  r0_max = max(max(r0_mcmc), true_r0)
   plot.ts(r0_mcmc, ylab = 'alpha', #ylim=c(0, a_lim),
+          ylim=c(r0_min, r0_max),
           main = paste("MCMC SS Events, true r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = true_r0, col = 'orange', lwd = 2) #True = green
   
   #iii. Cumulative mean plots
   #r0 Mean
-  r0_min = min(min(r0_mean), true_r0)
-  r0_max = max(max(r0_mean), true_r0)
+  r0_min2 = min(min(r0_mean), true_r0)
+  r0_max2 = max(max(r0_mean), true_r0)
   plot2 = plot(seq_along(r0_mean), r0_mean,
-               ylim=c(r0_min, r0_max),
+               ylim=c(r0_min2, r0_max2),
                xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = true_r0, col = 'orange', lwd = 2)
   
   #iv. Histogram
-  r0_min2 = min(min(r0_mcmc), true_r0)
-  r0_max2 = max(max(r0_mcmc), true_r0)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
        main = paste('R0 total MCMC samples'), #. Prior = ', prior),
-       xlim=c(r0_min2, r0_max2),
+       xlim=c(r0_min, r0_max),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
   
