@@ -1,14 +1,14 @@
 #INSPECT OUTPUT OF MODEL CRITICISM
 
 #Set up params
-setwd("~/GitHub/epidemic_modelling/Model_super_spreading")
-source("functions.R")
-source("~/GitHub/epidemic_modelling/helper_functions.R") 
-source("7A_Model_Criticism_SS_Events.R")
-source("7B_Run_model_criticism_all.R")
-source("7C_Inspect_output_model_criticism.R")
-#results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II/"
-results_home = "~/PhD_Warwick/Project_Epidemic_Modelling/Results/super_spreading_events/model_criticism_II_iter_II/"
+setwd("~/GitHub/epidemic_modelling/")
+results_folder =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_I/"
+
+#*******************************************************************************************************
+#RUN INFERENCE: BASE MODEL
+inference_type = 'base_infer/'
+results_home =  paste0(results_folder, inference_type)
+print(results_home)
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTs - BASE MODEL
@@ -27,13 +27,15 @@ display_rep_results_base <- function(results_home, model_type, iter, rep, n_mcmc
   list_p_vals <- readRDS(paste0(results_inspect, 'list_p_vals_rep', rep, '.rds'))
   print(df_true_sum_stats)
   
-  #Plot p vals & summary stats
-  plot_rep_sum_stats(true_r0, model_type, sim_data_rep, df_sum_stats, df_true_sum_stats,
-                     list_p_vals, upper_quant, trim_flag) 
+  #Plot simulated data
+  get_sim_data_mcmc_runs_base(results_home, sim_data_rep, mcmc_params, list_i,model_type, rep)
   
   #Plot MCMC results 
   plot_mcmc_results_r0(n_mcmc, sim_data_rep, mcmc_params, true_r0, time_elap, rep, model_type)
-  get_sim_data_mcmc_runs_base(results_home, sim_data_rep, mcmc_params, list_i,model_type, rep)
+  
+  #Plot p vals & summary stats
+  plot_rep_sum_stats(true_r0, model_type, sim_data_rep, df_sum_stats, df_true_sum_stats,
+                     list_p_vals, upper_quant, trim_flag)
   
 } 
 
@@ -64,7 +66,8 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
     # if(i == length(list_idx)){
     #   iter_mcmc = list_idx[i] - 50
     # }
-  
+    
+    print(paste0(sim_data_path, 'sim_data_iter_', iter_mcmc, '.rds'))
     sim_data_mcmc_rep <- readRDS(paste0(sim_data_path, 'sim_data_iter_', iter_mcmc, '.rds'))
     print(paste0('sum of sim_data_mcmc_rep = ', sum(sim_data_mcmc_rep)))
     r0_mcmc = mcmc_params[1]; r0_mcmc = unlist(r0_mcmc)
@@ -80,25 +83,27 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
   
 }
 
-
 ##############################################
-#SSE MODEL - INSPECT SPECIFIC REPS
-#MODELs x3 APPLY - INSPECT SPECIFIC REPS
-model_type = 'base_inf_ssi_sim' #'base_inf_sse_sim' 'base_inf_base_sim' #''
+#BASE MODEL - INSPECT SPECIFIC REPS
+#- MODELs x3 APPLY - INSPECT SPECIFIC REPS
+
+model_type = 'base_inf_ssi_sim' #base_inf_sse_sim'' # 'base_inf_base_sim' #''
 iter = 1
-n_mcmc = 5500
-n_reps = 100
-#Df p vals
-df_p_vals_baseIII = get_df_p_vals(results_home, model_type, iter)
-plot_p_vals(df_p_vals_baseIII)
+plot_p_vals(df_p_valuesBII)
+
+#df_p_vals_baseI = get_df_p_vals(results_home, model_type, iter)
+#plot_p_vals(df_p_vals_baseI)
+
+#rESULTS
 upper_quant = 0.99 #1.0
 trim_flag = FALSE #TRUE #
-list_i = seq(from = 500, to = 5500, by = 500)
+list_i = seq(from = 1, to = 5000, by = 500)
+list_i = c(list_i, 4991)
+#list_i = list_i + 1
+time_elap = 0
 
 #Rep
-list_i = seq(from = 500, to = 5000, by = 500)
-rep = 99 #53 #97 #64 #38 #16 
-time_elap = 0.5
+rep = 11 #6 #37 #36 #27 #53 #97 #64 #38 #16 
 display_rep_results_base(results_home, model_type, iter, rep, n_mcmc, true_r0,
                     upper_quant, trim_flag, list_i, time_elap)
 

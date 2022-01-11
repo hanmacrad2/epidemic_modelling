@@ -823,18 +823,22 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   
   #iii. Cumulative mean plots
   #r0 Mean
+  r0_min = min(min(r0_mean), true_r0)
+  r0_max = max(max(r0_mean), true_r0)
   plot2 = plot(seq_along(r0_mean), r0_mean,
-               #ylim=c(0, r0_lim),
+               ylim=c(r0_min, r0_max),
                xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = true_r0, col = 'orange', lwd = 2)
   
   #iv. Histogram
+  r0_min2 = min(min(r0_mcmc), true_r0)
+  r0_max2 = max(max(r0_mcmc), true_r0)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
        main = paste('R0 total MCMC samples'), #. Prior = ', prior),
-       #xlim=c(0, r0_lim),
+       xlim=c(r0_min2, r0_max2),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
   
