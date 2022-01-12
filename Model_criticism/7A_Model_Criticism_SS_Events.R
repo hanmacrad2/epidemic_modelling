@@ -164,7 +164,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
               accept_rate1, accept_rate2, accept_rate3, accept_rate4))
 }
 
-##############################
+##############################s
 #1i. REPEAT MCMC
 run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folder, burn_in){
   
@@ -178,15 +178,15 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
   cat('r0 = ', r0, '\n');
   
-  # if (flag1){
-  #   start_rep = 291
-  # } else {
-  #   start_rep = 1
-  # }
+  if (flag1){
+    start_rep = 462
+  } else {
+    start_rep = 1
+  }
   
   #Repeat for n reps
   
-  for(rep in 1:n_reps) {
+  for(rep in start_rep:n_reps) {
     
     cat('\n rep =', rep, '\n')
     folder_rep = paste0(base_folder, '/rep_', rep)

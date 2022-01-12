@@ -18,9 +18,9 @@ burn_in = 500
 thinning_factor = 5 #0 #(1/1000)*n;
 
 #### - MCMC params - ######
-alphaX = 1.1 #0.8 #0.7 #0.8 #0.7 
+alphaX = 0.8 #0.8 #0.7 #0.8 #0.7 
 betaX = 0.2 #0.05 #0.025 #0.2 #0.1 
-gammaX = 2 #10 #8 #TRY WITH SMALLER GAMMA
+gammaX = 5 #10 #8 #TRY WITH SMALLER GAMMA
 true_r0 = alphaX + betaX*gammaX
 true_r0
 model_params = c(alphaX, betaX, gammaX, true_r0)
@@ -206,7 +206,6 @@ model_type = 'base_inf_base_sim' #'sse_inf_sse_sim' 'sse_inf_base_sim'
 flags_data_type = c(FALSE, FALSE, TRUE) #1)ss_events, 2) ss_individuals, 3) basline
 base_folder_current = paste0(results_home, model_type, '/iter_', iter)
 print(base_folder_current)
-
 
 #APPLY MCMC
 start_time = Sys.time()
