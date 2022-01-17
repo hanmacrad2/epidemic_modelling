@@ -56,7 +56,6 @@ run_mcmc_reps_ss(n_mcmc, n_reps, model_params, sigma, flags_data_type, base_fold
 end_time = Sys.time()
 timei = get_time(start_time, end_time)
 
-
 ###############
 #APPLY SUMMARY STATS + p vals
 model_type = 'sse_inf_sse_sim'
@@ -66,6 +65,8 @@ get_sum_stats_total(base_folder_current, thinning_factor, n_reps, n_mcmc)
 df_p_valuesI = get_p_values_total(base_folder_current, n_reps) 
 end_time = Sys.time()
 timeI = get_timeII(start_time, end_time, timei)
+timeI = time_hours(timeI)
+print(paste0('timeI: ', timeI))
 
 #PLOT
 plot_p_vals(df_p_valuesI)

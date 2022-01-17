@@ -26,13 +26,23 @@ get_timeII <- function(start_time, end_time, timeI){
   'Print difference between end & start time'
   
   time_elap = round(end_time - start_time, 2) + timeI
+  time_elap = time_hours(time_elap)
   print('Time elapsed:') 
   print(time_elap)
   
 }
 
+time_hours <- function(time_secs){
+  
+  as.numeric(time_secs, units = "hours")
+}
+
 #TIME
 #time_elapI = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
+
+round(difftime(timeI, units='hours'), 2) #round(end_time - start_time, 2)
+
+as.numeric(timeI, units = "hours")
 
 ################
 # DATA
