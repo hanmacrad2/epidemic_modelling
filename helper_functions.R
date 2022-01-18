@@ -34,7 +34,9 @@ get_timeII <- function(start_time, end_time, timeI){
 
 time_hours <- function(time_secs){
   
-  as.numeric(time_secs, units = "hours")
+  time_hours = as.numeric(time_secs, units = "hours")
+  time_hours = round(time_hours, 2)
+  
 }
 
 #TIME

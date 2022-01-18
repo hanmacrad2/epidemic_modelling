@@ -88,11 +88,10 @@ get_sim_data_mcmc_runs_base <- function(results_home, sim_data, mcmc_params, lis
 #- MODELs x3 APPLY - INSPECT SPECIFIC REPS
 
 model_type = 'base_inf_base_sim' #'base_inf_ssi_sim' #base_inf_sse_sim'' # 'base_inf_base_sim' #''
-iter = 1
-plot_p_vals(df_p_valuesBIII)
-
-#df_p_vals_baseI = get_df_p_vals(results_home, model_type, iter)
-#plot_p_vals(df_p_vals_baseI)
+iter = 2 #1
+#plot_p_vals(df_p_valuesBIII)
+df_bb = get_df_p_vals(results_home, model_type, iter)
+plot_p_vals(df_bb)
 
 #rESULTS
 upper_quant = 0.99 #8 #1.0
@@ -103,7 +102,7 @@ list_i = c(list_i, 4991)
 time_elap = 0
 
 #Rep
-rep = 19 # #9 #3 #2 #19 #3 #8 #9 #67 #168 #164 #160 #156 #135 #45 #157 #6 #37 #36 #27 #53 #97 #64 #38 #16 
+rep = 33#16 #963 #201 #19 # #9 #3 #2 #19 #3 #8 #9 #67 #168 #164 #160 #156 #135 #45 #157 #6 #37 #36 #27 #53 #97 #64 #38 #16 
 display_rep_results_base(results_home, model_type, iter, rep, n_mcmc, true_r0,
                     upper_quant, trim_flag, list_i, time_elap)
 

@@ -6,17 +6,18 @@ source("epidemic_functions.R")
 source("helper_functions.R")
 source("Model_criticism/7A_Model_Criticism_SS_Events.R")
 source("Model_criticism/7B_Run_model_criticism_all_sse_and_base.R")
-results_folder =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_II/"
+results_folder =  "~/PhD_Warwick/Project_Epidemic_Modelling/Results/model_criticism/model_criticism_1k_I/"
 
 #RESULTS FOLDER: SS EVENTS
 inference_type = 'ss_events_infer/'
 results_home =  paste0(results_folder, inference_type)
 print(results_home)
+iter = 1
 
 #*##########################################################
 #1. GET & DISPLAY TOTAL REP RESULTS 
 display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, true_r0,
-                            upper_quant, trim_flag, list_i, time_elap){
+                            upper_quant, trim_flag, list_i, time_elap, flags_data_type){
   #P values
   df_p_vals_tot = get_df_p_vals(results_home, model_type, iter)
   plot_p_vals(df_p_vals_tot)
@@ -36,7 +37,7 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
   print(df_true_sum_stats)
   
   #Plot simualated results (random sample)
-  get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
+  plot_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i, flags_data_type)
   
   #Plot MCMC results 
   plot_mcmc_x4_priors(n_mcmc, sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
@@ -176,21 +177,33 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
 
 ###################################
 #INSPECT MCMC
-get_sim_data_mcmc_runs <- function(results_home, sim_data, mcmc_params, list_idx){
+plot_sim_data_mcmc_runs <- function(results_home, sim_data, mcmc_params, list_idx, flags_data_type){
   
   #Results inspect
   sim_data_path = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/mcmc/')
   print(sim_data_path)
+  #Flags
   
   #Plot
   colorsX <- rainbow(length(list_idx)+1)
   par(mfrow=c(3,4))
   
   #i. Sim infections data (True for the rep)
-  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste0(rep, ", ", model_type, ", True a:", alphaX, ', b:', betaX, ', g:', gammaX, ', R0:', true_r0), #model_type
-          col = colorsX[1],
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #SSE or SSI
+  if(!flags_data_type[3]) {
+    plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+            main = paste0(rep, ", ", model_type, ", True a:", alphaX, ', b:', betaX, ', g:', gammaX, ', R0:', true_r0), #model_type
+            col = colorsX[1],
+            cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  } else if (flags_data_type[3]){
+    plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+            main = paste0(rep, ", ", model_type, ", True R0:", true_r0), #model_type
+            col = colorsX[1],
+            cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    
+  }
+
   
   #Loop - Get mcmc rep
   for (i in seq_along(list_idx)){
@@ -243,29 +256,32 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
   
   #Plot MCMC results 
   plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
-  get_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
+  plot_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
   
 }
 
 ##############################################
 #MODELs x3 APPLY - INSPECT SPECIFIC REPS
-time_elap = timeI
+model_type = 'sse_inf_base_sim' #sse_inf_ssi_sim' #sse_inf_sse_sim' #'' #  '' 
+flags_data_type = c(FALSE, FALSE, TRUE)
+
+#Time
+time_elap = timeIII
+time_elap = time_hours(time_elap)
 print(paste0('timeI: ', time_elap))
-#timeII = time_hours(timeII)
-model_type = 'sse_inf_sse_sim' #'sse_inf_base_sim' #  'sse_inf_ssi_sim' 
 
 #SSE
-df_sseI = get_df_p_vals(results_home, model_type, iter)
-plot_p_vals(df_sseI)
-#plot_p_vals(df_p_valuesI)
+df_baseI = get_df_p_vals(results_home, model_type, iter)
+plot_p_vals(df_baseI)
+plot_p_vals(df_p_valuesIII)
 
 #Rep specific
-upper_quant = 0.99 #8 #6 #7 #8 #0.99 #1.0
+upper_quant = 0.99 #8 #8 #6 #7 #8 #0.99 #1.0
 trim_flag = TRUE #FALSE # # #
 list_i = seq(from = 500, to = 5500, by = 500)
 
 #Rep
-rep = 9 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
+rep = 10 #3 #12 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
-                upper_quant, trim_flag, list_i, time_elap)
+                upper_quant, trim_flag, list_i, time_elap, flags_data_type)
 
