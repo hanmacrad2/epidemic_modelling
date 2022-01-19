@@ -102,7 +102,7 @@ list_i = c(list_i, 4991)
 time_elap = 0
 
 #Rep
-rep = 33#16 #963 #201 #19 # #9 #3 #2 #19 #3 #8 #9 #67 #168 #164 #160 #156 #135 #45 #157 #6 #37 #36 #27 #53 #97 #64 #38 #16 
+rep = 39 #14 #36 #16 #963 #201 #19 # #9 #3 #2 #19 #3 #8 #9 #67 #168 #164 #160 #156 #135 #45 #157 #6 #37 #36 #27 #53 #97 #64 #38 #16 
 display_rep_results_base(results_home, model_type, iter, rep, n_mcmc, true_r0,
                     upper_quant, trim_flag, list_i, time_elap)
 
