@@ -265,19 +265,27 @@ get_summary_stats <- function(data, flag_create){
   start_half2 = (length(data)/2)+1
   stop_half2 = length(data)
   
+  #Sum stats divide by point in time
+  max_dif = max(  (diff(data))   ) #Change from absolute difference
+  med_dif = median(diff(data))
+  dif_dif = diff(diff(data))
+  
   if (flag_create){
     
     #Df
     summary_stats_results = data.frame(
-      sum_inf_counts = sum(data),
-      median_inf_count = median(data),
-      max_inf_count = max(data),
-      sd_inf_counts = sd(data),
-      val_75_infs_counts = quantile(data)[4][1][1],
-      val_87_5_infs_counts = mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
-      max_dif = max(abs(diff(data))),
-      med_dif = median(abs(diff(data))),
-      mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
+      sum_infects = sum(data),
+      median_infect = median(data),
+      max_infect = max(data),
+      sd_infect = sd(data),
+      
+      infect_q_75 = quantile(data)[4][1][1],
+      infect_q_87_5 = quantile(data, probs = seq(0, 1, 0.125))[8][1][1], #mean(quantile(data)[4][1][1], quantile(data)[5][1][1]),
+      max_dif = max((diff(data))), #Change from absolute difference
+      med_dif = median(diff(data)),
+      dif_dif = diff(diff(data)),
+      dif_q_87_5 = quantile(diff(data), probs = seq(0, 1, 0.125))[8][1][1],
+      #mean_upper_dif = mean(c(quantile(abs(diff(data)))[4][1][1], quantile(abs(diff(data)))[5][1][1])),
       sum_1st_half  = sum(data[1:(length(data)/2)]), #sum(which(data < quantile(data)[3][1][1]))
       sum_2nd_half =  sum(data[start_half2:stop_half2]) #sum(which(data > quantile(data)[3][1][1]))
     )

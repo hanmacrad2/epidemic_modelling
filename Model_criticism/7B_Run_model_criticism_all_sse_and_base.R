@@ -19,8 +19,8 @@ thinning_factor = 5 #0 #(1/1000)*n;
 
 #### - MCMC params - ######
 alphaX = 0.8 #0.8 #0.7 #0.8 #0.7 
-betaX = 0.1 #0.2 #0.05 #0.025 #0.2 #0.1 
-gammaX = 10 #5 #10 #8 #TRY WITH SMALLER GAMMA
+betaX = 0.2 #0.1 #0.2 #0.05 #0.025 #0.2 #0.1 
+gammaX = 5 #10 #5 #10 #8 #TRY WITH SMALLER GAMMA
 true_r0 = alphaX + betaX*gammaX
 true_r0
 model_params = c(alphaX, betaX, gammaX, true_r0)

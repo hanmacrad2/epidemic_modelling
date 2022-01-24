@@ -262,8 +262,8 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
 
 ##############################################
 #MODELs x3 APPLY - INSPECT SPECIFIC REPS
-model_type = 'sse_inf_base_sim' #sse_inf_ssi_sim' #sse_inf_sse_sim' #'' #  '' 
-flags_data_type = c(FALSE, FALSE, TRUE)
+model_type = 'sse_inf_sse_sim' #sse_inf_base_sim' #sse_inf_ssi_sim' #sse_inf_sse_sim' #'' #  '' 
+flags_data_type = c(TRUE, FALSE, FALSE)
 
 #Time
 time_elap = timeIII
@@ -277,11 +277,11 @@ plot_p_vals(df_p_valuesIII)
 
 #Rep specific
 upper_quant = 0.99 #8 #8 #6 #7 #8 #0.99 #1.0
-trim_flag = TRUE #FALSE # # #
+trim_flag = FALSE #TRUE #FALSE # # #
 list_i = seq(from = 500, to = 5500, by = 500)
 
 #Rep
-rep = 10 #3 #12 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
+rep = 34 #10 #3 #12 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap, flags_data_type)
 
