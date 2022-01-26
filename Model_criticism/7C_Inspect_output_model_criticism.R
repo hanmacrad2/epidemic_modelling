@@ -138,7 +138,7 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
   
   'Plot sim data, summary stats and true summary stat for a given mcmc rep' 
   #Setup
-  par(mfrow = c(4, 5)) #c(3,4))
+  par(mfrow = c(5, 5)) #c(3,4))
   len_data = length(list_p_vals)
   print(paste0('length of data:', len_data))
   colorsX <- rainbow(len_data+1)
