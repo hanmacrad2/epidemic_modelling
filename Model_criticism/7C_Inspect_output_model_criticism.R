@@ -94,39 +94,40 @@ get_df_p_vals <- function(results_home, model_type, iter){
 
 ###################
 #PLOT P VALUES
-plot_p_vals <- function(df_p_vals){
+plot_p_vals <- function(df_p_vals, model_type){
   
   'Plot histograms of the p values'
-  par(mfrow=c(3,4)) #c(3,4)
+  par(mfrow=c(4,5)) #c(3,4)
   
   #Prop lt than 0.05
   num_iters = length(df_p_vals[,1])
   
-  for (i in c(1:11)){
+  for (i in c(1:20)){ #11
     
     #Prop lt 0.05
     val_05 = 0.05
     percent_lt_05 = (length(which(df_p_vals[,i] < val_05))/num_iters)*100
     
     if (i == 1){
-      
+      print(paste0('i = ', i))
       hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
            #xlim = c(xmin, xmax),
            xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
            ylab = 'Num Samples', col = 'green',
-           main = paste('', toupper(colnames(df_p_vals)[i]),', R0:', true_r0, ', n reps:', num_iters),
+           main = paste('', toupper(colnames(df_p_vals)[i]),'R0:', true_r0, '', model_type),
+           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+      abline(v = 0.05, col = 'red', lwd = 2)
+      
+    } else {
+      hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
+           #xlim = c(xmin, xmax),
+           xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
+           ylab = 'Num Samples', col = 'green',
+           main = paste('', toupper(colnames(df_p_vals)[i]), ', n reps:', num_iters),
            cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
       abline(v = 0.05, col = 'red', lwd = 2)
       
     }
-    
-    hist(df_p_vals[,i], breaks = 100, #freq = FALSE, 
-         #xlim = c(xmin, xmax),
-         xlab = paste0('p value, < 0.05: ', percent_lt_05, '%'),
-         ylab = 'Num Samples', col = 'green',
-         main = paste('', toupper(colnames(df_p_vals)[i]), ', n reps:', num_iters),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    abline(v = 0.05, col = 'red', lwd = 2)
   }
 }
 
@@ -137,8 +138,9 @@ plot_rep_sum_stats <- function(true_r0, model_type, sim_data_rep, df_sum_stats, 
   
   'Plot sim data, summary stats and true summary stat for a given mcmc rep' 
   #Setup
-  par(mfrow = c(3,4))
+  par(mfrow = c(4, 5)) #c(3,4))
   len_data = length(list_p_vals)
+  print(paste0('length of data:', len_data))
   colorsX <- rainbow(len_data+1)
   colors_line <- rainbow(c(15:15+len_data+1))
   

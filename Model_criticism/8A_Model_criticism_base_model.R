@@ -76,7 +76,7 @@ get_sum_stats_base_total <- function(base_folder_current, thinning_factor, n_rep
     #Stats
     print(paste0('r0 mean: ', mean(r0_mcmc)))
     print(paste0('r0 std: ', sd(r0_mcmc)))
-    print(paste0('r0 10th value: ', r0_mcmc[10]))
+    #print(paste0('r0 10th value: ', r0_mcmc[10]))
     r0_na_count = 0; total_count = 0;  na_indices <- vector('numeric', n_mcmc/5)
     
     #MCMC folder - mcmc results #REMOVE FROM FUNCTION
@@ -117,12 +117,7 @@ get_sum_stats_base_total <- function(base_folder_current, thinning_factor, n_rep
     }
     
     #Save summary stats
-    print(paste0('r0_na_count = ', r0_na_count))
-    print(paste0('total_count = ', total_count))
-    print('r0 indices;')
-    print(na_indices)
     saveRDS(df_summary_stats, file = paste0(folder_rep, '/df_summary_stats_', rep, ".rds"))
-    #print(paste0('df_summary_stats', df_summary_stats))
     #Save ss iterations
     saveRDS(list_ss_iters, file = paste0(folder_rep, '/list_ss_iters_i', rep, '.rds'))  
     
