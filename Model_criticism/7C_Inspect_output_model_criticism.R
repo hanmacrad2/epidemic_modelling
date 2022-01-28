@@ -20,7 +20,7 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
                             upper_quant, trim_flag, list_i, time_elap, flags_data_type){
   #P values
   df_p_vals_tot = get_df_p_vals(results_home, model_type, iter)
-  plot_p_vals(df_p_vals_tot)
+  #plot_p_vals(df_p_vals_tot, model_type)
   
   #Specific rep results inspect
   results_inspect = paste0(results_home, model_type, "/iter_", iter, "/rep_", rep, '/')
@@ -283,7 +283,7 @@ trim_flag = FALSE #TRUE #FALSE # # #
 list_i = seq(from = 500, to = 5500, by = 500)
 
 #Rep
-rep = 34 #10 #3 #12 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
+rep = 6 #34 #10 #3 #12 #10 #33 #10 #16 12 #98 #98 #7 #72 ##38 #40 #34 #40 #39 #31 #28 #27 #14 #26 #19 #7 #1 #34 #26 #54
 display_rep_results(results_home, model_type, iter, rep, n_mcmc, true_r0,
                 upper_quant, trim_flag, list_i, time_elap, flags_data_type)
 

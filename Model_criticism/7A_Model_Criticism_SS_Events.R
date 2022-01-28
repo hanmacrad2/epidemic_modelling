@@ -2,7 +2,9 @@
 #AIM: MODEL CRITICISM of SUPER-SPREADING EVENTS MODEL
 
 #SETUP
+library(zoo)
 setwd("~/GitHub/epidemic_modelling")
+
 
 #Epidemic params
 num_days = 50
@@ -80,7 +82,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
     }
     
     #************************************************************************
-    #BETA
+    #BETA (Only if B > 0)
     beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
     if(beta_dash < 0){
       beta_dash = abs(beta_dash)
@@ -151,6 +153,8 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
         count_accept4 = count_accept4 + 1
       } 
     }
+    #End of if 
+    #A final 5th move -> B = 0 if not 0, and vice versa
   }
   
   #Final stats

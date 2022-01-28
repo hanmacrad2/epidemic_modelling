@@ -101,7 +101,7 @@ end_time = Sys.time()
 #timeII = get_timeII(start_time, end_time, timeii)
 
 #PLOT
-plot_p_vals(df_p_valuesII)
+plot_p_vals(df_p_valuesII, model_type)
 
 ############################################################
 #RUN III - sse_inf_base_sim
@@ -199,7 +199,7 @@ end_time = Sys.time()
 #timeBII = get_timeII(start_time, end_time, timeBii)
 
 #PLOT
-plot_p_vals(df_p_valuesBII)
+plot_p_vals(df_p_valuesBII, model_type)
 
 ############################################################
 #RUN III - base_inf_base_sim
