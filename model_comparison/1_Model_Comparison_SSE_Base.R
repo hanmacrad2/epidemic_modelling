@@ -28,7 +28,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 
 ##############################
 #1. MCMC
-mcmc_sse_base_mod_comp <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
+rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
   
   'Returns mcmc samples of alpha & acceptance rate'
   print('MCMC SUPERSPREADING')
@@ -156,17 +156,13 @@ mcmc_sse_base_mod_comp <- function(data, n, sigma, thinning_factor, folder_resul
       }
     }
     
-    #Write out and see what cancels 
-    #Reverse of proposals. Prob of proposing 0 when not 0 == 1. Therefore one of qs is 1. While othre 
-    if ((beta_vec[i] > 0) | (gamma_vec[i] > 0)){ #Proposal. Should it be beta[i] or beta[i-1]????
+    #RJMCMC Step 
+    #Reverse of proposals. Prob of proposing 0 when not 0, = 1. Therefore one of qs is 1. While othre 
+    if ((beta_vec[i] > 0) | (gamma_vec[i] > 0)){ #Proposal. 
       #Not a random walk metropolis - as not using current values to decide the next. As current values are zero - choosing non zero.
       #Indpendence Sampler 
       beta_dash = 0
       gamma_dash = 0
-      #Do log prior and proposals here 
-      
-      #FIX (bring same/repeated lines outside - the likelihood ones will repeat)
-      #Acceptance Probabilities. (One of the qs cancels one of the priors). Two
       
     } else { #This acceptance prob will be the reverse of the first version
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
@@ -183,11 +179,8 @@ mcmc_sse_base_mod_comp <- function(data, n, sigma, thinning_factor, folder_resul
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       beta_vec[i] <- beta_dash
       gamma_vec[i] <- gamma_dash
-      #count_accept5 = count_accept5 + 1
+      count_accept5 = count_accept5 + 1
     } 
-
-    #End of if 
-    #A final 5th move -> B = 0 if not 0, and vice versa
   }
   
   #Final stats
@@ -195,8 +188,9 @@ mcmc_sse_base_mod_comp <- function(data, n, sigma, thinning_factor, folder_resul
   accept_rate2 = 100*count_accept2/n
   accept_rate3 = 100*count_accept3/n
   accept_rate4 = 100*count_accept4/n
+  accept_rate5 = 100*count_accept5/n
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
-              accept_rate1, accept_rate2, accept_rate3, accept_rate4))
+              accept_rate1, accept_rate2, accept_rate3, accept_rate4, accept_rate5))
 }
