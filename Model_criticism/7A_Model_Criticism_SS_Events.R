@@ -25,7 +25,6 @@ sigma_g = 0.85*gammaX
 sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 
-
 ##############################
 #1. MCMC
 mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1, prior = TRUE) {

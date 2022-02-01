@@ -320,6 +320,8 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       logl = logl -(alphaX*lambda_t) - 
         (betaX*lambda_t*log(gammaX +1))
       
+      #print(paste0('logl 1 = ', logl))
+      
     } else {
       
       #Terms in inner sum
@@ -337,9 +339,12 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
       
       #Calculate max element in inner vector, for all y_t for a given t, x[t]
       lx_max = max(inner_sum_vec)
+      #print(paste0('lx_max = ', lx_max))
       
       #Calculate lse
       lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
+      
+      #print(paste0('lse = ', lse))
       
       #Add to overall log likelihood 
       logl = logl + lse 
@@ -568,7 +573,8 @@ plot_mcmc_results <- function(sim_data, mcmc_params, true_r0,
 #****************
 #MCMC Plots 4x4
 plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
-                            total_time, seed_count, prior, max_sum_val, model_crit = TRUE, joint = TRUE){
+                            total_time, seed_count, prior, max_sum_val,
+                            model_crit = TRUE, joint = TRUE, flag5 = TRUE){
   
   #Plot Set up
   plot.new()
@@ -771,22 +777,30 @@ plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
   }
   
   #Results
-  df_results <- data.frame(
-    alpha = alphaX,
-    a_mc = a_mcmc_mean,
-    beta = betaX,
-    b_mc = b_mcmc_mean,
-    gamma = gammaX,
-    g_mc = g_mcmc_mean,
-    R0 = true_r0, 
-    R0_mc = r0_mcmc_mean,
-    accept_rate_a = round(mcmc_params[[5]],2),
-    a_rte_b = round(mcmc_params[[6]], 2),
-    a_rte_g = round(mcmc_params[[7]],2),
-    a_rte_b_g = round(mcmc_params[[8]],2),
-    tot_time = total_time) 
-  
-  print(df_results)
+  if (flag5){
+    print(paste0('flag5 = '), flag5)
+    df_results <- data.frame(
+      alpha = alphaX, a_mc = a_mcmc_mean,
+      beta = betaX, b_mc = b_mcmc_mean,
+      gamma = gammaX, g_mc = g_mcmc_mean,
+      R0 = true_r0, R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      a_rte_rj = round(mcmc_params[[8]],2),
+      tot_time = total_time) 
+    
+  } else {
+    df_results <- data.frame(
+      alpha = alphaX, a_mc = a_mcmc_mean,
+      beta = betaX, b_mc = b_mcmc_mean,
+      gamma = gammaX, g_mc = g_mcmc_mean,
+      R0 = true_r0, R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      tot_time = total_time) 
+  }
   
 }
 
@@ -861,8 +875,8 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 
 ###############################################################################
 #FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
-plot_mcmc_x4_priors <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_time,
-                                seed_count, prior, joint = TRUE){
+plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_time,
+                                seed_count, prior = TRUE, joint = TRUE, flag5 = TRUE){
   
   #Plot Set up
   #par(mar=c(1,1,1,1))
@@ -1059,21 +1073,42 @@ plot_mcmc_x4_priors <- function(n, sim_data, mcmc_params, true_r0, dist_type, to
   }
   
   #Results
-  df_results <- data.frame(
-    rep = seed_count,
-    alpha = alphaX,
-    a_mc = a_mcmc_mean,
-    beta = betaX,
-    b_mc = b_mcmc_mean,
-    gamma = gammaX,
-    g_mc = g_mcmc_mean,
-    R0 = true_r0, 
-    R0_mc = r0_mcmc_mean,
-    accept_rate_a = round(mcmc_params[[5]],2),
-    a_rte_b = round(mcmc_params[[6]], 2),
-    a_rte_g = round(mcmc_params[[7]],2),
-    a_rte_b_g = round(mcmc_params[[8]],2),
-    tot_time = total_time) 
+  if (flag5){
+    print(paste0('flag5 = '), flag5)
+    df_results <- data.frame(
+      rep = seed_count,
+      alpha = alphaX,
+      a_mc = a_mcmc_mean,
+      beta = betaX,
+      b_mc = b_mcmc_mean,
+      gamma = gammaX,
+      g_mc = g_mcmc_mean,
+      R0 = true_r0, 
+      R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      a_rte_b_g = round(mcmc_params[[8]],2),
+      a_rte_rj0 = round(mcmc_params[[9]],2),
+      a_rte_rj1 = round(mcmc_params[[10]],2),
+      tot_time = total_time)
+  } else {
+    df_results <- data.frame(
+      rep = seed_count,
+      alpha = alphaX,
+      a_mc = a_mcmc_mean,
+      beta = betaX,
+      b_mc = b_mcmc_mean,
+      gamma = gammaX,
+      g_mc = g_mcmc_mean,
+      R0 = true_r0, 
+      R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      a_rte_b_g = round(mcmc_params[[8]],2),
+      tot_time = total_time)
+  }
   
   print(df_results)
   
@@ -1083,7 +1118,7 @@ plot_mcmc_x4_priors <- function(n, sim_data, mcmc_params, true_r0, dist_type, to
 # GRID PLOT
 ################################################################################
 
-plot_mcmc_grid <- function(sim_data, mcmc_params, true_r0, dist_type,
+plot_mcmc_grid_3x4 <- function(sim_data, mcmc_params, true_r0, dist_type,
                            total_time, seed_count, prior = TRUE, flag5 = FALSE){
   
   #Plot Set up
