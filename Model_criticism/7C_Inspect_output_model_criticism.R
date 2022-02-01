@@ -40,7 +40,7 @@ display_rep_results <- function(results_home, model_type, iter, rep, n_mcmc, tru
   plot_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i, flags_data_type)
   
   #Plot MCMC results 
-  plot_mcmc_x4_priors(n_mcmc, sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
+  plot_mcmc_grid(n_mcmc, sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
   
   #Plot p vals & summary stats
   plot_rep_sum_stats(true_r0, model_type, sim_data_rep, df_sum_stats, df_true_sum_stats, list_p_vals, upper_quant, trim_flag) 
@@ -257,7 +257,7 @@ get_mcmc_results <- function(results_home, model_type, iter, rep, true_r0, time_
   mcmc_params <- readRDS(paste0(results_inspect, 'mcmc_params_rep_', rep, '.rds' ))
   
   #Plot MCMC results 
-  plot_mcmc_x4_priors(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
+  plot_mcmc_grid(sim_data_rep, mcmc_params, true_r0, 'Neg Bin,', time_elap, rep, TRUE, TRUE)
   plot_sim_data_mcmc_runs(results_home, sim_data_rep, mcmc_params, list_i)
   
 }

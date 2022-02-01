@@ -1,34 +1,18 @@
 #Model Comparision
-#To do
-#MCMC + model comparison
-#Inspect results 
 
 setwd("~/GitHub/epidemic_modelling")
+source("epidemic_functions.R")
+source("helper_functions.R")
 
 #Epidemic params
 num_days = 50
 shape_gamma = 6 #Gamma params for infectiousness curve (lambda) distribution
 scale_gamma = 1 
-
-############# --- INSERT PARAMETERS! --- ######################################
-alphaX = 0.8 #0.7 #0.8 #0.7 
-betaX = 0.1 #0.05 #0.025 #0.2 #0.1 
-gammaX = 10 #8
-true_r0 = alphaX + betaX*gammaX
-true_r0
-model_params = c(alphaX, betaX, gammaX, true_r0)
-
-#MCMC - sigma
-sigma_a = 0.4*alphaX
-sigma_b = 1.0*betaX 
-sigma_g = 0.85*gammaX
-sigma_bg = 1.5*gammaX
-sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
-
+seed_count = 1 
 
 ##############################
 #1. MCMC
-rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
+rjmcmc_sse_base <- function(data, n, sigma, thinning_factor, rep, burn_in, x0 = 1, prior = TRUE) {
   
   'Returns mcmc samples of alpha & acceptance rate'
   print('MCMC SUPERSPREADING')
@@ -46,14 +30,14 @@ rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, re
   #Result vectors
   count_accept1 = 0; count_accept2 = 0;
   count_accept3 = 0; count_accept4 = 0; count_accept5 = 0;
-  prior = TRUE; flag_true = FALSE
+  flag_true = FALSE
   
   #Create folder for mcmc results 
-  folder_mcmc = paste0(folder_results, '/mcmc')
-  ifelse(!dir.exists(file.path(folder_mcmc)), dir.create(file.path(folder_mcmc), recursive = TRUE), FALSE)
+  #folder_mcmc = paste0(folder_results, '/mcmc')
+  #ifelse(!dir.exists(file.path(folder_mcmc)), dir.create(file.path(folder_mcmc), recursive = TRUE), FALSE)
   
   #MCMC chain
-  for(i in 2:n) {
+  for(i in 2:n) { #1:n
     
     #******************************************************
     #ALPHA
@@ -82,7 +66,7 @@ rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, re
     
     #************************************************************************
     #BETA (Only if B > 0)
-    if (beta_vec[i] > 0) {
+    if ((beta_vec[i] > 0) & (i > 1)){
       
       beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
       if(beta_dash < 0){
@@ -176,10 +160,15 @@ rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, re
     log_accept_prob = logl_new - logl_prev 
     
     #Metropolis Step
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+    unif_var = runif(1)
+    if(!(is.na(log_accept_prob)) && log(unif_var) < log_accept_prob) {
       beta_vec[i] <- beta_dash
       gamma_vec[i] <- gamma_dash
       count_accept5 = count_accept5 + 1
+      print(paste0('beta_dash = '), beta_dash)
+      print(paste0('gamma_dash = '), gamma_dash)
+      print(paste0('rj log_accept_prob = '), log_accept_prob)
+      print(paste0('unif_var = '), unif_var)
     } 
   }
   
@@ -194,3 +183,48 @@ rjmcmc_sse_base_ <- function(data, n, sigma, thinning_factor, folder_results, re
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4, accept_rate5))
 }
+
+############# --- INSERT PARAMETERS! --- ######################################
+alphaX = 0.8 #0.7 #0.8 #0.7 
+betaX = 0.1 #0.05 #0.025 #0.2 #0.1 
+gammaX = 10 #8
+true_r0 = alphaX + betaX*gammaX
+true_r0
+model_params = c(alphaX, betaX, gammaX, true_r0)
+
+#MCMC - sigma
+sigma_a = 0.4*alphaX
+sigma_b = 1.0*betaX 
+sigma_g = 0.85*gammaX
+sigma_bg = 1.5*gammaX
+sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
+
+print(seed_count)
+set.seed(seed_count)
+
+#Epidemic data - Neg Bin
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#MCMC 
+n = 2000 
+start_time = Sys.time()
+print('Start time:')
+print(start_time)
+mcmc_params = rjmcmc_sse_base(sim_data, n, sigma, sigma_b, x0 = 1)
+end_time = Sys.time()
+print('End time:')
+print(end_time)
+time_elap = get_time(start_time, end_time)
+time_elap = timei
+
+#SOMETHING WEIRD HAPPEING 
+
+#Plotting 
+dist_type = 'Neg Bin,'
+plot_mcmc_grid(sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+
+
+#Seed
+#seed_count = seed_count + 1
+seed_count

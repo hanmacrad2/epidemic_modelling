@@ -1,6 +1,10 @@
 #Epidemic Modelling Functions
-#-Simulations fucntions
-#- Likelihood Functions
+
+#Contains:
+#Simulations fucntions
+#Likelihood Functions
+#MCMC functions
+#MCMC plotting functions
 
 #*********************************************************
 #*Simulation Functions
@@ -640,8 +644,8 @@ plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
   #Title
-  text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
-       line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
+  #text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+  #     line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
   
   #iii. Cumulative mean plots
   #r0 Mean
@@ -1070,6 +1074,200 @@ plot_mcmc_x4_priors <- function(n, sim_data, mcmc_params, true_r0, dist_type, to
     a_rte_g = round(mcmc_params[[7]],2),
     a_rte_b_g = round(mcmc_params[[8]],2),
     tot_time = total_time) 
+  
+  print(df_results)
+  
+}
+
+################################################################################
+# GRID PLOT
+################################################################################
+
+plot_mcmc_grid <- function(sim_data, mcmc_params, true_r0, dist_type,
+                           total_time, seed_count, prior = TRUE, flag5 = FALSE){
+  
+  #Plot Set up
+  plot.new()
+  par(mfrow=c(3,4))
+  
+  #Extract params
+  alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
+  like_a = mcmc_params[8]; like_a = unlist(like_a)
+  prior_a = mcmc_params[11]; prior_a = unlist(prior_a)
+  
+  beta_mcmc = mcmc_params[2]; beta_mcmc = unlist(beta_mcmc)
+  like_b = mcmc_params[9]; like_b = unlist(like_b)
+  prior_b = mcmc_params[12]; prior_b = unlist(prior_b)
+  
+  gamma_mcmc = mcmc_params[3]; gamma_mcmc = unlist(gamma_mcmc)
+  like_g = mcmc_params[10]; like_g = unlist(like_g)
+  prior_g = mcmc_params[13]; prior_g = unlist(prior_g)
+  
+  r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
+  
+  #Cumulative means + param sample limits
+  #r0
+  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
+  r0_lim = max(true_r0, max(r0_mcmc))
+  r0_lim2 = max(true_r0, r0_mean)
+  
+  #alpha
+  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
+  like_a_mean = cumsum(like_a)/seq_along(like_a)
+  prior_a_mean = cumsum(prior_a)/seq_along(prior_a)
+  a_lim =  max(alphaX, max(alpha_mcmc))
+  a_lim2 =  max(alphaX, alpha_mean)
+  
+  #beta
+  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
+  like_b_mean = cumsum(like_b)/seq_along(like_b)
+  prior_b_mean = cumsum(prior_b)/seq_along(prior_b)
+  b_lim = max(betaX, max(beta_mcmc))
+  b_lim2 = max(betaX, beta_mean)
+  
+  #gamma
+  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
+  like_g_mean = cumsum(like_g)/seq_along(like_g)
+  prior_g_mean = cumsum(prior_g)/seq_along(prior_g)
+  g_lim =  max(gammaX, max(gamma_mcmc))
+  g_lim2 =  max(gammaX, gamma_mean) 
+  
+  #***********
+  #* Plots *
+  
+  #i.Infections
+  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
+          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #ii. MCMC Trace Plots
+  plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
+          main = paste("SS Evnts, true a = ", alphaX, '(green), ll(red), prior(blue)'),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = alphaX, col = 'green', lwd = 2) #True = green
+  lines(seq_along(like_a), like_a, col = 'red')
+  lines(seq_along(prior_a), prior_a, col = 'blue')
+  
+  plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim),
+          main = paste("MCMC SS Events, true beta = ", betaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = betaX, col = 'green', lwd = 2) #True = green
+  lines(seq_along(like_b), like_b, col = 'red')
+  lines(seq_along(prior_b), prior_b, col = 'blue')
+  
+  plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
+          main = paste("MCMC SS Events, true gamma = ", gammaX),
+          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(h = gammaX, col = 'green', lwd = 2) #True = green
+  lines(seq_along(like_g), like_g, col = 'red')
+  lines(seq_along(prior_g), prior_g, col = 'blue')
+  
+  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
+  
+  #Title
+  #text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
+  #     line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
+  
+  #iii. Cumulative mean plots
+  #r0 Mean
+  plot2 = plot(seq_along(r0_mean), r0_mean,
+               ylim=c(0, r0_lim),
+               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = true_r0, col = 'orange', lwd = 2)
+  
+  #alpha mean
+  plot2 = plot(seq_along(alpha_mean), alpha_mean,
+               ylim=c(0, a_lim),
+               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = alphaX, col = 'green', lwd = 2)
+  lines(seq_along(like_a_mean), like_a_mean, col = 'red')
+  lines(seq_along(prior_a_mean), prior_a_mean, col = 'blue')
+  
+  #beta mean
+  plot2 = plot(seq_along(beta_mean), beta_mean,
+               ylim=c(0, b_lim),
+               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = betaX, col = 'green', lwd = 2)
+  lines(seq_along(like_b_mean), like_b_mean, col = 'red')
+  lines(seq_along(prior_b_mean), prior_b_mean, col = 'blue')
+  
+  #gamma Mean
+  plot2 = plot(seq_along(gamma_mean), gamma_mean,
+               xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
+               ylim=c(0, g_lim),
+               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  print(plot2)
+  abline(h = gammaX, col = 'green', lwd = 2)
+  lines(seq_along(like_g_mean), like_g_mean, col = 'red')
+  lines(seq_along(prior_g_mean), prior_g_mean, col = 'blue')
+  
+  #iv. Param Histograms (Plots 9,11,12)
+  hist(r0_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'R0 total', #ylab = 'Density', 
+       main = paste('R0 total MCMC samples. Prior = ', prior),
+       xlim=c(0, r0_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = true_r0, col = 'orange', lwd = 2)
+  
+  #v. Beta vs gamma
+  plot(beta_mcmc, gamma_mcmc,
+       xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  
+  #Hist Beta 
+  hist(beta_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'beta', #ylab = 'Density', 
+       main = paste("Beta, True beta = ", betaX), 
+       xlim=c(0, b_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = betaX, col = 'blue', lwd = 2)
+  
+  #Hist Gamma 
+  hist(gamma_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'gamma', #ylab = 'Density', 
+       main = paste("Gamma, True gamma = ", gammaX),
+       xlim=c(0, g_lim),
+       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+  abline(v = gammaX, col = 'green', lwd = 2)
+  
+  #Final Mean Stats
+  data_10_pc = 0.1*n
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
+  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  
+  #Results
+  if (flag5){
+    print(paste0('flag5 = '), flag5)
+    df_results <- data.frame(
+      alpha = alphaX, a_mc = a_mcmc_mean,
+      beta = betaX, b_mc = b_mcmc_mean,
+      gamma = gammaX, g_mc = g_mcmc_mean,
+      R0 = true_r0, R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      a_rte_rj = round(mcmc_params[[8]],2),
+      tot_time = total_time) 
+    
+  } else {
+    df_results <- data.frame(
+      alpha = alphaX, a_mc = a_mcmc_mean,
+      beta = betaX, b_mc = b_mcmc_mean,
+      gamma = gammaX, g_mc = g_mcmc_mean,
+      R0 = true_r0, R0_mc = r0_mcmc_mean,
+      accept_rate_a = round(mcmc_params[[5]],2),
+      a_rte_b = round(mcmc_params[[6]], 2),
+      a_rte_g = round(mcmc_params[[7]],2),
+      tot_time = total_time) 
+  }
   
   print(df_results)
   

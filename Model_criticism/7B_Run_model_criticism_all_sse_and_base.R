@@ -54,6 +54,8 @@ print('Start time:')
 print(start_time)
 run_mcmc_reps_ss(n_mcmc, n_reps, model_params, sigma, flags_data_type, base_folder_current, burn_in)
 end_time = Sys.time()
+print('End time:')
+print(end_time)
 timei = get_time(start_time, end_time)
 
 ###############

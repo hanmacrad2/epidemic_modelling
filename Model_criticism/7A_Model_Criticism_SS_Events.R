@@ -5,7 +5,6 @@
 library(zoo)
 setwd("~/GitHub/epidemic_modelling")
 
-
 #Epidemic params
 num_days = 50
 shape_gamma = 6 #Gamma params for infectiousness curve (lambda) distribution
@@ -29,7 +28,7 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 
 ##############################
 #1. MCMC
-mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1) {
+mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1, prior = TRUE) {
   
   'Returns mcmc samples of alpha & acceptance rate'
   print('MCMC SUPERSPREADING')
@@ -47,7 +46,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
   #Result vectors
   count_accept1 = 0; count_accept2 = 0;
   count_accept3 = 0; count_accept4 = 0;
-  prior = TRUE; flag_true = FALSE
+  flag_true = FALSE
   
   #Create folder for mcmc results 
   folder_mcmc = paste0(folder_results, '/mcmc')

@@ -41,10 +41,8 @@ time_hours <- function(time_secs){
 
 #TIME
 #time_elapI = round(difftime(end_time, start_time, units='hours'), 2) #round(end_time - start_time, 2)
-
-round(difftime(timeI, units='hours'), 2) #round(end_time - start_time, 2)
-
-as.numeric(timeI, units = "hours")
+#round(difftime(timeI, units='hours'), 2) #round(end_time - start_time, 2)
+#as.numeric(timeI, units = "hours")
 
 ################
 # DATA

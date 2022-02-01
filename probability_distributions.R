@@ -44,5 +44,3 @@ plot.ts(rgamma(100, shape = shape_football, scale = scale_football))
 plot.ts(dgamma(1:20, shape = shape_football, scale = scale_football))
 
 
-
-
