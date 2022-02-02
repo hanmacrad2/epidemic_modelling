@@ -384,7 +384,6 @@ log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
       #print(paste0('logl 1 = ', logl))
       
     } else {
-      
       #Terms in inner sum
       inner_sum_vec <- vector('numeric', x[t])
       
@@ -405,8 +404,8 @@ log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
         
         #Check inf
         if (is.infinite(inner_sum_Lx)){
-          print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
-          print(paste0('yt value = ', y_t))
+          #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
+          #print(paste0('yt value = ', y_t))
         } else {
           inner_sum_vec[y_t + 1] = inner_sum_Lx
         }
@@ -417,11 +416,11 @@ log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
       #Calculate max element in inner vector, for all y_t for a given t, x[t]
       #print(paste0('inner_sum_vec = ', inner_sum_vec))
       lx_max = max(inner_sum_vec)
-      print(paste0('lx_max = ', lx_max))
+      #print(paste0('lx_max = ', lx_max))
       
       #Calculate lse
       lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
-      print(paste0('lse = ', lse))
+      #print(paste0('lse = ', lse))
       
       #Add to overall log likelihood 
       logl = logl + lse 
