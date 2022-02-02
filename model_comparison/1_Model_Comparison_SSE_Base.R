@@ -147,12 +147,12 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
     }
     
     #Print
-    print(paste0('alpha_dash = ', alpha_dash))
+    #print(paste0('alpha_dash = ', alpha_dash))
     if (is.na(log_accept_prob)){
-      print(paste0('logl_new = ', logl_new))
-      print(paste0('logl_prev = ', logl_prev))
+      #print(paste0('logl_new = ', logl_new))
+      #print(paste0('logl_prev = ', logl_prev))
     } else {
-      print(paste0('log_accept_prob = ', log_accept_prob))
+      #print(paste0('log_accept_prob = ', log_accept_prob))
     }
     
     #Metropolis Acceptance Step
@@ -187,10 +187,9 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       } else {
         beta_vec[i] <- beta_vec[i-1]
       }
-      
       #Print
-      print(paste0('beta_dash = ', beta_dash))
-      print(paste0('log_accept_prob = ', log_accept_prob))
+      #print(paste0('beta_dash = ', beta_dash))
+      #print(paste0('log_accept_prob = ', log_accept_prob))
       
       #************************************************************************
       #GAMMA
@@ -215,8 +214,8 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       }
       
       #Print
-      print(paste0('gamma_dash = ', gamma_dash))
-      print(paste0('log_accept_prob = ', log_accept_prob))
+      #print(paste0('gamma_dash = ', gamma_dash))
+      #print(paste0('log_accept_prob = ', log_accept_prob))
       
       #R0
       r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
@@ -247,8 +246,8 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
           flagB0 = FALSE
         } 
         #Print
-        print(paste0('2 gamma_dash = ', gamma_dash))
-        print(paste0('log_accept_prob = ', log_accept_prob))
+        #print(paste0('2 gamma_dash = ', gamma_dash))
+        #print(paste0('log_accept_prob = ', log_accept_prob))
       } 
     }
     
@@ -314,7 +313,7 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 1000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
