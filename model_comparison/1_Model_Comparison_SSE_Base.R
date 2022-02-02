@@ -14,8 +14,7 @@ seed_count = 1
 #1. MCMC
 rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_factor, burn_in
   
-  'Returns mcmc samples of alpha & acceptance rate'
-  print('MCMC SUPERSPREADING')
+  'Returns mcmc samples for sse model w/ rjmcmc & acceptance rates'
   
   #Initialise params
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
@@ -142,24 +141,24 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
     }
     
     #RJMCMC Step 
-    #Reverse of proposals. Prob of proposing 0 when not 0, = 1. Therefore one of qs is 1. While othre 
+    #Reverse of proposals. Prob of proposing 0 when not 0, = 1. Therefore one of qs is 1. 
     if ((beta_vec[i-1] > 0) | (gamma_vec[i-1] > 0)){ #Proposal. 
+      print('B 0 proposal')
       #Not a random walk metropolis - as not using current values to decide the next. As current values are zero - choosing non zero.
-      #Indpendence Sampler 
+      #Independence Sampler 
       beta_dash = 0
       gamma_dash = 0
       #Everything cancels
-      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_dash)
-      print(paste0('New log_l = ', logl_new))
+      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_dash)
+      print(paste0('B0 log_l = ', logl_new))
       logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
       print(paste0('Prev log_l = ', logl_prev))
       log_accept_prob = logl_new - logl_prev 
       
       #Metropolis Step
-      print('B 0 proposal')
       unif_var = runif(1)
       print(paste0('unif_var = ', unif_var))
-      print(paste0('log_accept_prob = ', log_accept_prob))
+      print(paste0('log_accept_prob = logl_new - logl_prev:', log_accept_prob))
       
       if(!(is.na(log_accept_prob)) && log(unif_var) < log_accept_prob) {
         beta_vec[i] <- beta_dash
@@ -168,15 +167,17 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       } 
       
     } else { #This acceptance prob will be the reverse of the first version
+      print('B Independ. proposal')
+      
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
       beta_dash = rexp(1) #q - the proposal distribution is equal to the prior disribution. Reason: Acc prob = like*prior*q/(like*prior*q)
       gamma_dash = rexp(1) + 1
       
       #Everything cancels
       logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_dash)
-      logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+      logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
       log_accept_prob = logl_new - logl_prev 
-      print('B Independ. proposal')
+    
       unif_var = runif(1)
       print(paste0('unif_var = ', unif_var))
       print(paste0('log_accept_prob = ', log_accept_prob))
@@ -204,9 +205,8 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
               accept_rate1, accept_rate2, accept_rate3, accept_rate4, accept_rate5, accept_rate6))
 }
 
-
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 100 #5500
+n_mcmc = 1000 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
@@ -224,41 +224,26 @@ sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 #sigma_base = 0.25 #0.5
 
+print(seed_count)
+set.seed(seed_count)
+
+#Epidemic data - Neg Bin
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
 #RUN MCMC
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-mcmc_params = rjmcmc_sse_base(sim_data, n, sigma)
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma)
 end_time = Sys.time()
 print('End time:')
 print(end_time)
 time_elap = get_time(start_time, end_time)
 
-true_r0 = alphaX + betaX*gammaX
-true_r0
-model_params = c(alphaX, betaX, gammaX, true_r0)
-
-#MCMC - sigma
-sigma_a = 0.4*alphaX
-sigma_b = 1.0*betaX 
-sigma_g = 0.85*gammaX
-sigma_bg = 1.5*gammaX
-sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
-
-print(seed_count)
-set.seed(seed_count)
-
-#Epidemic data - Neg Bin
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
-
-#MCMC 
-#SOMETHING WEIRD HAPPEING 
-
 #Plotting 
 dist_type = 'Neg Bin,'
 plot_mcmc_grid(n, sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
-  
   
 #Seed
 #seed_count = seed_count + 1
