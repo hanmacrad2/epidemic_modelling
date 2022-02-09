@@ -12,88 +12,98 @@ seed_count = 1
 
 ##############################
 #1. MCMC - Loglikelihood
-log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX, flagB0){
+log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
   
   #Params
   num_days = length(x)
   shape_gamma = 6
   scale_gamma = 1
   
-  #Infectiousness (Discrete gamma)
-  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)),
-                                                                                         shape = shape_gamma, scale = scale_gamma)
-  logl = 0 
-  
-  for (t in 2:num_days) {
+  #*********
+  #IF B = 0:
+  #CALL LOGLIKE BASE
+  if((betaX == 0) &(gammaX == 0)) {
+    logl = log_like(x, alphaX)
+  } else {
     
-    #print(t)
-    lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
+    #ELSE: USE THIS FUNCTION
+    #Infectiousness (Discrete gamma)
+    prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)),
+                                                                                           shape = shape_gamma, scale = scale_gamma)
+    logl = 0 
     
-    if(x[t] == 0){ #y_t also equal to zero
+    for (t in 2:num_days) {
       
-      #L(x_i) for y_t, x_t = 0
-      logl = logl -(alphaX*lambda_t) - 
-        (betaX*lambda_t*log(gammaX +1))
+      #print(t)
+      lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
       
-      #print(paste0('logl 1 = ', logl))
-      
-    } else {
-      
-      #Terms in inner sum
-      inner_sum_vec <- vector('numeric', x[t])
-      
-      #Check if Beta & gamma == 0
-      if (flagB0) {
+      if(x[t] == 0){ #y_t also equal to zero
         
-        for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
-          
-          inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
-                            lgamma((x[t] - y_t) + (betaX*lambda_t)) #lgamma(betaX*lambda_t) - 
-                          - lfactorial(x[t] - y_t)) #- (betaX*lambda_t*log(gammaX +1)) 
-          #+ (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
-          
-          #Check inf
-          if (is.infinite(inner_sum_Lx)){
-            #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
-            #print(paste0('yt value = ', y_t))
-          } else {
-            inner_sum_vec[y_t + 1] = inner_sum_Lx
-          }
-          
-        }
+        #L(x_i) for y_t, x_t = 0
+        logl = logl -(alphaX*lambda_t) - 
+          (betaX*lambda_t*log(gammaX +1))
         
-        #ELSE IF NOT == 0
+        #print(paste0('logl 1 = ', logl))
+        
       } else {
         
-        for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
-          #print(paste0('y_t  = ', y_t))
-          #Store inner L(x_i) term in vector position
-          inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
-                            lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) -
-                            lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) +
-                            (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
+        #Terms in inner sum
+        inner_sum_vec <- vector('numeric', x[t])
+        
+        #Check if Beta & gamma == 0
+        if (TRUE) {
           
-          #Check inf
-          if (is.infinite(inner_sum_Lx)){
-            #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
-            #print(paste0('yt value = ', y_t))
-          } else {
-            inner_sum_vec[y_t + 1] = inner_sum_Lx
+          for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
+            
+            inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
+                              lgamma((x[t] - y_t) + (betaX*lambda_t)) #- lgamma(betaX*lambda_t) - 
+                            - lfactorial(x[t] - y_t)) #- (betaX*lambda_t*log(gammaX +1)) 
+            #+ (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
+            
+            #Check inf
+            if (is.infinite(inner_sum_Lx)){
+              #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
+              #print(paste0('yt value = ', y_t))
+            } else {
+              inner_sum_vec[y_t + 1] = inner_sum_Lx
+            }
+            
+          }
+          
+          #ELSE IF NOT == 0
+        } else {
+          
+          for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
+            #print(paste0('y_t  = ', y_t))
+            #Store inner L(x_i) term in vector position
+            inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
+                              lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) -
+                              lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) +
+                              (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
+            
+            #Check inf
+            if (is.infinite(inner_sum_Lx)){
+              #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
+              #print(paste0('yt value = ', y_t))
+            } else {
+              inner_sum_vec[y_t + 1] = inner_sum_Lx
+            }
           }
         }
+        
+        #Calculate max element in inner vector, for all y_t for a given t, x[t]
+        #print(paste0('inner_sum_vec = ', inner_sum_vec))
+        lx_max = max(inner_sum_vec)
+        #print(paste0('lx_max = ', lx_max))
+        
+        #Calculate lse
+        lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
+        #print(paste0('lse = ', lse))
+        
+        #Add to overall log likelihood 
+        logl = logl + lse 
+        
       }
-      
-      #Calculate max element in inner vector, for all y_t for a given t, x[t]
-      #print(paste0('inner_sum_vec = ', inner_sum_vec))
-      lx_max = max(inner_sum_vec)
-      #print(paste0('lx_max = ', lx_max))
-      
-      #Calculate lse
-      lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
-      #print(paste0('lse = ', lse))
-      
-      #Add to overall log likelihood 
-      logl = logl + lse 
       
     }
     
@@ -112,9 +122,11 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
   #Initialise params
   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
-  alpha_vec[1] <- x0; beta_vec[1] <- x0;
-  gamma_vec[1] <- x0; r0_vec[1] <- x0;
-  flagB0 = FALSE
+  like_vec <- vector('numeric', n)
+  
+  alpha_vec[1] <- x0; beta_vec[1] <- 0.1 #x0;
+  gamma_vec[1] <- 10; r0_vec[1] <- x0;
+  like_vec[1] <- log_like_ss_lse_B0(data, alpha_vec[1], beta_vec[1],  gamma_vec[1]) 
   
   #Extract params
   sigma_a = sigma[1]; sigma_b = sigma[2]
@@ -136,31 +148,26 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
     }
     
     #log alpha
-    logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1], flagB0)
-    logl_prev = log_like_ss_lse_B0(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1], flagB0)
-    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior
+    logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    log_accept_prob = logl_new - like_vec[i-1]  #+ prior1 - prior
     #Priors
     if (prior){
       log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
     }
     
-    #Print
-    #print(paste0('alpha_dash = ', alpha_dash))
-    if (is.na(log_accept_prob)){
-      #print(paste0('logl_new = ', logl_new))
-      #print(paste0('logl_prev = ', logl_prev))
-    } else {
-      #print(paste0('log_accept_prob = ', log_accept_prob))
-    }
+    #Old
+    #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+    #prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+    #prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
     
     #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       alpha_vec[i] <- alpha_dash
       count_accept1 = count_accept1 + 1
+      like_vec[i] = logl_new
     } else {
       alpha_vec[i] <- alpha_vec[i-1]
+      like_vec[i] = like_vec[i-1]
     }
     
     #************************************************************************
@@ -172,9 +179,9 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
         beta_dash = abs(beta_dash)
       }
       #loglikelihood
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_vec[i-1], flagB0)
-      logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1], flagB0)
-      log_accept_prob = logl_new - logl_prev
+      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+      #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+      log_accept_prob = logl_new - like_vec[i] #logl_prev
       #Priors
       if (prior){
         log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
@@ -182,14 +189,11 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       #Metropolis Acceptance Step
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         beta_vec[i] <- beta_dash
+        like_vec[i] = logl_new
         count_accept2 = count_accept2 + 1
-        flagB0 = FALSE
       } else {
         beta_vec[i] <- beta_vec[i-1]
       }
-      #Print
-      #print(paste0('beta_dash = ', beta_dash))
-      #print(paste0('log_accept_prob = ', log_accept_prob))
       
       #************************************************************************
       #GAMMA
@@ -198,9 +202,9 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
         gamma_dash = 2 - gamma_dash #abs(gamma_dash)
       }
       #Acceptance Probability
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_dash, flagB0)
-      logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1], flagB0)
-      log_accept_prob = logl_new - logl_prev 
+      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_dash)
+      #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+      log_accept_prob = logl_new - like_vec[i] #logl_prev 
       #Priors
       if (prior){
         log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
@@ -208,33 +212,33 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       #Metropolis Acceptance Step
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         gamma_vec[i] <- gamma_dash
+        like_vec[i] <- logl_new
         count_accept3 = count_accept3 + 1
       } else {
         gamma_vec[i] <- gamma_vec[i-1]
       }
       
-      #Print
-      #print(paste0('gamma_dash = ', gamma_dash))
-      #print(paste0('log_accept_prob = ', log_accept_prob))
-      
       #R0
-      r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
+      r0_current = alpha_vec[i] + beta_vec[i]*gamma_vec[i] #r0_vec[i] #Stays as r0 until updated again 
+      #PRINT
+      print('****************************')
+      print(paste0('1 RO_i = ', r0_current))
       
       #*****************************************************
       #GAMMA-BETA
-      gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg)#Alter sigma_bg depending on acceptance rate. 
+      gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg) #Alter sigma_bg depending on acceptance rate. 
       #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
       if(gamma_dash < 1){ #If less then 1
         gamma_dash = 2 - gamma_dash #abs(gamma_dash)
       }
-      #New beta 
-      beta_new = (r0_vec[i] - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
-      
+      #New beta  r0_vec[i]
+      beta_new = (r0_current - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
+        
       if(beta_new >= 0){ #Only accept values of beta > 0
         
-        logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_new, gamma_dash, flagB0)
-        logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i], flagB0)
-        log_accept_prob = logl_new - logl_prev  
+        logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_new, gamma_dash)
+        #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
+        log_accept_prob = logl_new - like_vec[i] #logl_prev  
         #Priors
         if (prior){
           log_accept_prob = log_accept_prob - beta_dash + beta_vec[i]
@@ -242,62 +246,74 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
         #Metropolis Step
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           beta_vec[i] <- beta_new
+          like_vec[i] <- logl_new
           count_accept4 = count_accept4 + 1
-          flagB0 = FALSE
         } 
-        #Print
-        #print(paste0('2 gamma_dash = ', gamma_dash))
-        #print(paste0('log_accept_prob = ', log_accept_prob))
       } 
-    }
+    } #end of if b[i-1] > 0
     
+    #************************************************************
     #RJMCMC Step 
-    if ((beta_vec[i-1] > 0) | (gamma_vec[i-1] > 0)){ 
+    if ((beta_vec[i] > 0) | (gamma_vec[i] > 0)){ #Look to it 
+
       print('B 0 proposal')
       beta_dash = 0
       gamma_dash = 0
-      flagB0 = TRUE
+      alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
       #Acceptance probability (everything cancels)
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_dash, flagB0)
-      logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1], flagB0)
-      log_accept_prob = logl_new - logl_prev 
+      logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_dash, gamma_dash)
+      #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i]) #Update
+      log_accept_prob = logl_new - like_vec[i] #logl_prev 
       
       #Metropolis Step
-      unif_var = runif(1)
-      print(paste0('log_accept_prob = ', log_accept_prob))
-      print(paste0('log(unif_var) = ', log(unif_var)))
       
-      if(!(is.na(log_accept_prob)) && log(unif_var) < log_accept_prob) {
+      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         beta_vec[i] <- beta_dash
         gamma_vec[i] <- gamma_dash
+        alpha_vec[i] <- alpha_dash
+        like_vec[i] <- logl_new
         count_accept5 = count_accept5 + 1
-      } else {
-        flagB0 = FALSE 
-      }
+        print('0s accepted')
+        
+      } 
     } else { 
       print('B Independ. proposal')
       
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
-      beta_dash = rexp(1) 
-      gamma_dash = rexp(1) + 1
+      beta_dash = rexp(1)  #Propose beta from the prior, calculate calculate alpha based on r0, beta_dash, gamma_dash.  
+      gamma_dash = rexp(1) + 1 #Adjust r0 so the same in adjust
+      alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian? 
       
-      #Everything cancels
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_dash, flagB0)
-      logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1], flagB0)
-      log_accept_prob = logl_new - logl_prev 
+      #Print
+      print(paste0('beta_dash = ', beta_dash))
+      print(paste0('gamma_dash = ', gamma_dash))
+      print(paste0('alpha_dash = ', alpha_dash))
       
-      #Metropolis Step
-      unif_var = runif(1)
-      print(paste0('log_accept_prob = ', log_accept_prob))
-      print(paste0('log(unif_var) = ', log(unif_var)))
-      
-      if(!(is.na(log_accept_prob)) && log(unif_var) < log_accept_prob) {
-        beta_vec[i] <- beta_dash
-        gamma_vec[i] <- gamma_dash
-        count_accept6 = count_accept6 + 1
-        flagB0 = FALSE
+      #Check alpha postive
+      if (alpha_dash > 0) {
         
-      } } }
+        #Everything cancels
+        logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_dash, gamma_dash)
+        #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+        log_accept_prob = logl_new - like_vec[i]  #logl_prev #Jacobian 
+        
+        #Metropolis Step
+        if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+          beta_vec[i] <- beta_dash
+          gamma_vec[i] <- gamma_dash
+          alpha_vec[i] <- alpha_dash
+          like_vec[i] = logl_new 
+          count_accept6 = count_accept6 + 1
+        
+      }
+      }
+    }
+    
+    r0_vec[i] = r0_current
+    #Print 
+    print(paste0('beta_vec[i] = ',  beta_vec[i]))
+    print(paste0('gamma_vec[i] = ',  beta_vec[i]))
+  }
   
   #Final stats
   accept_rate1 = 100*count_accept1/n 
@@ -313,7 +329,7 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 5000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 10 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
@@ -335,8 +351,12 @@ print(seed_count)
 set.seed(seed_count)
 
 #Epidemic data - Neg Bin
-#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#Seed
+#seed_count = seed_count + 1
+seed_count
 
 #RUN MCMC
 start_time = Sys.time()
@@ -351,7 +371,3 @@ time_elap = get_time(start_time, end_time)
 #Plotting 
 dist_type = 'Neg Bin,'
 plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
-  
-#Seed
-#seed_count = seed_count + 1
-seed_count
