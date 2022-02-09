@@ -280,8 +280,8 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       print('B Independ. proposal')
       
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
-      beta_dash = rexp(1)  #Propose beta from the prior, calculate calculate alpha based on r0, beta_dash, gamma_dash.  
-      gamma_dash = rexp(1) + 1 #Adjust r0 so the same in adjust
+      beta_dash = rexp(1) 
+      gamma_dash = rexp(1) + 1 
       alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian? 
       
       #Print
