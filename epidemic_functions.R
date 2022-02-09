@@ -201,7 +201,7 @@ log_like <- function(y, r0_dash){
   for (t in 2:num_days) {
     
     lambda = r0_dash*sum(y[1:t-1]*rev(prob_infect[1:t-1]))
-    logl = logl + y[t]*log(lambda) - lambda
+    logl = logl + y[t]*log(lambda) - lambda - lfactorial(y[t]) #Need to include normalizing constant 
     
   }
   
@@ -387,6 +387,7 @@ log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
       #Terms in inner sum
       inner_sum_vec <- vector('numeric', x[t])
       
+      #CUT FOR LOOP; REPLACE ALL YT WITH XT (ONE ITERATION) LET YT = XT. 
       for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
         #print(paste0('y_t  = ', y_t))
         #Store inner L(x_i) term in vector position
@@ -432,6 +433,9 @@ log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
   logl
   
 }
+
+#ADDITION
+#IF BETA == 0
 
 #*********************************************************************************************
 #* Log Likelihood - Using package distribution functions
