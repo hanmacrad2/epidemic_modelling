@@ -48,7 +48,7 @@ log_like_B0 <- function(y, alphaX) {
 
 ##################
 #RJMCMC  
-rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_factor, burn_in
+rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) { #thinning_factor, burn_in
   
   'Returns mcmc samples for sse model w/ rjmcmc & acceptance rates'
   
@@ -57,8 +57,8 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
   like_vec <- vector('numeric', n)
   
-  alpha_vec[1] <- x0; beta_vec[1] <- 0.1 #x0;
-  gamma_vec[1] <- 10; r0_vec[1] <- x0;
+  alpha_vec[1] <- model_params[1]; beta_vec[1] <- model_params[2] #x0;
+  gamma_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
   like_vec[1] <- log_like_ss_lse_B0(data, alpha_vec[1], beta_vec[1],  gamma_vec[1]) 
   
   #Extract params
@@ -69,6 +69,7 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
   count_accept1 = 0; count_accept2 = 0;
   count_accept3 = 0; count_accept4 = 0; 
   count_accept5 = 0; count_accept6 = 0;
+  count_reject5 = 0; count_reject6 = 0;
   
   #MCMC chain
   for(i in 2:n) {
@@ -194,14 +195,12 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       gamma_dash = 0
       alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
       #Acceptance probability (everything cancels)
-      logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_dash, gamma_dash)
+      logl_new = log_like_B0(data, alpha_dash)
       print(paste0('like_vec[i] = ', like_vec[i]))
       print(paste0('logl_new = ', logl_new))
-      #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i]) #Update
       log_accept_prob = logl_new - like_vec[i] #logl_prev 
       
       #Metropolis Step
-      
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         beta_vec[i] <- beta_dash
         gamma_vec[i] <- gamma_dash
@@ -210,7 +209,9 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
         count_accept5 = count_accept5 + 1
         print('0s accepted')
         
-      } 
+      } else {
+        count_reject5 = count_reject5 + 1
+      }
     } else { 
       print('B Independ. proposal')
       
@@ -228,8 +229,7 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
       if (alpha_dash > 0) {
         
         #Everything cancels
-        logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_dash, gamma_dash)
-        #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+        logl_new = log_like_ss_lse(data, alpha_dash, beta_dash, gamma_dash)
         log_accept_prob = logl_new - like_vec[i]  #logl_prev #Jacobian 
         
         #Metropolis Step
@@ -239,7 +239,10 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
           alpha_vec[i] <- alpha_dash
           like_vec[i] = logl_new 
           count_accept6 = count_accept6 + 1
+          print('B independent accepted')
         
+        } else {
+          count_reject6 = count_reject6 + 1
       }
       }
     }
@@ -255,8 +258,9 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
   accept_rate2 = 100*count_accept2/n
   accept_rate3 = 100*count_accept3/n
   accept_rate4 = 100*count_accept4/n
-  accept_rate5 = 100*count_accept5/n
-  accept_rate6 = 100*count_accept6/n
+  #RJMCMC Steps 
+  accept_rate5 = 100*count_accept5/(count_accept5 + count_reject5)
+  accept_rate6 = 100*count_accept6/(count_accept6 + count_reject6)
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
@@ -264,7 +268,7 @@ rjmcmc_sse_base <- function(data, n, sigma, x0 = 1, prior = TRUE) { #thinning_fa
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
@@ -272,7 +276,7 @@ betaX = 0.1
 gammaX = 10 
 true_r0 = alphaX + betaX*gammaX
 true_r0
-#model_params = c(alphaX, betaX, gammaX, true_r0)
+model_params = c(alphaX, betaX, gammaX, true_r0)
 
 #MCMC - sigma
 sigma_a = 0.4*alphaX
@@ -293,7 +297,7 @@ plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections coun
 start_time = Sys.time()
 print('Start time:')
 print(start_time)
-mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma)
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma,model_params)
 end_time = Sys.time()
 print('End time:')
 print(end_time)
