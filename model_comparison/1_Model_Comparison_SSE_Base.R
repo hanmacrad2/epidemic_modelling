@@ -12,106 +12,39 @@ seed_count = 1
 
 ##############################
 #1. MCMC - Loglikelihood
-# log_like_ss_lse_B0 <- function(x, alphaX, betaX, gammaX){
-#   
-#   #Params
-#   num_days = length(x)
-#   shape_gamma = 6
-#   scale_gamma = 1
-#   
-#   #*********
-#   #IF B = 0:
-#   #CALL LOGLIKE BASE
-#   if((betaX == 0) &(gammaX == 0)) {
-#     logl = log_like(x, alphaX)
-#   } else {
-#     
-#     #ELSE: USE THIS FUNCTION
-#     #Infectiousness (Discrete gamma)
-#     prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)),
-#                                                                                            shape = shape_gamma, scale = scale_gamma)
-#     logl = 0 
-#     
-#     for (t in 2:num_days) {
-#       
-#       #print(t)
-#       lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
-#       
-#       if(x[t] == 0){ #y_t also equal to zero
-#         
-#         #L(x_i) for y_t, x_t = 0
-#         logl = logl -(alphaX*lambda_t) - 
-#           (betaX*lambda_t*log(gammaX +1))
-#         
-#         #print(paste0('logl 1 = ', logl))
-#         
-#       } else {
-#         
-#         #Terms in inner sum
-#         inner_sum_vec <- vector('numeric', x[t])
-#         
-#         #Check if Beta & gamma == 0
-#         if (TRUE) {
-#           
-#           for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
-#             
-#             inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
-#                               lgamma((x[t] - y_t) + (betaX*lambda_t)) #- lgamma(betaX*lambda_t) - 
-#                             - lfactorial(x[t] - y_t)) #- (betaX*lambda_t*log(gammaX +1)) 
-#             #+ (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
-#             
-#             #Check inf
-#             if (is.infinite(inner_sum_Lx)){
-#               #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
-#               #print(paste0('yt value = ', y_t))
-#             } else {
-#               inner_sum_vec[y_t + 1] = inner_sum_Lx
-#             }
-#             
-#           }
-#           
-#           #ELSE IF NOT == 0
-#         } else {
-#           
-#           for (y_t in 0:x[t]){ #Sum for all values of y_t up to x_t
-#             #print(paste0('y_t  = ', y_t))
-#             #Store inner L(x_i) term in vector position
-#             inner_sum_Lx = (-(alphaX*lambda_t) - lfactorial(y_t) + y_t*log(alphaX*lambda_t) +
-#                               lgamma((x[t] - y_t) + (betaX*lambda_t)) - lgamma(betaX*lambda_t) -
-#                               lfactorial(x[t] - y_t) - (betaX*lambda_t*log(gammaX +1)) +
-#                               (x[t] - y_t)*log(gammaX) -(x[t] - y_t)*log(gammaX + 1))
-#             
-#             #Check inf
-#             if (is.infinite(inner_sum_Lx)){
-#               #print(paste0('inner_sum_Lx is inf:', inner_sum_Lx))
-#               #print(paste0('yt value = ', y_t))
-#             } else {
-#               inner_sum_vec[y_t + 1] = inner_sum_Lx
-#             }
-#           }
-#         }
-#         
-#         #Calculate max element in inner vector, for all y_t for a given t, x[t]
-#         #print(paste0('inner_sum_vec = ', inner_sum_vec))
-#         lx_max = max(inner_sum_vec)
-#         #print(paste0('lx_max = ', lx_max))
-#         
-#         #Calculate lse
-#         lse = lx_max + log(sum(exp(inner_sum_vec - lx_max) ))
-#         #print(paste0('lse = ', lse))
-#         
-#         #Add to overall log likelihood 
-#         logl = logl + lse 
-#         
-#       }
-#       
-#     }
-#     
-#   }
-#   
-#   logl
-#   
-# }
+
+log_like_B0 <- function(y, alphaX) {
+  
+  #Params
+  num_days = length(y)
+  shape_gamma = 6
+  scale_gamma = 1
+  
+  #Infectiousness (Discrete gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days - 1)),                                                                                    shape = shape_gamma, scale = scale_gamma)
+  logl = 0
+  
+  for (t in 2:num_days) {
+    
+    #Data
+    y_t = y[t]
+    lambda_t = sum(y[1:(t - 1)] * rev(prob_infect[1:(t - 1)]))
+    
+    if (y_t == 0) {
+      logl = logl - (alphaX * lambda_t)
+      
+    } else {
+      #Add to log likelihood
+      logl = logl +  y_t * log(alphaX * lambda_t) - (alphaX * lambda_t) -
+        lfactorial(y_t) #- lfactorial(x[t] - y_t))
+      
+    }
+    
+  }
+  
+  logl
+  
+}
 
 ##################
 #RJMCMC  
@@ -353,12 +286,8 @@ print(seed_count)
 set.seed(seed_count)
 
 #Epidemic data - Neg Bin
-#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
-
-#Seed
-#seed_count = seed_count + 1
-seed_count
 
 #RUN MCMC
 start_time = Sys.time()
