@@ -268,7 +268,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 10000 #50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 1000 #50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
@@ -289,26 +289,27 @@ sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 print(seed_count)
 set.seed(seed_count)
 
-#Epidemic data - Neg Bin
+#Epidemic data
 
 #BASE DATA
-sim_data = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
-
-#SSE DATA
-#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
-
-#RUN MCMC
-start_time = Sys.time()
-print('Start time:')
-print(start_time)
-mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma,model_params)
-end_time = Sys.time()
-print('End time:')
-print(end_time)
-time_elap = get_time(start_time, end_time)
-
-#Plotting 
-dist_type = 'Neg Bin,'
-plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, dist_type, time_elap, seed_count)
+# #sim_data_base = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+# model_typeX = 'Base'
+# plot.ts(sim_data_base, ylab = 'Daily Infections count', main = 'Daily Infections count')
+# 
+# #SSE DATA
+# #sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+# model_type = 'SSE'
+# plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+# 
+# #RUN MCMC
+# start_time = Sys.time()
+# print('Start time:')
+# print(start_time)
+# mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+# end_time = Sys.time()
+# print('End time:')
+# print(end_time)
+# time_elap = get_time(start_time, end_time)
+# 
+# #Plotting 
+# plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)

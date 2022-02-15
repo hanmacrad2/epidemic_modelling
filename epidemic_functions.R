@@ -955,32 +955,17 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 
 ###############################################################################
 #FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
-plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_time,
-                                seed_count, prior = TRUE, joint = TRUE, flag5 = TRUE){
-  
-  #Plot Set up
-  #par(mar=c(1,1,1,1))
+plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
+                                seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE, flag5 = TRUE){
+  #Plot
   plot.new()
-  
-  if (joint){
-    par(mfrow=c(4,4))
-  } else {
-    par(mfrow=c(3,4))
-  }
-  
-  
+  par(mfrow=c(4,4))
+
   #Extract params
-  alpha_mcmc = mcmc_params[1]
-  alpha_mcmc = unlist(alpha_mcmc)
-  
-  beta_mcmc = mcmc_params[2]
-  beta_mcmc = unlist(beta_mcmc)
-  
-  gamma_mcmc = mcmc_params[3]
-  gamma_mcmc = unlist(gamma_mcmc)
-  
-  r0_mcmc = mcmc_params[4]
-  r0_mcmc = unlist(r0_mcmc)
+  alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
+  beta_mcmc = mcmc_params[2]; beta_mcmc = unlist(beta_mcmc)
+  gamma_mcmc = mcmc_params[3]; gamma_mcmc = unlist(gamma_mcmc)
+  r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
   
   #Cumulative means + param sample limits
   #r0
@@ -1002,14 +987,13 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
   gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
   g_lim =  max(gammaX, max(gamma_mcmc))
   g_lim2 =  max(gammaX, gamma_mean) 
-  
-  
+
   #***********
   #* Plots *
   
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, "Day Infts SS Evnts", dist_type, "r0 = ", true_r0),
+          main = paste(seed_count, ' Day Infts, ', model_typeX, ", r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots
@@ -1017,8 +1001,6 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
           main = paste("MCMC SS Events, true alpha = ", alphaX),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = alphaX, col = 'red', lwd = 2) #True = green
-  #lines(seq_along(like_a), like_a, col = 'red')
-  #lines(seq_along(prior_a), prior_a, col = 'blue')
   
   plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim),
           main = paste("MCMC SS Events, true beta = ", betaX),
@@ -1032,10 +1014,6 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
   
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
-  #Title
-  # text(line2user(line=mean(par('mar')[c(2, 4)]), side=2), 
-  #      line2user(line=2, side=3), paste('MCMC SS, True R0:', true_r0, 'Prior = ', prior), xpd=NA, cex=2, font=2)
-  # 
   #iii. Cumulative mean plots
   #r0 Mean
   plot2 = plot(seq_along(r0_mean), r0_mean,
@@ -1052,8 +1030,6 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   print(plot2)
   abline(h = alphaX, col = 'red', lwd = 2)
-  #lines(seq_along(like_a_mean), like_a_mean, col = 'red')
-  #lines(seq_along(prior_a_mean), prior_a_mean, col = 'blue')
   
   #beta mean
   plot2 = plot(seq_along(beta_mean), beta_mean,
@@ -1096,17 +1072,13 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
   #lines(exp1, col = 'purple')
   abline(v = alphaX, col = 'red', lwd = 2)
   
-  
   #Hist Beta 
   hist(beta_mcmc, freq = FALSE, breaks = 100,
        xlab = 'beta', #ylab = 'Density', 
        main = paste("Beta, True beta = ", betaX), 
        xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #Prior
-  #lines(exp1, col = 'purple')
   abline(v = betaX, col = 'blue', lwd = 2)
-  
   
   #Hist Gamma 
   hist(gamma_mcmc, freq = FALSE, breaks = 100,
@@ -1114,12 +1086,7 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
        main = paste("Gamma, True gamma = ", gammaX),
        xlim=c(0, g_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #Prior
-  #x <- seq(from = 0, to = 20, by = 0.5)
-  #exp1 = 1 + dexp(x, 1)
-  #lines(exp1, col = 'purple')
   abline(v = gammaX, col = 'green', lwd = 2)
-  
   
   #Final Mean Stats
   data_10_pc = 0.5*n #50%
@@ -1155,6 +1122,12 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
   #Results
   if (flag5){
     print(paste0('flag5 = '), flag5)
+    
+    #Bayes Factor
+    base_pc = (length(which(beta_mcmc == 0)))/n
+    bayes_factor = base_pc/(1-base_pc); bayes_factor = round(bayes_factor, 2)
+    
+    #Results
     df_results <- data.frame(
       rep = seed_count,
       alpha = alphaX,
@@ -1171,7 +1144,10 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, dist_type, total_t
       a_rte_b_g = round(mcmc_params[[8]],2),
       a_rte_rj0 = round(mcmc_params[[9]],2),
       a_rte_rj1 = round(mcmc_params[[10]],2),
+      pc0 = base_pc,
+      bf = bayes_factor,
       tot_time = total_time)
+    
   } else {
     df_results <- data.frame(
       rep = seed_count,
@@ -1387,3 +1363,6 @@ plot_mcmc_grid_3x4 <- function(sim_data, mcmc_params, true_r0, dist_type,
   print(df_results)
   
 }
+
+#Plotting
+#par(mar=c(1,1,1,1))
