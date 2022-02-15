@@ -259,8 +259,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
   accept_rate3 = 100*count_accept3/n
   accept_rate4 = 100*count_accept4/n
   #RJMCMC Steps 
-  accept_rate5 = 100*count_accept5/(count_accept5 + count_reject5)
-  accept_rate6 = 100*count_accept6/(count_accept6 + count_reject6)
+  accept_rate5 = 100*count_accept5/(count_accept5 + count_reject5 + 1)
+  accept_rate6 = 100*count_accept6/(count_accept6 + count_reject6 + 1)
   
   #Return alpha, acceptance rate
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
@@ -268,7 +268,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 1000 #50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
