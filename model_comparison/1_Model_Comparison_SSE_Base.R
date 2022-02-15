@@ -59,7 +59,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
   
   alpha_vec[1] <- model_params[1]; beta_vec[1] <- model_params[2] #x0;
   gamma_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
-  like_vec[1] <- log_like_ss_lse_B0(data, alpha_vec[1], beta_vec[1],  gamma_vec[1]) 
+  like_vec[1] <- log_like_ss_lse(data, alpha_vec[1], beta_vec[1],  gamma_vec[1]) 
   
   #Extract params
   sigma_a = sigma[1]; sigma_b = sigma[2]
@@ -82,7 +82,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
     }
     
     #log alpha
-    logl_new = log_like_ss_lse_B0(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
     log_accept_prob = logl_new - like_vec[i-1]  #+ prior1 - prior
     #Priors
     if (prior){
@@ -113,7 +113,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
         beta_dash = abs(beta_dash)
       }
       #loglikelihood
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
       #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
       log_accept_prob = logl_new - like_vec[i] #logl_prev
       #Priors
@@ -136,7 +136,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
         gamma_dash = 2 - gamma_dash #abs(gamma_dash)
       }
       #Acceptance Probability
-      logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_dash)
+      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash)
       #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
       log_accept_prob = logl_new - like_vec[i] #logl_prev 
       #Priors
@@ -170,8 +170,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
         
       if(beta_new >= 0){ #Only accept values of beta > 0
         
-        logl_new = log_like_ss_lse_B0(data, alpha_vec[i], beta_new, gamma_dash)
-        #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
+        logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_dash)
+        #logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
         log_accept_prob = logl_new - like_vec[i] #logl_prev  
         #Priors
         if (prior){
@@ -268,7 +268,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
 }
 
 ############# --- INSERT PARAMETERS! --- ######################################
-n_mcmc = 1000 #50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
+n_mcmc = 10000 #50000 #5000 #500 #0 #5000 #00 #20 #5 #0 #5 #15 #00 #5500
 
 #### - MCMC params - ######
 alphaX = 0.8 
@@ -280,7 +280,7 @@ model_params = c(alphaX, betaX, gammaX, true_r0)
 
 #MCMC - sigma
 sigma_a = 0.4*alphaX
-sigma_b = 1.0*betaX 
+sigma_b = 1.0*betaX #0.1
 sigma_g = 0.85*gammaX
 sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
@@ -290,7 +290,13 @@ print(seed_count)
 set.seed(seed_count)
 
 #Epidemic data - Neg Bin
-sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+
+#BASE DATA
+sim_data = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#SSE DATA
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
 plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
 
 #RUN MCMC
