@@ -116,9 +116,13 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
       logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
       #logl_prev = log_like_ss_lse_B0(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
       log_accept_prob = logl_new - like_vec[i] #logl_prev
+      
       #Priors
+      #Beta prior = exp(1) = rate*exp(-rate*x) = 1*exp(-1*beta) = exp(-beta)
+      #log(exp(-beta)) = -beta
+      
       if (prior){
-        log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
+        log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1] 
       }
       #Metropolis Acceptance Step
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
