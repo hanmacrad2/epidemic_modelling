@@ -155,8 +155,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
       #R0
       r0_current = alpha_vec[i] + beta_vec[i]*gamma_vec[i] #r0_vec[i] #Stays as r0 until updated again 
       #PRINT
-      print('****************************')
-      print(paste0('1 RO_i = ', r0_current))
+      #print('****************************')
+      #print(paste0('1 RO_i = ', r0_current))
       
       #*****************************************************
       #GAMMA-BETA
@@ -190,14 +190,14 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
     #RJMCMC Step 
     if ((beta_vec[i] > 0) | (gamma_vec[i] > 0)){ #Look to it 
 
-      print('B 0 proposal')
+      #print('B 0 proposal')
       beta_dash = 0
       gamma_dash = 0
       alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
       #Acceptance probability (everything cancels)
       logl_new = log_like_B0(data, alpha_dash)
-      print(paste0('like_vec[i] = ', like_vec[i]))
-      print(paste0('logl_new = ', logl_new))
+      #print(paste0('like_vec[i] = ', like_vec[i]))
+      #print(paste0('logl_new = ', logl_new))
       log_accept_prob = logl_new - like_vec[i] #logl_prev 
       
       #Metropolis Step
@@ -207,13 +207,13 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
         alpha_vec[i] <- alpha_dash
         like_vec[i] <- logl_new
         count_accept5 = count_accept5 + 1
-        print('0s accepted')
+        #print('0s accepted')
         
       } else {
         count_reject5 = count_reject5 + 1
       }
     } else { 
-      print('B Independ. proposal')
+      #print('B Independ. proposal')
       
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
       beta_dash = rexp(1) 
@@ -221,9 +221,9 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
       alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian? 
       
       #Print
-      print(paste0('beta_dash = ', beta_dash))
-      print(paste0('gamma_dash = ', gamma_dash))
-      print(paste0('alpha_dash = ', alpha_dash))
+      # print(paste0('beta_dash = ', beta_dash))
+      # print(paste0('gamma_dash = ', gamma_dash))
+      # print(paste0('alpha_dash = ', alpha_dash))
       
       #Check alpha postive
       if (alpha_dash > 0) {
@@ -239,7 +239,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
           alpha_vec[i] <- alpha_dash
           like_vec[i] = logl_new 
           count_accept6 = count_accept6 + 1
-          print('B independent accepted')
+          #print('B independent accepted')
         
         } else {
           count_reject6 = count_reject6 + 1
@@ -249,8 +249,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, x0 = 1, prior = TRUE) 
     
     r0_vec[i] = r0_current
     #Print 
-    print(paste0('beta_vec[i] = ',  beta_vec[i]))
-    print(paste0('gamma_vec[i] = ',  beta_vec[i]))
+    # print(paste0('beta_vec[i] = ',  beta_vec[i]))
+    # print(paste0('gamma_vec[i] = ',  beta_vec[i]))
   }
   
   #Final stats
@@ -275,7 +275,6 @@ alphaX = 0.8
 betaX = 0.1 
 gammaX = 10 
 true_r0 = alphaX + betaX*gammaX
-true_r0
 model_params = c(alphaX, betaX, gammaX, true_r0)
 
 #MCMC - sigma
@@ -286,7 +285,6 @@ sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 #sigma_base = 0.25 #0.5
 
-print(seed_count)
 set.seed(seed_count)
 
 #Epidemic data
@@ -312,4 +310,4 @@ set.seed(seed_count)
 # time_elap = get_time(start_time, end_time)
 # 
 # #Plotting 
-# plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+#plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)

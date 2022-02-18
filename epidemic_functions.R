@@ -858,7 +858,6 @@ plot_mcmc_x4_II <- function(sim_data, mcmc_params, true_r0, dist_type,
   
   #Results
   if (flag5){
-    print(paste0('flag5 = '), flag5)
     df_results <- data.frame(
       alpha = alphaX, a_mc = a_mcmc_mean,
       beta = betaX, b_mc = b_mcmc_mean,
@@ -958,7 +957,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
                                 seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE, flag5 = TRUE){
   #Plot
-  plot.new()
+  #plot.new()
   par(mfrow=c(4,4))
 
   #Extract params
@@ -993,7 +992,7 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, ' Day Infts, ', model_typeX, ", r0 = ", true_r0),
+          main = paste(seed_count, ' Day Infts, ', model_typeX, "Data, r0 = ", true_r0),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots
@@ -1016,35 +1015,34 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   
   #iii. Cumulative mean plots
   #r0 Mean
-  plot2 = plot(seq_along(r0_mean), r0_mean,
+  plot(seq_along(r0_mean), r0_mean,
                ylim=c(0, r0_lim),
                xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  print(plot2)
+  #print(plot2)
   abline(h = true_r0, col = 'orange', lwd = 2)
   
   #alpha mean
-  plot2 = plot(seq_along(alpha_mean), alpha_mean,
+  plot(seq_along(alpha_mean), alpha_mean,
                ylim=c(0, a_lim),
                xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  print(plot2)
+  #print(plot2)
   abline(h = alphaX, col = 'red', lwd = 2)
   
   #beta mean
-  plot2 = plot(seq_along(beta_mean), beta_mean,
+  plot(seq_along(beta_mean), beta_mean,
                ylim=c(0, b_lim),
                xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  print(plot2)
+  #print(plot2)
   abline(h = betaX, col = 'blue', lwd = 2)
   
   #gamma Mean
-  plot2 = plot(seq_along(gamma_mean), gamma_mean,
+  plot(seq_along(gamma_mean), gamma_mean,
                xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
                ylim=c(0, g_lim),
                cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  print(plot2)
   abline(h = gammaX, col = 'green', lwd = 2)
   
   #iv. Param Histograms (Plots 9,11,12)
@@ -1090,7 +1088,7 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   
   #Final Mean Stats
   data_10_pc = 0.5*n #50%
-  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2)
+  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2) 
   b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
   g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
   r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
@@ -1119,17 +1117,38 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   }
   
+  
   #Results
   if (flag5){
-    print(paste0('flag5 = '), flag5)
     
     #Bayes Factor
     base_pc = (length(which(beta_mcmc == 0)))/n
-    bayes_factor = base_pc/(1-base_pc); bayes_factor = round(bayes_factor, 2)
+    bayes_factor = base_pc/(1-base_pc); bayes_factor = round(bayes_factor, 3)
+    
+    #Check
+    # print(paste0('seed_Count = ', seed_count))
+    # print(paste0('alphaX = ', alphaX))
+    # print(paste0('a_mcmc_mean = ', a_mcmc_mean)) 
+    # print(paste0('betaX = ', betaX))
+    # print(paste0('b_mcmc_mean = ', b_mcmc_mean))
+    # print(paste0('gammaX = ', gammaX))
+    # print(paste0('g_mcmc_mean = ', g_mcmc_mean))
+    # print(paste0('true_r0 = ', true_r0))
+    # print(paste0('accept_rate_a = ', round(mcmc_params[[5]],2)))
+    # print(paste0('a_rte_b = ', round(mcmc_params[[6]], 2)))
+    # 
+    # print(paste0('a_rte_g = ', round(mcmc_params[[7]],2)))
+    # print(paste0('a_rte_b_g = ', round(mcmc_params[[8]],2)))
+    # print(paste0('a_rte_rj0 = ', round(mcmc_params[[9]],2)))
+    # print(paste0('a_rte_rj1 = ', round(mcmc_params[[10]],2)))
+    # print(paste0('base_pc = ', base_pc))
+    # print(paste0('bayes_factor = ', bayes_factor))
+    # #print(paste0('total_time = ', total_time))
     
     #Results
     df_results <- data.frame(
       rep = seed_count,
+      n_mcmc = n,
       alpha = alphaX,
       a_mc = a_mcmc_mean,
       beta = betaX,
@@ -1145,12 +1164,13 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
       a_rte_rj0 = round(mcmc_params[[9]],2),
       a_rte_rj1 = round(mcmc_params[[10]],2),
       pc0 = base_pc,
-      bf = bayes_factor,
-      tot_time = total_time)
+      bf = bayes_factor)
+      #tot_time = total_time)
     
   } else {
     df_results <- data.frame(
       rep = seed_count,
+      n_mcmc = n,
       alpha = alphaX,
       a_mc = a_mcmc_mean,
       beta = betaX,

@@ -13,13 +13,15 @@ print_time <- function(start_time, end_time){
   
 }
 
-get_time <- function(start_time, end_time){
+get_time <- function(start_time, end_time, show = TRUE){
   'Print difference between end & start time'
   
   time_elap = round(end_time - start_time, 2)
-  print('Time elapsed:') 
-  print(time_elap)
-  
+  if(show){
+    print('Time elapsed:') 
+    print(time_elap)
+  }
+  time_elap
 }
 
 get_timeII <- function(start_time, end_time, timeI){
@@ -82,3 +84,26 @@ rename_col <- function(df_new, old_name, new_name){
   #Rename column
   names(df_new)[names(df_new) == old_name] <- new_name
 }
+
+
+#PRINT
+
+# print(paste0('seed_Count = ', seed_count))
+# print(paste0('alphaX = ', alphaX))
+# print(paste0('a_mcmc_mean = ', a_mcmc_mean))
+# print(paste0('betaX = ', betaX))
+# print(paste0('b_mcmc_mean = ', b_mcmc_mean))
+# print(paste0('gammaX = ', gammaX))
+# print(paste0('g_mcmc_mean = ', g_mcmc_mean))
+# print(paste0('true_r0 = ', true_r0))
+# print(paste0('accept_rate_a = ', round(mcmc_params[[5]],2)))
+# print(paste0('a_rte_b = ', round(mcmc_params[[6]], 2)))
+# 
+# print(paste0('a_rte_g = ', round(mcmc_params[[7]],2)))
+# print(paste0('a_rte_b_g = ', round(mcmc_params[[8]],2)))
+# print(paste0('a_rte_rj0 = ', round(mcmc_params[[9]],2)))
+# print(paste0('a_rte_rj1 = ', round(mcmc_params[[10]],2)))
+# print(paste0('base_pc = ', base_pc))
+# print(paste0('bayes_factor = ', bayes_factor))
+# print(paste0('total_time = ', total_time))
+

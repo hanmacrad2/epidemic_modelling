@@ -1,0 +1,151 @@
+---
+title: "Model comparison using rjmcmc"
+subtitle: Bayes Factor of compared models determined
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Model Comparison - SSE data I
+
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+setwd("~/GitHub/epidemic_modelling") 
+source("epidemic_functions.R") 
+source("helper_functions.R")
+source("model_comparison/1_Model_Comparison_SSE_Base.R")
+
+#Epidemic Parameters
+num_days = 50
+shape_gamma = 6 #Gamma params for infectiousness curve (lambda) 
+scale_gamma = 1 
+seed_count = 1 
+
+############# --- INSERT PARAMETERS! --- ######################################
+n_mcmc = 1000 
+
+#### - MCMC params - ######
+alphaX = 0.8 
+betaX = 0.1 
+gammaX = 10 
+true_r0 = alphaX + betaX*gammaX
+model_params = c(alphaX, betaX, gammaX, true_r0)
+
+#MCMC - sigma
+sigma_a = 0.4*alphaX
+sigma_b = 1.0*betaX #0.1
+sigma_g = 0.85*gammaX
+sigma_bg = 1.5*gammaX
+sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
+#sigma_base = 0.25 #0.5
+
+set.seed(seed_count)
+
+############
+#DATA I
+
+#SSE DATA
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+model_typeX = 'SSE'
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#RUN MCMC
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time, show = FALSE)
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+set.seed(seed_count)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
+\
+
+#### Model Comparison - BASE Data I 
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = 1
+set.seed(seed_count)
+sim_data_base = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+mcmc_params = rjmcmc_sse_base(sim_data_base, n_mcmc, sigma, model_params)
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data_base, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+sim_data_base = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+mcmc_params = rjmcmc_sse_base(sim_data_base, n_mcmc, sigma, model_params)
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data_base, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX)
+
+```
