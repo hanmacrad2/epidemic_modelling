@@ -136,7 +136,7 @@ plot_mcmc_grid(n_mcmc, sim_data_base, mcmc_params, true_r0, time_elap, seed_coun
 
 #### Model Comparison - BASE Data II
 
-```{r, echo = FALSE, fig.width= 20, fig.height=11}
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
 
 #SSE DATA
 seed_count = seed_count + 1
