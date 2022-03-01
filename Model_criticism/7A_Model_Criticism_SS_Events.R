@@ -178,13 +178,14 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
   
   #Data_type
   flag1 = flag_dt[1]; flag2 = flag_dt[2]; flag3 = flag_dt[3] 
+  start_rep = 1
   cat('r0 = ', r0, '\n');
   
-  if (flag1){
-    start_rep = 462
-  } else {
-    start_rep = 1
-  }
+  # if (flag1){
+  #   start_rep = 462
+  # } else {
+  #   start_rep = 1
+  # }
   
   #Repeat for n reps
   

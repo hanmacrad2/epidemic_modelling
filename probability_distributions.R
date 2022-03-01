@@ -6,6 +6,9 @@ lambda = 1.8 #1.8 #10 #1.8
 #Samples
 plot.ts(rexp(100, lambda))
 #Probability Density 
+a = seq(0, 1.5, by = 0.005)
+plot(a, dexp(a, 1))
+
 plot.ts(dexp(1:100, lambda))
 plot.ts(1- dexp(1:100, lambda))
 #Cumulative Distribution Function
@@ -36,6 +39,22 @@ scale_gamma = 1 #1/rate.
 plot.ts(rgamma(100, shape = shape_gamma, scale = scale_gamma))
 plot.ts(dgamma(1:20, shape = shape_gamma, scale = scale_gamma))
 
+#Option 2
+shape_gamma = 2 #Gamma params for infectiousness curve (lambda) distribution
+scale_gamma = 0.5 #1/rate. 
+
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        ylab = 'Gamma(2, 0.5)', main = 'Gamma(2, 0.5)')
+
+plot.ts(dgamma(1:20, shape = shape_gamma, scale = scale_gamma),
+        ylab = 'Gamma(2, 0.5)', main = 'Gamma(2, 0.5)')
+
+plot.ts(rgamma(1000, shape = shape_gamma, scale = scale_gamma),
+        ylab = 'Gamma(2, 0.5)', main = 'Gamma(2, 0.5)')
+
+mean(rgamma(100, shape = shape_gamma, scale = scale_gamma))
+
 #Example number of goals in a match
 shape_football = 25
 scale_football = 1/10
@@ -44,3 +63,4 @@ plot.ts(rgamma(100, shape = shape_football, scale = scale_football))
 plot.ts(dgamma(1:20, shape = shape_football, scale = scale_football))
 
 
+length(a)
