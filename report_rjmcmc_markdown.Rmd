@@ -1,0 +1,200 @@
+---
+title: "Model comparison using rjmcmc & gamma prior on B"
+subtitle: Bayes Factor of compared models determined
+Author: Hannah Craddock, Simon Spencer, Xavier Didelot
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Contents
+
+1. **Part I: RJMCMC - $exp(1)$ prior on $\beta$**
+i. Data
+- Data simulated using the Super Spreading Events model $(\alpha, \beta, \gamma)$. Four datasets simulated - small & large outbreaks.
+- Data simulated using the Baseline model of a regular events spreading model $(\alpha)$. Two datasets simulated. 
+ii. RJMCMC
+- RJMCMC implemented, jumping between the SSE and baseline model.
+- Bayes Factor between the two models calculated 
+
+2. **Part II: RJMCMC - $\Gamma(2, 1/2)$ prior on $\beta$**
+- The steps are repeated as in part I with the exception of a $\Gamma(2, 1/2)$ prior on $\beta$
+- Identical datasets are used 
+
+### Background
+RJMCMC was implemented whereby the algorithm jumped between the Baseline model $M_1$ of an epidemic with regular spreading events $(\alpha)$ and the Super Spreading Events (SSE) model $(\alpha, \beta, \gamma)$ which has both regular spreading events with rate $\alpha$ and super spreading events with rate $\beta$ and multiplicative factor $\gamma$.
+
+### Bayes Factor
+
+Bayesian model comparison is a method of model selection based on Bayes factors. The aim of the Bayes factor is to quantify the support for one model over another, e.g model $M_1$ over model $M_2$. The Bayes Factor BF is as follows;
+\
+$$ BF =  \dfrac{P(D|M_1)}{P(D|M_2)} =   \dfrac{\dfrac{P(M_1|D)P(D)}{P(M_1)}}{\dfrac{P(M_2|D)P(D)}{P(M_2)}} = \dfrac{P(M_1|D)}{P(M_2 | D)}
+$$ 
+\
+when $P(M_1) == P(M_2)$, otherwise
+\
+$$ BF =  \dfrac{P(D|M_1)}{P(D|M_2)} =   \dfrac{\dfrac{P(M_1|D)}{P(M_1)}}{\dfrac{P(M_2|D)}{P(M_2)}} = \dfrac{P(M_1|D)}{P(M_1)} \cdot \dfrac{P(M_2)}{P(M_2|D)}
+$$ 
+\
+where $P(D|M_1)$ is the model evidence, specifically the marginal likelihood integrand;
+\
+$$ P(D|M_1) = \int P(D \hspace{1 mm}|\hspace{1 mm} M_1, \theta) \hspace{1 mm} P(\hspace{1 mm}\theta \hspace{1 mm}| M_1) \hspace{1 mm}d \theta$$
+and the first term in the integrand $P(D \hspace{1 mm}|\hspace{1 mm} M_1, \theta)$ is the likelihood and the second term $P(\hspace{1 mm}\theta \hspace{1 mm}| M_1)$ is the prior on the model parameter $\theta$. 
+
+\
+
+\
+
+#### Interpretation of the Bayes Factor results 
+
+\
+
+A Bayes Factor > 1 signifies that $M_1$ is more strongly supported by the data under consideration than $M_2$. Harold Jefferys gave a scale of interpretation of the Bayes Factor;
+\
+```{r, echo = FALSE}
+
+#Bayes Factor Table
+bf = c('< 10^0', '[10^0, 10^1/2]', '[10^1/2, 10^1]', '[10^1, 10^3/2]', '[10^3/2, 10^2]', '> 10^2')
+bf_equiv = c('< 1', '[1, 3.16]', '[3.16, 10]', '[10, 31.62]', '[31.62, 100]', '> 100')
+evidence = c('Negative (supports M_2)', 'Weak evidence', 'Substantial', 'Strong', 'Very strong', 'Decisive')
+
+#Practice table 
+bf_table <- cbind(X1 = bf, X2 = bf_equiv, X3 = evidence)
+col_names = c('Bayes Factor', 'Bayes Factor equivalence', 'Evidence Strength')
+knitr::kable(bf_table, digits = 4, col.names = col_names, full_width = F)
+
+```
+
+\
+
+#### Bayes Factor Results
+
+In this particular setting in which the Baseline model $\alpha$ and SSE model $(\alpha, \beta, \gamma)$ are compared, the Bayes factor is calculated as;
+
+$$ \dfrac{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples == 0}{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples != 0} $$
+
+\
+
+The following table summaries the results of the RJMCMC iterations for a number of datasets when both a $exp(\beta, 1)$ prior and a $\Gamma(\beta, 2, 1/2)$ prior on beta were used. The mcmc plots 
+
+\
+
+\
+
+```{r, echo = FALSE}
+
+#Bayes Factor Table
+data_sim = c('SSE - dies out', 'SSE spreads', 'SS spreads',  'SSE - dies out', 'Base - spreads', 'Base - spreads')
+data_max = c(2, 55, 340, 2, 65, 45)
+bf_exp2 = c(7.741, 0, 0, 5.481, 6.968, 2.2546)
+bf_g = c(9.846, 0, 0, 5.711, 7.19, 2.701)
+
+#Practice table 
+bf_results <- cbind(X1 = data_sim, X2 = data_max, X3 = bf_exp2, X4 = bf_g)
+col_names = c('Epidemic Data', 'Max daily infection count', 'Bayes Factor exp(beta; 1)', 'Bayes Factor, Gamma(2, 1/2)')
+knitr::kable(bf_results, digits = 4, col.names = col_names, full_width = F)
+
+```
+\
+
+The mcmc plots of all aformentioned iterations are as below.
+
+\
+
+
+## Part I: RJMCMC between Base model & SSE Model - exp(1) prior used for beta
+
+A $exp\hspace{1mm}(\beta; \hspace{1mm}1)$ has density;
+
+\
+
+```{r echo=F}
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dexp(a, 4),
+        xlab = '', ylab = 'exp(1)', main = 'exp(1)')
+```
+
+
+### Part 2: Gamma Prior on Beta
+
+
+A gamma prior, $\Gamma(\beta; k, \theta)$ on beta was also trialed whereby $k$ determines the shape of the distribution and $\theta$ governs the scale. The gamma distribution function is as follows;
+
+$$ \Gamma(\beta; k, \theta) = \dfrac{1}{\Gamma(k) \cdot \theta^k}\cdot \beta^{(k-1)} \cdot e^{\dfrac{-\beta}{\theta}} $$
+
+A range of gamma priors on beta are used including a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2, \hspace{1mm} 2.5)$, $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2.5, \hspace{1mm} 2)$ and a $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 3, \hspace{1mm} 2)$
+Each have a mean of $k \cdot \theta$. A $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2, \hspace{1mm} 2.5)$, is as follows;
+
+```{r echo=F}
+shape_gamma = 2 
+scale_gamma = 2.5 #1/rate. 
+beta_prior = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior, main = beta_prior)
+```
+\
+
+A $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 2)$,;
+
+\
+
+```{r echo=F}
+shape_gamma = 3 
+scale_gamma = 2 #1/rate. 
+beta_prior = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior, main = beta_prior)
+```
+\
+
+And a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 3)$,;
+\
+```{r echo=F}
+shape_gamma = 3
+scale_gamma = 3 #1/rate. 
+beta_prior = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior, , main = beta_prior)
+```
+\
+And a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}4, \hspace{1mm} 4)$,;
+\
+```{r echo=F}
+shape_gamma = 4
+scale_gamma = 4 #1/rate. 
+beta_prior = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior, main = beta_prior)
+```
+\
+In the Metropolis acceptance step, the logs of all quantities are determined and evaluating $log\hspace{1mm}( \Gamma\hspace{1mm}(\beta; \hspace{1mm} k, \hspace{1mm} \theta))$ gives;
+
+\
+$$log\bigg( \dfrac{1}{\Gamma(k) \cdot \theta^k}\cdot \beta^{(k-1)} \cdot e^{\dfrac{-\beta}{\theta}} \bigg)$$
+=
+$$ \dfrac{1}{log\Gamma(k)\cdot klog(\theta)} \cdot (k-1) \cdot log(\beta) \cdot \dfrac{-\beta}{\theta} $$
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 2, 2.5)
+######################################################################################################
+
+```
+### Gamma Prior $\Gamma$($\beta$; 2, 2.5)
+
+#### Model Comparison - SSE data I

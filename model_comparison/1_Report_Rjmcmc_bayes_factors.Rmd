@@ -1,0 +1,1037 @@
+---
+title: "Model comparison using rjmcmc & gamma prior on B"
+subtitle: Bayes Factor of compared models determined. With alpha transform.
+Author: Hannah Craddock, Simon Spencer, Xavier Didelot
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE}
+
+#Setup 
+setwd("~/GitHub/epidemic_modelling") 
+source("epidemic_functions.R") 
+source("helper_functions.R")
+source("model_comparison/1_Model_Comparison_SSE_Base.R")
+
+#Epidemic Parameters
+num_days = 50
+shape_gamma = 6 #Gamma params for infectiousness curve (lambda) 
+scale_gamma = 1 
+seed_count = 1 
+
+############# --- INSERT PARAMETERS! --- ######################################
+RJMCMCX = TRUE
+alpha_transformX = TRUE
+n_mcmc = 10000 #100 #50
+
+#### - MCMC params - ######
+alphaX = 0.8 
+betaX = 0.1 
+gammaX = 10 
+true_r0 = alphaX + betaX*gammaX
+model_params = c(alphaX, betaX, gammaX, true_r0)
+
+#MCMC - sigma
+sigma_a = 0.4*alphaX
+sigma_b = 1.0*betaX #0.1
+sigma_g = 0.85*gammaX
+sigma_bg = 1.5*gammaX
+sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
+#sigma_base = 0.25 #0.5
+time_elap = 0
+
+#Bayes Factor storage
+bf_exp1 = c() #bf_exp1 = c(bf_exp1, 2)
+bf_gi = c(); bf_gii = c()
+bf_giii = c(); bf_giv = c()
+bf_gv = c()
+
+set.seed(seed_count)
+
+```
+
+### Contents
+
+1. **Part I: RJMCMC - $exp(1)$ prior on $\beta$**
+i. Data
+- Data simulated using the Super Spreading Events model $(\alpha, \beta, \gamma)$. Four datasets simulated - small & large outbreaks.
+- Data simulated using the Baseline model of a regular events spreading model $(\alpha)$. Two datasets simulated. 
+ii. RJMCMC
+- RJMCMC implemented, jumping between the SSE and baseline model.
+- Bayes Factor between the two models calculated 
+
+2. **Part II: RJMCMC - $\Gamma(k, \theta)$ prior on $\beta$**
+- The steps are repeated as in part I with the exception of a $\Gamma(k, \theta)$ prior on $\beta$. Five different gamma priors were trialled including a including a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2, \hspace{1mm} 2.5)$, $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 2)$, $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 3, \hspace{1mm} 3)$, $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 4, \hspace{1mm} 4)$ and $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 5, \hspace{1mm} 5)$
+- Identical datasets are used 
+
+### Background
+RJMCMC was implemented whereby the algorithm jumped between the Baseline model $M_1$ of an epidemic with regular spreading events $(\alpha)$ and the Super Spreading Events (SSE) model $(\alpha, \beta, \gamma)$ which has both regular spreading events with rate $\alpha$ and super spreading events with rate $\beta$ and multiplicative factor $\gamma$.
+
+### Bayes Factor
+
+Bayesian model comparison is a method of model selection based on Bayes factors. The aim of the Bayes factor is to quantify the support for one model over another, e.g model $M_1$ over model $M_2$. The Bayes Factor BF is as follows;
+\
+$$ BF =  \dfrac{P(D|M_1)}{P(D|M_2)} =   \dfrac{\dfrac{P(M_1|D)P(D)}{P(M_1)}}{\dfrac{P(M_2|D)P(D)}{P(M_2)}} = \dfrac{P(M_1|D)}{P(M_2 | D)}
+$$ 
+\
+when $P(M_1) == P(M_2)$, otherwise
+\
+$$ BF =  \dfrac{P(D|M_1)}{P(D|M_2)} =   \dfrac{\dfrac{P(M_1|D)}{P(M_1)}}{\dfrac{P(M_2|D)}{P(M_2)}} = \dfrac{P(M_1|D)}{P(M_1)} \cdot \dfrac{P(M_2)}{P(M_2|D)}
+$$ 
+\
+where $P(D|M_1)$ is the model evidence, specifically the marginal likelihood integrand;
+\
+$$ P(D|M_1) = \int P(D \hspace{1 mm}|\hspace{1 mm} M_1, \theta) \hspace{1 mm} P(\hspace{1 mm}\theta \hspace{1 mm}| M_1) \hspace{1 mm}d \theta$$
+and the first term in the integrand $P(D \hspace{1 mm}|\hspace{1 mm} M_1, \theta)$ is the likelihood and the second term $P(\hspace{1 mm}\theta \hspace{1 mm}| M_1)$ is the prior on the model parameter $\theta$. 
+
+\
+
+\
+
+#### Interpretation of the Bayes Factor results 
+
+\
+
+A Bayes Factor > 1 signifies that $M_1$ is more strongly supported by the data under consideration than $M_2$. Harold Jefferys gave a scale of interpretation of the Bayes Factor;
+\
+```{r, echo = FALSE}
+
+#Bayes Factor Table
+bf = c('< 10^0', '[10^0, 10^1/2]', '[10^1/2, 10^1]', '[10^1, 10^3/2]', '[10^3/2, 10^2]', '> 10^2')
+bf_equiv = c('< 1', '[1, 3.16]', '[3.16, 10]', '[10, 31.62]', '[31.62, 100]', '> 100')
+evidence = c('Negative (supports M_2)', 'Weak evidence', 'Substantial', 'Strong', 'Very strong', 'Decisive')
+
+#Practice table 
+bf_table <- cbind(X1 = bf, X2 = bf_equiv, X3 = evidence)
+col_names = c('Bayes Factor', 'Bayes Factor equivalence', 'Evidence Strength')
+knitr::kable(bf_table, digits = 4, col.names = col_names, full_width = F)
+
+```
+
+\
+
+<!-- #### Bayes Factor Results -->
+
+<!-- In this particular setting in which the Baseline model $\alpha$ and SSE model $(\alpha, \beta, \gamma)$ are compared, the Bayes factor is calculated as; -->
+
+<!-- $$ \dfrac{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples == 0}{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples != 0} $$ -->
+
+<!-- \ -->
+
+<!-- The following table summaries the results of the RJMCMC iterations for a number of datasets when both a $exp(\beta, 1)$ prior and a $\Gamma(\beta, 2, 1/2)$ prior on beta were used. The mcmc plots  -->
+
+<!-- \ -->
+
+<!-- \ -->
+
+<!-- ```{r, echo = FALSE} -->
+
+<!-- #Bayes Factor Table -->
+<!-- data_sim = c('SSE - dies out', 'SSE spreads', 'SS spreads',  'SSE - dies out', 'Base - spreads', 'Base - spreads') -->
+<!-- data_max = c(2, 55, 340, 2, 65, 45) -->
+<!-- bf_exp2 = c(7.741, 0, 0, 5.481, 6.968, 2.2546) -->
+<!-- bf_g = c(9.846, 0, 0, 5.711, 7.19, 2.701) -->
+
+<!-- #Practice table  -->
+<!-- bf_results <- cbind(X1 = data_sim, X2 = data_max, X3 = bf_exp2, X4 = bf_g) -->
+<!-- col_names = c('Epidemic Data', 'Max daily infection count', 'Bayes Factor exp(beta; 1)', 'Bayes Factor, Gamma(2, 1/2)') -->
+<!-- knitr::kable(bf_results, digits = 4, col.names = col_names, full_width = F) -->
+
+<!-- ``` -->
+<!-- \ -->
+
+
+## Part I: RJMCMC between Base model & SSE Model - exp(1) prior used for beta
+
+An $exp\hspace{1mm}(\beta; \hspace{1mm}1)$ has density;
+
+
+```{r echo=F}
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dexp(a),
+        xlab = '', ylab = 'exp(1)', main = 'exp(1)')
+```
+
+#### Model Comparison - SSE data I
+
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+
+############
+#DATA I
+
+#SSE DATA
+sim_data1 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+model_typeX = 'SSE'
+gamma_prior = FALSE
+gamma_priors = c(0,0)
+#plot.ts(sim_data, ylab = 'Daily Infections count', main = 'Daily Infections count')
+
+#RUN MCMC
+start_time = Sys.time() 
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX) 
+#mcmc_params = rjmcmc_sse_base(sim_data, n_mcmc, sigma, model_params)
+end_time = Sys.time()
+#time_elap = get_time(start_time, end_time, show = FALSE)
+#BF
+bf_exp1 = c(bf_exp1, mcmc_params[[19]])
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, 0, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+set.seed(seed_count)
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data2 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_exp1 = c(bf_exp1, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data3 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_exp1 = c(bf_exp1, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+sim_data4 = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_exp1 = c(bf_exp1, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data I 
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = 1
+set.seed(seed_count)
+sim_data5 = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_exp1 = c(bf_exp1, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+sim_data6 = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_exp1 = c(bf_exp1, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+\newpage
+
+### Part 2: Gamma Prior on Beta
+
+
+A gamma prior, $\Gamma(\beta; k, \theta)$ on beta was also trialed whereby $k$ determines the shape of the distribution and $\theta$ governs the scale. The gamma distribution function is as follows;
+
+$$ \Gamma(\beta; k, \theta) = \dfrac{1}{\Gamma(k) \cdot \theta^k}\cdot \beta^{(k-1)} \cdot e^{\dfrac{-\beta}{\theta}} $$
+
+A range of gamma priors on beta are used including a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2, \hspace{1mm} 2.5)$, $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 2)$, $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 3, \hspace{1mm} 3)$, $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 4, \hspace{1mm} 4)$ and $\Gamma \hspace{1mm}(\beta; \hspace{1mm} 5, \hspace{1mm} 5)$.
+Each have a mean of $k \cdot \theta$. A $\Gamma\hspace{1mm}(\beta; \hspace{1mm}2, \hspace{1mm} 2.5)$, is as follows;
+
+```{r echo=F}
+shape_gamma = 2 
+scale_gamma = 2.5 #1/rate. 
+beta_prior_i = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior_i, main = beta_prior_i)
+```
+\
+
+A $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 2)$;
+
+\
+
+```{r echo=F}
+shape_gamma = 3 
+scale_gamma = 2 #1/rate. 
+beta_prior_ii = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior_ii, main = beta_prior_ii)
+```
+\
+
+And a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}3, \hspace{1mm} 3)$;
+\
+```{r echo=F}
+shape_gamma = 3
+scale_gamma = 3 #1/rate. 
+beta_prior_iii = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior_iii, main = beta_prior_iii)
+```
+\
+And a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}4, \hspace{1mm} 4)$;
+\
+```{r echo=F}
+shape_gamma = 4
+scale_gamma = 4 #1/rate. 
+beta_prior_iv = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+        xlab = '', ylab = beta_prior_iv, main = beta_prior_iv)
+```
+\
+
+And a $\Gamma\hspace{1mm}(\beta; \hspace{1mm}5, \hspace{1mm} 5)$;
+
+\
+```{r echo=F}
+shape_gamma = 5
+scale_gamma = 5 #1/rate. 
+beta_prior_v = paste0('gamma(',  shape_gamma, ', ', scale_gamma, ')')
+
+#Plot
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+     xlab = '', ylab = beta_prior_v, main = beta_prior_v)
+```
+\
+In the Metropolis acceptance step, the logs of all quantities are determined and evaluating $log\hspace{1mm}( \Gamma\hspace{1mm}(\beta; \hspace{1mm} k, \hspace{1mm} \theta))$ gives;
+
+\
+$$log\bigg( \dfrac{1}{\Gamma(k) \cdot \theta^k}\cdot \beta^{(k-1)} \cdot e^{\dfrac{-\beta}{\theta}} \bigg)$$
+
+$$ =  \dfrac{1}{log\Gamma(k)\cdot klog(\theta)} \cdot (k-1) \cdot log(\beta) \cdot \dfrac{-\beta}{\theta} $$
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 2, 2.5)
+######################################################################################################
+
+```
+\
+
+### Gamma Prior $\Gamma$($\beta$; 2, 2.5)
+
+\
+
+#### Model Comparison - SSE data I
+
+\
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+############# --- INSERT PARAMETERS! --- ######################################
+model_typeX = 'SSE'
+seed_count = 1
+set.seed(seed_count)
+
+############
+#DATA I
+
+#RUN MCMC
+gamma_prior = TRUE
+gamma_priors = c(2, 2.5)
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+#time_elap = get_time(start_time, end_time)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, 0, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, 0, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+<!-- ################################################ -->
+#### Model Comparison - BASE Data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#Base DATA
+model_typeX = 'BASE'
+seed_count = 1
+set.seed(seed_count)
+#sim_data5 = simulate_branching(num_days, true_r0, shape_gamma, scale_gamma)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gi = c(bf_gi, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 3, 2)
+######################################################################################################
+
+```
+\
+
+### Gamma Prior $\Gamma(\beta; 3, 2)$
+
+\
+
+#### Model Comparison - SSE data I
+
+\
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+############# --- INSERT PARAMETERS! --- ######################################
+model_typeX = 'SSE'
+seed_count = 1
+set.seed(seed_count)
+
+############
+
+#RUN MCMC
+gamma_prior = TRUE
+gamma_priors = c(3, 2)
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]]) 
+end_time = Sys.time()
+#time_elap = get_time(start_time, end_time)
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#MCMC
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+<!-- ################################################ -->
+#### Model Comparison - BASE Data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#Base DATA
+model_typeX = 'BASE'
+seed_count = 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]])  
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gii = c(bf_gii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 3, 3)
+######################################################################################################
+
+```
+\
+
+### Gamma Prior $\Gamma(\beta; 3, 3)$
+
+\
+
+#### Model Comparison - SSE data I
+\
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+############# --- INSERT PARAMETERS! --- ######################################
+model_typeX = 'SSE'
+seed_count = 1
+set.seed(seed_count)
+
+############
+#DATA I
+
+#RUN MCMC
+gamma_prior = TRUE
+gamma_priors = c(3, 2)
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+end_time = Sys.time()
+#time_elap = get_time(start_time, end_time)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#DATA II
+
+#RUN MCMC
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+\
+
+<!-- ################################################ -->
+#### Model Comparison - BASE Data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#Base DATA MCMC
+model_typeX = 'BASE'
+seed_count = 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giii = c(bf_giii, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 4, 4)
+######################################################################################################
+
+```
+\
+
+### Gamma Prior $\Gamma(\beta; 4, 4)$
+
+\
+
+#### Model Comparison - SSE data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+############# --- INSERT PARAMETERS! --- ######################################
+model_typeX = 'SSE'
+seed_count = 1
+set.seed(seed_count)
+
+############
+#DATA I
+
+#RUN MCMC
+gamma_prior = TRUE
+gamma_priors = c(4, 4)
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+end_time = Sys.time()
+#time_elap = get_time(start_time, end_time)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+<!-- ################################################ -->
+#### Model Comparison - BASE Data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#Base DATA
+model_typeX = 'BASE'
+seed_count = 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_giv = c(bf_giv, mcmc_params[[19]]) 
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+\
+
+```{r, echo = FALSE}
+
+######################################################################################################
+#I. GAMMA PRIOR ON BETA; \Gamma(\Beta; 5, 5)
+######################################################################################################
+
+```
+\
+
+### Gamma Prior $\Gamma(\beta; 5, 5)$
+
+\
+
+#### Model Comparison - SSE data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+############# --- INSERT PARAMETERS! --- ######################################
+model_typeX = 'SSE'
+seed_count = 1
+set.seed(seed_count)
+
+############
+#DATA I
+
+#RUN MCMC
+gamma_prior = TRUE
+gamma_priors = c(5, 5)
+start_time = Sys.time()
+mcmc_params = rjmcmc_sse_base(sim_data1, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+end_time = Sys.time()
+#time_elap = get_time(start_time, end_time)
+bf_gv = c(bf_gv, mcmc_params[[19]]) 
+
+#Plot
+plot_mcmc_grid(n_mcmc, sim_data1, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data II
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data2, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gv = c(bf_gv, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data2, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data III
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data3, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gv = c(bf_gv, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data3, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - SSE data IV
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data4, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gv = c(bf_gv, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'SSE'
+plot_mcmc_grid(n_mcmc, sim_data4, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+<!-- ################################################ -->
+#### Model Comparison - BASE Data I
+
+```{r, echo = FALSE, fig.width= 20, fig.height=11}
+
+#Base DATA
+model_typeX = 'BASE'
+seed_count = 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data5, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gv = c(bf_gv, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data5, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+\
+
+#### Model Comparison - BASE Data II
+
+```{r, echo = FALSE, fig.width= 23, fig.height=13}
+
+#SSE DATA
+seed_count = seed_count + 1
+set.seed(seed_count)
+mcmc_params = rjmcmc_sse_base(sim_data6, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, alpha_transform = alpha_transformX)
+bf_gv = c(bf_gv, mcmc_params[[19]])
+
+#Plot
+model_typeX = 'BASE'
+plot_mcmc_grid(n_mcmc, sim_data6, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX, g_prior = gamma_prior, g_priorsX = gamma_priors, rjmcmc = RJMCMCX)
+
+```
+
+\
+
+
+
+#### Bayes Factor - Summary of Results
+
+In this particular setting in which the Baseline model $\alpha$ and SSE model $(\alpha, \beta, \gamma)$ are compared, the Bayes factor is calculated as;
+
+$$ \dfrac{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples == 0}{Proportion \hspace{1 mm}of \hspace{1 mm} \beta \hspace{1 mm} mcmc \hspace{1 mm} samples != 0} $$
+
+\
+
+The following table summaries the results of the RJMCMC iterations for a number of datasets when both a $exp(\beta, 1)$ prior and a variety of $\Gamma(\beta;)$ priors on beta were used.  
+
+\
+
+\
+
+```{r, echo = FALSE}
+
+#Bayes Factor Table
+data_sim = c('SSE - dies out', 'SSE spreads', 'SS spreads',  'SSE - dies out', 'Base - spreads', 'Base - spreads')
+data_max = c(2, 55, 340, 2, 65, 45)
+#bf_exp2 = c(7.741, 0, 0, 5.481, 6.968, 2.2546)
+#bf_g = c(9.846, 0, 0, 5.711, 7.19, 2.701)
+
+#Practice table 
+bf_results <- cbind(X1 = data_sim, X2 = data_max, X3 = bf_exp1, X4 = bf_gi, X5 = bf_gii, X6 =bf_giii, X7 = bf_giv, X8 = bf_gv)
+col_names = c('Epidemic Data', 'Max daily infection count', 'Bayes Factor exp(beta; 1)',
+              paste0('Bayes Factor,', beta_prior_i), paste0('Bayes Factor,', beta_prior_ii), paste0('Bayes Factor,', beta_prior_iii), paste0('Bayes Factor,', beta_prior_iv), paste0('Bayes Factor,', beta_prior_v)) 
+knitr::kable(bf_results, digits = 4, col.names = col_names, full_width = F)
+
+```
+\
+

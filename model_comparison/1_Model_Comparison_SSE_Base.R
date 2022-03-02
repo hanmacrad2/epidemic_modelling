@@ -61,7 +61,7 @@ log_gamma_dist <- function(param, gamma_priors){
 ##################
 #RJMCMC  
 rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
-                            x0 = 1, prior = TRUE) {#thinning_factor, burn_in
+                            x0 = 1, prior = TRUE, alpha_transform = FALSE) {#thinning_factor, burn_in
   
   'Returns MCMC samples of SSE model parameters (alpha, beta, gamma, r0 = a + b*g) 
   w/ rjmcmc & acceptance rate
@@ -75,7 +75,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
   like_vec <- vector('numeric', n)
   
-  alpha_vec[1] <- model_params[1]; beta_vec[1] <- model_params[2] #x0;
+  alpha_vec[1] <- model_params[1]; beta_vec[1] <- 0.5 #model_params[2] #x0;
   gamma_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
   like_vec[1] <- log_like_ss_lse(data, alpha_vec[1], beta_vec[1],  gamma_vec[1])   
   
@@ -217,13 +217,18 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       #print('B 0 proposal')
       beta_dash = 0
       gamma_dash = 0
-      alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
+      
+      #alpha
+      if (alpha_transform) {
+        alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
+      } else alpha_dash = alpha_vec[i]
+      
       #Acceptance probability (everything cancels)
       logl_new = log_like_B0(data, alpha_dash)
       log_accept_prob = logl_new - like_vec[i] #logl_prev. #Multiply by 100 for example. Increase prior ratio so adquate  
       
       #Metropolis Step
-      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) { #+log(1000)
         beta_vec[i] <- beta_dash
         gamma_vec[i] <- gamma_dash
         alpha_vec[i] <- alpha_dash
@@ -240,7 +245,11 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
       beta_dash = rexp(1) 
       gamma_dash = rexp(1) + 1 
-      alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian? 
+      
+      #alpha
+      if (alpha_transform) {
+        alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian?
+      } else alpha_dash = alpha_vec[i]
       
       #Check alpha postive
       if (alpha_dash > 0) {
@@ -257,10 +266,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
           like_vec[i] = logl_new 
           count_accept6 = count_accept6 + 1
         
-        } else {
-          count_reject6 = count_reject6 + 1
-      }
-      }
+        } else count_reject6 = count_reject6 + 1
+      } else count_reject6 = count_reject6 + 1
       
     }
     
@@ -277,7 +284,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   accept_rate3 = 100*count_accept3/(count_accept3 + count_reject3)
   accept_rate4 = 100*count_accept4/(count_accept4 + count_reject4)
   #RJMCMC Steps 
-  accept_rate5 = 100*count_accept5/(count_accept5 + count_reject5)
+  accept_rate5 = 100*count_accept5/(count_accept5 + count_reject5) #Check count_accept + count_reject = n_mcmc 
   accept_rate6 = 100*count_accept6/(count_accept6 + count_reject6)
   
   #Return alpha, acceptance rate
@@ -448,10 +455,6 @@ mcmc_sse_gprior <- function(data, n_mcmc, sigma, model_params, gamma_prior, gamm
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4))
 }
-
-
-
-
 
 
 #FIX.
