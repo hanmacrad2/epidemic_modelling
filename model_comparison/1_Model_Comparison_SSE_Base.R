@@ -251,7 +251,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
         alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian?
       } else alpha_dash = alpha_vec[i]
       
-      #Check alpha postive
+      #Check alpha postive==
       if (alpha_dash > 0) {
         
         #Everything cancels

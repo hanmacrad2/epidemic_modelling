@@ -214,7 +214,8 @@ log_like <- function(y, r0_dash){
 # BASE MCMC
 mcmc_r0 <- function(data, n, sigma, burn_in, x0 = 1) {
   
-  'Returns mcmc samples of R0'
+  'Returns mcmc samples of R0. 
+  Prior on R_0 (or alpha) = exp(1)'
   #Data
   print('sim data')
   print(data)

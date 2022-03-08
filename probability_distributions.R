@@ -47,6 +47,13 @@ a = seq(0, 1.5, by = 0.005)
 plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
         ylab = 'Gamma(2, 0.5)', main = 'Gamma(2, 0.5)')
 
+#V2
+shape_gamma = 5
+scale_gamma = 5
+a = seq(0, 1.5, by = 0.005)
+plot(a, dgamma(a, shape = shape_gamma, scale = scale_gamma),
+     ylab = 'Gamma(5, 5)', main = 'Gamma(5, 5)')
+
 plot.ts(dgamma(1:20, shape = shape_gamma, scale = scale_gamma),
         ylab = 'Gamma(2, 0.5)', main = 'Gamma(2, 0.5)')
 
