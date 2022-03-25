@@ -328,8 +328,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4,
               accept_rate5, accept_rate6, count_accept5, count_accept6,
-              count_reject5, count_reject6, count_accept2, count_accept3, count_accept4, beta_pc0, bayes_factor,
-              alpha_vec_i, alpha_vec_ii, alpha_vec_iii))
+              count_reject5, count_reject6, count_accept2, count_accept3, count_accept4, beta_pc0, bayes_factor))
 }
 
 
@@ -713,7 +712,7 @@ set.seed(seed_count)
 # beta_mcmc = mcmc_params[[2]]
 
 #Which
-b <- c(1,5,8,4,5, 6, 5, 5)
-a <- c(1, 3, 3, 4, 5, 6, 7, 111)
-ind = which(b == 5)
-a[ind]
+#b <- c(1,5,8,4,5, 6, 5, 5)
+#a <- c(1, 3, 3, 4, 5, 6, 7, 111)
+#ind = which(b == 5)
+#a[ind]
