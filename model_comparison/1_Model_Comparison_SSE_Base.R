@@ -75,7 +75,10 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
   like_vec <- vector('numeric', n)
   
-  alpha_vec[1] <- model_params[1]; beta_vec[1] <- 0.5 #model_params[2] #x0;
+  #Alpha vecs
+  #alpha_vec_i = c(); alpha_vec_ii = c(); alpha_vec_iii = c();
+  
+  alpha_vec[1] <- model_params[1]; beta_vec[1] <- model_params[2] #0.5 #x0;
   gamma_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
   like_vec[1] <- log_like_ss_lse(data, alpha_vec[1], beta_vec[1],  gamma_vec[1])   
   
@@ -118,7 +121,10 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       alpha_vec[i] <- alpha_vec[i-1]
       like_vec[i] = like_vec[i-1]
     }
+    #Alpha check
+    #alpha_vec_i = c(alpha_vec_i,  alpha_vec[i])
     
+    #if(i == 2){print(paste0('alpha_vec[2] = ')) }
     #************************************************************************
     #BETA (ONLY IF B > 0)
     if (beta_vec[i-1] > 0){ 
@@ -203,15 +209,25 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           beta_vec[i] <- beta_new
           like_vec[i] <- logl_new
+          #R0
+          r0_current = alpha_vec[i] + beta_vec[i]*gamma_dash
           count_accept4 = count_accept4 + 1
         } else {
           count_reject4 = count_reject4 + 1
         }
       } 
+    } else {
+      count_reject2 = count_reject2 + 1
+      count_reject3 = count_reject3 + 1
+      count_reject4 = count_reject4 + 1
     } #end of if b[i-1] > 0
     
     #************************************************************
-    #RJMCMC Step 
+    #RJMCMC STEP 
+    #************************************************************
+    
+    #************************************************************
+    #* M_I *#
     if ((beta_vec[i] > 0) | (gamma_vec[i] > 0)){ #Look to it 
 
       #print('B 0 proposal')
@@ -219,16 +235,30 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       gamma_dash = 0
       
       #alpha
-      if (alpha_transform) {
-        alpha_dash = r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
+      if (alpha_transform) { #ro = alpha + beta*gamma. alpha_dash_base (R0_base) = alpha_sse + beta_sse*gamma_sse (R0_SSE)
+        alpha_dash = alpha_vec[i] + beta_vec[i]*gamma_vec[i] #Increase. as alpha_dash is actually the new R_0            #r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
       } else alpha_dash = alpha_vec[i]
       
+      #Alpha check
+      #alpha_vec_ii = c(alpha_vec_ii, alpha_dash)
+      
+      #Check
+      #if(is.nan(alpha_dash)){
+      #print(paste0('i = ', i)); print(paste0('alpha_dash = ', alpha_dash));
+      #print(paste0('beta_i = ', beta_vec[i])); print(paste0('gamma_vec[i] = ', gamma_vec[i]))
+      
+      #Check alpha postive==
+      if (alpha_dash > 0) { #Automatically satisfied as we've increased alpha. *Remove
+        
       #Acceptance probability (everything cancels)
       logl_new = log_like_B0(data, alpha_dash)
-      log_accept_prob = logl_new - like_vec[i] #logl_prev. #Multiply by 100 for example. Increase prior ratio so adquate  
+      log_accept_prob = logl_new - like_vec[i] - alpha_dash + alpha_vec[i]
+      
+      #logl_prev. #Multiply by 100 for example. Increase prior ratio so adequate   
       
       #Metropolis Step
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) { #+log(1000)
+        
         beta_vec[i] <- beta_dash
         gamma_vec[i] <- gamma_dash
         alpha_vec[i] <- alpha_dash
@@ -236,27 +266,32 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
         count_accept5 = count_accept5 + 1
         #print('0s accepted')
         
-      } else {
-        count_reject5 = count_reject5 + 1
-      }
+      } else count_reject5 = count_reject5 + 1
+  } else count_reject5 = count_reject5 + 1
+      
     } else { 
-      #print('B Independ. proposal')
+      
+      #************************************************************
+      #* M_II 
       
       #Independence sampler - Propose from prior. If VERY lucky value is accepted to be able to jump between models. 
       beta_dash = rexp(1) 
       gamma_dash = rexp(1) + 1 
       
       #alpha
-      if (alpha_transform) {
-        alpha_dash = r0_current - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian?
+      if (alpha_transform) { #alpha_sse = ro_base (alpha_base) - beta_sse*gamma_sse
+        alpha_dash = alpha_vec[i] - beta_dash*gamma_dash #(alpha_vec[i] - (beta_vec[i]*gamma_vec[i])) - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian?
       } else alpha_dash = alpha_vec[i]
       
-      #Check alpha postive==
+      #print(paste0('i = ', i)); print(paste0('alpha_dash = ', alpha_dash));
+      #print(paste0('beta_i = ', beta_vec[i])); print(paste0('gamma_vec[i] = ', gamma_vec[i]))
+      
+      #Check alpha positive==
       if (alpha_dash > 0) {
         
         #Everything cancels
         logl_new = log_like_ss_lse(data, alpha_dash, beta_dash, gamma_dash)
-        log_accept_prob = logl_new - like_vec[i]  #logl_prev #Jacobian 
+        log_accept_prob = logl_new - like_vec[i] - alpha_dash + alpha_vec[i]
         
         #Metropolis Step
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
@@ -269,6 +304,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
         } else count_reject6 = count_reject6 + 1
       } else count_reject6 = count_reject6 + 1
       
+      #Alpha check
+      #alpha_vec_iii = c(alpha_vec_iii, alpha_dash)
     }
     
     r0_vec[i] = r0_current
@@ -276,7 +313,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   
   #Bayes Factor
   beta_pc0 = (length(which(beta_vec == 0)))/length(beta_vec) #Check beta_mcmc
-  bayes_factor = beta_pc0/(1-beta_pc0); bayes_factor = round(bayes_factor, 3)
+  bayes_factor = beta_pc0/(1-beta_pc0); bayes_factor = round(bayes_factor, 6)
   
   #Final stats
   accept_rate1 = 100*count_accept1/(n-1)
@@ -291,7 +328,8 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4,
               accept_rate5, accept_rate6, count_accept5, count_accept6,
-              count_reject5, count_reject6, count_accept2, count_accept3, count_accept4, beta_pc0, bayes_factor))
+              count_reject5, count_reject6, count_accept2, count_accept3, count_accept4, beta_pc0, bayes_factor,
+              alpha_vec_i, alpha_vec_ii, alpha_vec_iii))
 }
 
 
@@ -673,3 +711,9 @@ set.seed(seed_count)
 # bf
 # 
 # beta_mcmc = mcmc_params[[2]]
+
+#Which
+b <- c(1,5,8,4,5, 6, 5, 5)
+a <- c(1, 3, 3, 4, 5, 6, 7, 111)
+ind = which(b == 5)
+a[ind]
