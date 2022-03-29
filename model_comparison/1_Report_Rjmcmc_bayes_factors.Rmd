@@ -1,6 +1,6 @@
 ---
 title: "Model comparison using rjmcmc & gamma prior on B"
-subtitle: Bayes Factor of compared models determined. With alpha transform.
+subtitle: Bayes Factor of compared models determined. Without alpha transform. MCMC chain length = 50k
 Author: Hannah Craddock, Simon Spencer, Xavier Didelot
 output: html_document
 ---
@@ -25,8 +25,8 @@ seed_count = 1
 
 ############# --- INSERT PARAMETERS! --- ######################################
 RJMCMCX = TRUE
-alpha_transformX = TRUE
-n_mcmc = 10000 #100 #50
+alpha_transformX = FALSE #TRUE
+n_mcmc = 5 #50000 #100 #50
 
 #### - MCMC params - ######
 alphaX = 0.8 
