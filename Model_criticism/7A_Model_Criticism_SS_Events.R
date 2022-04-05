@@ -148,6 +148,7 @@ mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, bur
       #Metropolis Step
       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
         beta_vec[i] <- beta_new
+        gamma_vec[i] <- gamma_dash
         count_accept4 = count_accept4 + 1
       } 
     }
