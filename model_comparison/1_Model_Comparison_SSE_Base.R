@@ -21,8 +21,7 @@ log_like_B0 <- function(y, alphaX) {
   #Params
   num_days = length(y)
   shape_gamma = 6
-  scale_gamma = 1
-  
+y  
   #Infectiousness (Discrete gamma)
   prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days - 1)),                                                                                    shape = shape_gamma, scale = scale_gamma)
   logl = 0
@@ -33,7 +32,7 @@ log_like_B0 <- function(y, alphaX) {
     y_t = y[t]
     lambda_t = sum(y[1:(t - 1)] * rev(prob_infect[1:(t - 1)]))
     
-    if (y_t == 0) {
+    if((y[t] == 0) | is.na(y[t])) {
       logl = logl - (alphaX * lambda_t)
       
     } else {
@@ -512,7 +511,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       #alpha
       if (alpha_transform) { #ro = alpha + beta*gamma. alpha_dash_base (R0_base) = alpha_sse + beta_sse*gamma_sse (R0_SSE)
         alpha_dash = alpha_vec[i] + beta_vec[i]*gamma_vec[i] #Increase. as alpha_dash is actually the new R_0            #r0_current #r0_vec[i] #- beta_new*gamma_dash #Line added 
-      } else alpha_dash =  alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #
+      } else alpha_dash =  alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #
       
       #Check alpha positive ==
       if (alpha_dash > 0) { #Automatically satisfied as we've increased alpha. *Remove
@@ -547,7 +546,7 @@ rjmcmc_sse_base <- function(data, n, sigma, model_params, gamma_prior, gamma_pri
       #alpha
       if (alpha_transform) { #alpha_sse = ro_base (alpha_base) - beta_sse*gamma_sse
         alpha_dash = alpha_vec[i] - beta_dash*gamma_dash #(alpha_vec[i] - (beta_vec[i]*gamma_vec[i])) - beta_dash*gamma_dash #Preserves alpha, beta, gamma. Will we need the Jacobian?
-      } else alpha_dash = alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i]
+      } else alpha_dash = alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i] #alpha_vec[i] + rnorm(1, sd = sigma_a) #alpha_vec[i]
       
       #Check alpha positive==
       if (alpha_dash > 0) {
