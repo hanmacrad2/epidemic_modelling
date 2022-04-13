@@ -242,7 +242,7 @@ mcmc_r0 <- function(data, n, sigma, burn_in, x0 = 1) {
       print('na value')
       sprintf("r0_dash: %i", r0_dash)
     }
-    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) {
+    if(!(is.na(log_alpha)) && log(U[i]) < log_alpha) { 
       r0_vec[i] <- r0_dash
       count_accept = count_accept + 1
     } else {
@@ -260,7 +260,7 @@ mcmc_r0 <- function(data, n, sigma, burn_in, x0 = 1) {
 }
 
 #*******************************************************************************
-# SUPER-SPREADING MODEL
+# SUPER-SPREADING EVENTS MODEL
 #*******************************************************************************
 
 #Log Likelihood 
@@ -317,8 +317,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
     #print(t)
     lambda_t = sum(x[1:(t-1)]*rev(prob_infect[1:(t-1)]))
     
-    if(x[t] == 0){ #y_t also equal to zero
-      
+    if((x[t] == 0) | is.na(x[t])) { #y_t also equal to zero 
       #L(x_i) for y_t, x_t = 0
       logl = logl -(alphaX*lambda_t) - 
         (betaX*lambda_t*log(gammaX +1))
@@ -358,6 +357,173 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
   logl
   
+}
+
+##############################
+#1. MCMC
+mcmc_sse <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
+                            x0 = 1, prior = TRUE, alpha_transform = FALSE) {#thinning_factor, burn_in
+  
+  'Returns MCMC samples of SSE model parameters (alpha, beta, gamma, r0 = a + b*g) 
+  w/ acceptance rates. Includes alpha transform, beta-gamma transform' 
+  print('MCMC SUPERSPREADING EVENTS')
+  
+  'Priors
+  p(alpha) = exp(1) = rate*exp(-rate*x) = 1*exp(-1*alpha) = exp(-alpha). log(exp(-alpha)) = - alpha
+  p(beta) = exp(1) or p(beta) = gamma(shape, scale), for e.g gamma(3, 2)
+  p(gamma) = exp(1) + 1 = 1 + exp(-gamma) = exp(gamma - 1)'
+  
+  #Initialise params
+  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
+  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
+  log_like_vec <- vector('numeric', n)
+  
+  alpha_vec[1] <- model_params[1]; beta_vec[1] <- model_params[2] 
+  gamma_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
+  log_like_vec[1] <- log_like_ss_lse(data, alpha_vec[1], beta_vec[1],  gamma_vec[1])   
+  
+  alpha = alpha_vec[1]; beta =  beta_vec[1]; 
+  gamma = gamma_vec[1]; log_like = log_like_vec[1]
+  
+  #Extract params
+  sigma_a = sigma[1]; sigma_b = sigma[2]
+  sigma_g = sigma[3]; sigma_bg = sigma[4];
+  
+  #Result vectors
+  count_accept1 = 0; 
+  count_accept2 = 0; count_reject2 = 0;
+  count_accept3 = 0; count_reject3 = 0;
+  count_accept4 = 0; count_reject4 = 0;
+  
+  #MCMC chain
+  for(i in 2:n) {
+    
+    #******************************************************
+    #ALPHA
+    alpha_dash <- alpha + rnorm(1, sd = sigma_a) 
+    if(alpha_dash < 0){
+      alpha_dash = abs(alpha_dash)
+    }
+    
+    #log alpha
+    logl_new = log_like_ss_lse(data, alpha_dash, beta, gamma)
+    log_accept_prob = logl_new - log_like_vec[i-1]  #+ prior1 - prior
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - alpha_dash + alpha
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      alpha <- alpha_dash
+      count_accept1 = count_accept1 + 1
+      log_like = logl_new
+    } 
+
+    #************************************************************************
+    #BETA 
+    #Only if (Beta > 0){ WHY? Took it out
+    beta_dash <- beta + rnorm(1, sd = sigma_b) 
+    if(beta_dash < 0){
+      beta_dash = abs(beta_dash)
+    }
+    #loglikelihood
+    logl_new = log_like_ss_lse(data, alpha, beta_dash, gamma)
+    log_accept_prob = logl_new - log_like #logl_prev
+    
+    #Priors
+    if (gamma_prior){
+      log_accept_prob = log_accept_prob + log_gamma_dist(beta_dash, gamma_priors) - log_gamma_dist(beta, gamma_priors) 
+    } else {
+      log_accept_prob = log_accept_prob - beta_dash + beta 
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      beta <- beta_dash
+      log_like = logl_new
+      count_accept2 = count_accept2 + 1
+    } else {
+      count_reject2 = count_reject2 + 1
+    }
+    
+    #************************************************************************
+    #GAMMA
+    gamma_dash <- gamma + rnorm(1, sd = sigma_g) 
+    if(gamma_dash < 1){
+      gamma_dash = 2 - gamma_dash #Prior on gamma - gt 1
+    }
+    #Acceptance Probability
+    logl_new = log_like_ss_lse(data, alpha, beta, gamma_dash)
+    log_accept_prob = logl_new - log_like #logl_prev 
+    #Priors
+    if (prior){
+      log_accept_prob = log_accept_prob - gamma_dash + gamma
+    }
+    
+    #Metropolis Acceptance Step
+    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+      gamma <- gamma_dash
+      log_like <- logl_new
+      count_accept3 = count_accept3 + 1
+    } else {
+      count_reject3 = count_reject3 + 1
+    }
+    
+    #*****************************************************
+    #GAMMA-BETA
+    gamma_dash <- gamma + rnorm(1, sd = sigma_bg) #Alter sigma_bg depending on acceptance rate.
+    #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
+    if(gamma_dash < 1){ #If less then 1
+      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+    }
+    #New Beta
+    r0 = alpha + beta*gamma 
+    beta_new = (r0 - alpha)/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
+    
+    if(beta_new >= 0){ #Only accept values of beta > 0
+      
+      logl_new = log_like_ss_lse(data, alpha, beta_new, gamma_dash)
+      log_accept_prob = logl_new - log_like 
+      
+      #Priors: Gamma or Exp
+      if (gamma_prior){
+        log_accept_prob = log_accept_prob + log_gamma_dist(beta_new, gamma_priors) - log_gamma_dist(beta, gamma_priors)
+      } else {  
+        log_accept_prob = log_accept_prob - beta_new + beta
+      }
+      
+      #Metropolis Step
+      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+        beta <- beta_new
+        gamma <- gamma_dash
+        count_accept4 = count_accept4 + 1
+      } else {
+        count_reject4 = count_reject4 + 1
+      }
+    }
+    
+    #Populate Model parameters w/ current values
+    alpha_vec[i] <- alpha; beta_vec[i] <- beta
+    gamma_vec[i] <- gamma; r0_vec[i] <- alpha + beta*gamma
+    log_like_vec[i] <- log_like
+    
+  }
+  
+  #Bayes Factor
+  #beta_pc0 = (length(which(beta_vec == 0)))/length(beta_vec) #Check beta_mcmc
+  #bayes_factor = beta_pc0/(1-beta_pc0); bayes_factor = round(bayes_factor, 6)
+  
+  #Final stats
+  accept_rate1 = 100*count_accept1/(n-1)
+  accept_rate2 = 100*count_accept2/(count_accept2 + count_reject2)
+  accept_rate3 = 100*count_accept3/(count_accept3 + count_reject3)
+  accept_rate4 = 100*count_accept4/(count_accept4 + count_reject4)
+  
+  #Return alpha, acceptance rate
+  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+              accept_rate1, accept_rate2, accept_rate3, accept_rate4,
+              count_accept2, count_accept3, count_accept4))
 }
 
 
@@ -440,7 +606,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 
 #*******************************************************************************
 #SSE: FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
-plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
+plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
                                 seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            g_prior = FALSE, g_priorsX = c(3,3), rjmcmc = FALSE){
   #Plot
@@ -705,7 +871,7 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
                            g_prior = FALSE, g_priorsX = c(3,3), rjmcmc = FALSE){
   #Plot
   #plot.new()
-  par(mfrow=c(5,4))
+  par(mfrow=c(4,4))
   
   #Extract params
   alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
@@ -870,14 +1036,13 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   }
   
   #ALPHAS
+  #plot.new()
+  par(mfrow=c(3,1))
   
-  #ALPHA BASE
-  ind_b = which(beta_mcmc == 0)
-  alpha_base = alpha_mcmc[ind_b]
-  #Hist
-  hist(alpha_base, freq = FALSE, breaks = 100,
-       xlab = 'alpha_base', #ylab = 'Density', 
-       main = paste("alpha_base, True alpha = ", alphaX), 
+  #HIST ALPHA 
+  hist(alpha_mcmc, freq = FALSE, breaks = 100,
+       xlab = 'alpha', #ylab = 'Density', 
+       main = paste("alpha, True alpha = ", alphaX), 
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = alphaX, col = 'red', lwd = 2)
@@ -885,13 +1050,30 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   #ALPHA SSE
   ind_b = which(beta_mcmc > 0)
   alpha_sse = alpha_mcmc[ind_b]
+  
   #Hist
   hist(alpha_sse, freq = FALSE, breaks = 100,
        xlab = 'alpha_sse', #ylab = 'Density', 
-       main = paste("alpha_sse, True alpha = ", alphaX), 
+       main = "alpha_sse", 
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = alphaX, col = 'red', lwd = 2)
+  
+  #ALPHA BASE
+  ind_b = which(beta_mcmc == 0)
+  
+  if (length(ind_b > 2)){
+    
+    alpha_base = alpha_mcmc[ind_b]
+    #Hist
+    hist(alpha_base, freq = FALSE, breaks = 100,
+         xlab = 'alpha_base', #ylab = 'Density', 
+         main = "alpha_base",
+         xlim=c(0, a_lim),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    abline(v = alphaX, col = 'red', lwd = 2)
+  }
+
   
   #Results
   if (rjmcmc){
