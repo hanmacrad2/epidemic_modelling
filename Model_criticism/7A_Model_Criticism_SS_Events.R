@@ -4,6 +4,7 @@
 #SETUP
 library(zoo)
 setwd("~/GitHub/epidemic_modelling")
+source("epidemic_functions")
 
 #Epidemic params
 num_days = 50
@@ -26,146 +27,146 @@ sigma_bg = 1.5*gammaX
 sigma = c(sigma_a, sigma_b, sigma_g, sigma_bg)
 
 ##############################
-#1. MCMC
-mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1, prior = TRUE) {
-  
-  'Returns mcmc samples of alpha & acceptance rate'
-  print('MCMC SUPERSPREADING')
-  
-  #Initialise params
-  alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
-  gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
-  alpha_vec[1] <- x0; beta_vec[1] <- x0;
-  gamma_vec[1] <- x0; r0_vec[1] <- x0;
-  
-  #Extract params
-  sigma_a = sigma[1]; sigma_b = sigma[2]
-  sigma_g = sigma[3]; sigma_bg = sigma[4];
-  
-  #Result vectors
-  count_accept1 = 0; count_accept2 = 0;
-  count_accept3 = 0; count_accept4 = 0;
-  flag_true = FALSE
-  
-  #Create folder for mcmc results 
-  folder_mcmc = paste0(folder_results, '/mcmc')
-  ifelse(!dir.exists(file.path(folder_mcmc)), dir.create(file.path(folder_mcmc), recursive = TRUE), FALSE)
-  
-  #MCMC chain
-  for(i in 2:n) {
-    
-    #******************************************************
-    #ALPHA
-    alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma_a) 
-    if(alpha_dash < 0){
-      alpha_dash = abs(alpha_dash)
-    }
-    #log alpha
-    logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
-    logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
-    prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
-    prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
-    log_accept_prob = logl_new - logl_prev  #+ prior1 - prior
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
-    }
-    
-    #Metropolis Acceptance Step
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-      alpha_vec[i] <- alpha_dash
-      count_accept1 = count_accept1 + 1
-    } else {
-      alpha_vec[i] <- alpha_vec[i-1]
-    }
-    
-    #************************************************************************
-    #BETA (Only if B > 0)
-    beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
-    if(beta_dash < 0){
-      beta_dash = abs(beta_dash)
-    }
-    #loglikelihood
-    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
-    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
-    log_accept_prob = logl_new - logl_prev
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
-    }
-    #Metropolis Acceptance Step
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-      beta_vec[i] <- beta_dash
-      count_accept2 = count_accept2 + 1
-    } else {
-      beta_vec[i] <- beta_vec[i-1]
-    }
-    
-    #************************************************************************
-    #GAMMA
-    gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_g) 
-    if(gamma_dash < 1){
-      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
-    }
-    #Acceptance Probability
-    logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
-    logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
-    log_accept_prob = logl_new - logl_prev 
-    #Priors
-    if (prior){
-      log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
-    }
-    #Metropolis Acceptance Step
-    if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-      gamma_vec[i] <- gamma_dash
-      count_accept3 = count_accept3 + 1
-    } else {
-      gamma_vec[i] <- gamma_vec[i-1]
-    }
-    
-    #R0
-    r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
-    
-    #*****************************************************
-    #GAMMA-BETA
-    gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg)#Alter sigma_bg depending on acceptance rate. 
-    #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
-    if(gamma_dash < 1){ #If less then 1
-      gamma_dash = 2 - gamma_dash #abs(gamma_dash)
-    }
-    #New beta 
-    beta_new = (r0_vec[i] - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
-    
-    if(beta_new >= 0){ #Only accept values of beta > 0
-      
-      logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_dash)
-      logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
-      log_accept_prob = logl_new - logl_prev  
-      #Priors
-      if (prior){
-        log_accept_prob = log_accept_prob - beta_dash + beta_vec[i]
-      }
-      #Metropolis Step
-      if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
-        beta_vec[i] <- beta_new
-        gamma_vec[i] <- gamma_dash
-        count_accept4 = count_accept4 + 1
-      } 
-    }
-    #End of if 
-    #A final 5th move -> B = 0 if not 0, and vice versa
-  }
-  
-  #Final stats
-  accept_rate1 = 100*count_accept1/n
-  accept_rate2 = 100*count_accept2/n
-  accept_rate3 = 100*count_accept3/n
-  accept_rate4 = 100*count_accept4/n
-  
-  #Return alpha, acceptance rate
-  return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
-              accept_rate1, accept_rate2, accept_rate3, accept_rate4))
-}
+#1. MCMC #USE MCMC_SSE
+# mcmc_ss_x4 <- function(data, n, sigma, thinning_factor, folder_results, rep, burn_in, x0 = 1, prior = TRUE) {
+#   
+#   'Returns mcmc samples of alpha & acceptance rate'
+#   print('MCMC SUPERSPREADING')
+#   
+#   #Initialise params
+#   alpha_vec <- vector('numeric', n); beta_vec <- vector('numeric', n)
+#   gamma_vec <- vector('numeric', n); r0_vec <- vector('numeric', n)
+#   alpha_vec[1] <- x0; beta_vec[1] <- x0;
+#   gamma_vec[1] <- x0; r0_vec[1] <- x0;
+#   
+#   #Extract params
+#   sigma_a = sigma[1]; sigma_b = sigma[2]
+#   sigma_g = sigma[3]; sigma_bg = sigma[4];
+#   
+#   #Result vectors
+#   count_accept1 = 0; count_accept2 = 0;
+#   count_accept3 = 0; count_accept4 = 0;
+#   flag_true = FALSE
+#   
+#   #Create folder for mcmc results 
+#   folder_mcmc = paste0(folder_results, '/mcmc')
+#   ifelse(!dir.exists(file.path(folder_mcmc)), dir.create(file.path(folder_mcmc), recursive = TRUE), FALSE)
+#   
+#   #MCMC chain
+#   for(i in 2:n) {
+#     
+#     #******************************************************
+#     #ALPHA
+#     alpha_dash <- alpha_vec[i-1] + rnorm(1, sd = sigma_a) 
+#     if(alpha_dash < 0){
+#       alpha_dash = abs(alpha_dash)
+#     }
+#     #log alpha
+#     logl_new = log_like_ss_lse(data, alpha_dash, beta_vec[i-1], gamma_vec[i-1])
+#     logl_prev = log_like_ss_lse(data, alpha_vec[i-1], beta_vec[i-1], gamma_vec[i-1])
+#     prior1 = dgamma(alpha_dash, shape = 1, scale = 1, log = TRUE)
+#     prior2 = dgamma(alpha_vec[i-1], shape = 1, scale = 1, log = TRUE)
+#     log_accept_prob = logl_new - logl_prev  #+ prior1 - prior
+#     #Priors
+#     if (prior){
+#       log_accept_prob = log_accept_prob - alpha_dash + alpha_vec[i-1]
+#     }
+#     
+#     #Metropolis Acceptance Step
+#     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+#       alpha_vec[i] <- alpha_dash
+#       count_accept1 = count_accept1 + 1
+#     } else {
+#       alpha_vec[i] <- alpha_vec[i-1]
+#     }
+#     
+#     #************************************************************************
+#     #BETA (Only if B > 0)
+#     beta_dash <- beta_vec[i-1] + rnorm(1, sd = sigma_b) 
+#     if(beta_dash < 0){
+#       beta_dash = abs(beta_dash)
+#     }
+#     #loglikelihood
+#     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_dash, gamma_vec[i-1])
+#     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i-1], gamma_vec[i-1])
+#     log_accept_prob = logl_new - logl_prev
+#     #Priors
+#     if (prior){
+#       log_accept_prob = log_accept_prob - beta_dash + beta_vec[i-1]
+#     }
+#     #Metropolis Acceptance Step
+#     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+#       beta_vec[i] <- beta_dash
+#       count_accept2 = count_accept2 + 1
+#     } else {
+#       beta_vec[i] <- beta_vec[i-1]
+#     }
+#     
+#     #************************************************************************
+#     #GAMMA
+#     gamma_dash <- gamma_vec[i-1] + rnorm(1, sd = sigma_g) 
+#     if(gamma_dash < 1){
+#       gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+#     }
+#     #Acceptance Probability
+#     logl_new = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_dash) 
+#     logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i-1])
+#     log_accept_prob = logl_new - logl_prev 
+#     #Priors
+#     if (prior){
+#       log_accept_prob = log_accept_prob - gamma_dash + gamma_vec[i-1]
+#     }
+#     #Metropolis Acceptance Step
+#     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+#       gamma_vec[i] <- gamma_dash
+#       count_accept3 = count_accept3 + 1
+#     } else {
+#       gamma_vec[i] <- gamma_vec[i-1]
+#     }
+#     
+#     #R0
+#     r0_vec[i] = alpha_vec[i] + beta_vec[i]*gamma_vec[i]
+#     
+#     #*****************************************************
+#     #GAMMA-BETA
+#     gamma_dash <- gamma_vec[i] + rnorm(1, sd = sigma_bg)#Alter sigma_bg depending on acceptance rate. 
+#     #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
+#     if(gamma_dash < 1){ #If less then 1
+#       gamma_dash = 2 - gamma_dash #abs(gamma_dash)
+#     }
+#     #New beta 
+#     beta_new = (r0_vec[i] - alpha_vec[i])/gamma_dash #Proposing new Gamma AND Beta. Beta_dash = f(R0 & gamma_dash)
+#     
+#     if(beta_new >= 0){ #Only accept values of beta > 0
+#       
+#       logl_new = log_like_ss_lse(data, alpha_vec[i], beta_new, gamma_dash)
+#       logl_prev = log_like_ss_lse(data, alpha_vec[i], beta_vec[i], gamma_vec[i])
+#       log_accept_prob = logl_new - logl_prev  
+#       #Priors
+#       if (prior){
+#         log_accept_prob = log_accept_prob - beta_dash + beta_vec[i]
+#       }
+#       #Metropolis Step
+#       if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+#         beta_vec[i] <- beta_new
+#         gamma_vec[i] <- gamma_dash
+#         count_accept4 = count_accept4 + 1
+#       } 
+#     }
+#     #End of if 
+#     #A final 5th move -> B = 0 if not 0, and vice versa
+#   }
+#   
+#   #Final stats
+#   accept_rate1 = 100*count_accept1/n
+#   accept_rate2 = 100*count_accept2/n
+#   accept_rate3 = 100*count_accept3/n
+#   accept_rate4 = 100*count_accept4/n
+#   
+#   #Return alpha, acceptance rate
+#   return(list(alpha_vec, beta_vec, gamma_vec, r0_vec,
+#               accept_rate1, accept_rate2, accept_rate3, accept_rate4))
+# }
 
 ##############################s
 #1i. REPEAT MCMC
@@ -212,7 +213,8 @@ run_mcmc_reps_ss <- function(n, n_reps, model_params, sigma, flag_dt, base_folde
     }
     
     #MCMC
-    mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
+    #mcmc_params = mcmc_ss_x4(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
+    mcmc_params = mcmc_sse(sim_data, n, sigma, thinning_factor, folder_rep, rep, burn_in)
       
     #SAVE MCMC PARAMS 
     saveRDS(mcmc_params, file = paste0(folder_rep, '/mcmc_params_rep_', rep, '.rds' ))
