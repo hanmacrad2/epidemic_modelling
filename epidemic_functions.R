@@ -140,7 +140,7 @@ simulate_ss_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX
 
 #*******************************************************
 #III. SUPER-SRPEADING INDIVIDUALS (SUPER-SPREADERS) SIMULATION 
-simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
+simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
   'Simulate an epidemic with Superspreading individuals'
   
   #Set up
@@ -167,6 +167,44 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   
   total_infecteds
 }
+
+simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
+  'Simulate an epidemic with Superspreading individuals'
+  
+  #Set up
+  total_infecteds = vector('numeric', num_days)
+  nss_infecteds = vector('numeric', num_days)
+  ss_infecteds = vector('numeric', num_days)
+  total_infecteds[1] = 3
+  nss_infecteds[1] = 2
+  ss_infecteds[1] = 1 
+  
+  #Infectiousness (Discrete gamma) - I.e 'Infectiousness Pressure' - Sum of all people
+  #Explanation: Gamma is a continuous function so integrate over the density at that point in time (today - previous day)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  
+  #Days of Infection Spreading
+  for (t in 2:num_days) {
+    
+    #Regular infecteds (tot_rate = lambda) fix notation
+    lambda_t = sum((total_infecteds[1:(t-1)] + ss_mult*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
+    ss_infecteds[t] = rpois(1, bX*lambda_t)
+    total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]
+  }
+  
+  return(list(nss_infecteds, ss_infecteds))
+}
+
+#Return sum of n + s
+get_total_x = function(data_list){
+  
+  'Returns sum of x = n + s in a single vector'
+  n = data[[1]]; s = data[[2]]
+  x = n + s
+  x
+} 
+
 
 #*Implement
 num_days = 50
@@ -264,7 +302,7 @@ mcmc_r0 <- function(data, n, sigma, burn_in, x0 = 1) {
 #*******************************************************************************
 
 #Log Likelihood 
-log_like_ss <- function(x, alphaX, betaX, gammaX){
+log_like_sse <- function(x, alphaX, betaX, gammaX){
   
   #Params
   num_days = length(x)
@@ -361,7 +399,7 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
 
 ##############################
 #1. MCMC
-mcmc_sse <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
+MCMC_SSE <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
                             x0 = 1, prior = TRUE, alpha_transform = FALSE) {#thinning_factor, burn_in
   
   'Returns MCMC samples of SSE model parameters (alpha, beta, gamma, r0 = a + b*g) 
@@ -407,7 +445,7 @@ mcmc_sse <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
     
     #log alpha
     logl_new = log_like_ss_lse(data, alpha_dash, beta, gamma)
-    log_accept_prob = logl_new - log_like_vec[i-1]  #+ prior1 - prior
+    log_accept_prob = logl_new - log_like  #+ prior1 - prior
     #Priors
     if (prior){
       log_accept_prob = log_accept_prob - alpha_dash + alpha
@@ -608,7 +646,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 #SSE: FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
 plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
                                 seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
-                           g_prior = FALSE, g_priorsX = c(3,3), rjmcmc = FALSE){
+                             flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE){
   #Plot
   #plot.new()
   par(mfrow=c(4,4))
@@ -641,8 +679,8 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
   g_lim2 =  max(gammaX, gamma_mean) 
   
   #Priors
-    if (g_prior) {
-    beta_prior = paste0('gamma(',  g_priorsX[1], ', ', g_priorsX[2], ')')
+    if (flag_gam_prior_on_b) {
+    beta_prior = paste0('gamma(',  gam_priors_on_bX[1], ', ', gam_priors_on_bX[2], ')')
   } else {
     beta_prior = 'exp(1)'
   }
@@ -650,7 +688,7 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
   gamma_prior = '1 + exp(1)'
 
   #***********
-  #* Plots *
+  #* PLOTS *
   
   #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
@@ -659,17 +697,17 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
   
   #ii. MCMC Trace Plots 
   plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
-          main = paste("MCMC", model_typeX,  ": a prior:", alpha_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", alpha_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = alphaX, col = 'red', lwd = 2) #True = green
   
   plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim), 
-          main = paste("MCMC", model_typeX, ": b prior:", beta_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[2],  "prior:", beta_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = betaX, col = 'blue', lwd = 2) #True = green
   
   plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
-          main = paste("MCMC", model_typeX, ": g prior:", gamma_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:", gamma_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = gammaX, col = 'green', lwd = 2) #True = green
   
@@ -861,23 +899,26 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
 #*##############################################
 #*******************************************
 #*
-#* #VERSION II = x3 alphas
+#* #VERSION II = x3 params
 #* 
 #*******************************************
 #*##############################################
-
-plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
+plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
                            seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
-                           g_prior = FALSE, g_priorsX = c(3,3), rjmcmc = FALSE){
+                           flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
+                           true_vals = c(0.8, 0.1, 10),
+                           mod_par_names = c('alpha', 'beta', 'gamma')){
   #Plot
-  #plot.new()
+  plot.new()
   par(mfrow=c(4,4))
   
   #Extract params
-  alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
-  beta_mcmc = mcmc_params[2]; beta_mcmc = unlist(beta_mcmc)
-  gamma_mcmc = mcmc_params[3]; gamma_mcmc = unlist(gamma_mcmc)
+  m1_mcmc = mcmc_params[1]; m1_mcmc = unlist(m1_mcmc)
+  m2_mcmc = mcmc_params[2]; m2_mcmc = unlist(m2_mcmc)
+  m3_mcmc = mcmc_params[3]; m3_mcmc = unlist(m3_mcmc)
   r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
+  #True vals
+  m1X = true_vals[1]; m2X = true_vals[2]; m3X = true_vals[3]; 
   
   #Cumulative means + param sample limits
   #r0
@@ -885,29 +926,29 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   r0_lim = max(true_r0, max(r0_mcmc))
   r0_lim2 = max(true_r0, r0_mean)
   
-  #alpha
-  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
-  a_lim =  max(alphaX, max(alpha_mcmc))
-  a_lim2 =  max(alphaX, alpha_mean)
+  #m1
+  m1_mean = cumsum(m1_mcmc)/seq_along(m1_mcmc)
+  a_lim =  max(m1X, max(m1_mcmc))
+  a_lim2 =  max(m1X, m1_mean)
   
-  #beta
-  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
-  b_lim = max(betaX, max(beta_mcmc))
-  b_lim2 = max(betaX, beta_mean)
+  #m2
+  m2_mean = cumsum(m2_mcmc)/seq_along(m2_mcmc)
+  b_lim = max(m2X, max(m2_mcmc))
+  b_lim2 = max(m2X, m2_mean)
   
-  #gamma
-  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
-  g_lim =  max(gammaX, max(gamma_mcmc))
-  g_lim2 =  max(gammaX, gamma_mean) 
+  #m3
+  m3_mean = cumsum(m3_mcmc)/seq_along(m3_mcmc)
+  m3_lim =  max(m3X, max(m3_mcmc))
+  m3_lim2 =  max(m3X, m3_mean) 
   
   #Priors
-  if (g_prior) {
-    beta_prior = paste0('gamma(',  g_priorsX[1], ', ', g_priorsX[2], ')')
+  if (flag_gam_prior_on_b) {
+    m2_prior = paste0('m3(',  gam_priors_on_bX[1], ', ', gam_priors_on_bX[2], ')')
   } else {
-    beta_prior = 'exp(1)'
+    m2_prior = 'exp(1)'
   }
-  alpha_prior = 'exp(1)'
-  gamma_prior = '1 + exp(1)'
+  m1_prior = 'exp(1)'
+  m3_prior = '1 + exp(1)'
   
   #***********
   #* Plots *
@@ -918,20 +959,20 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots 
-  plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
-          main = paste("MCMC", model_typeX,  ": a prior:", alpha_prior),
+  plot.ts(m1_mcmc, ylab = mod_par_names[1], ylim=c(0, a_lim),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", m1_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = alphaX, col = 'red', lwd = 2) #True = green
+  abline(h = m1X, col = 'red', lwd = 2) #True = green
   
-  plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim), 
-          main = paste("MCMC", model_typeX, ": b prior:", beta_prior),
+  plot.ts(m2_mcmc, ylab = 'm2', ylim=c(0, b_lim), 
+          main = paste("MCMC", model_typeX, ":", mod_par_names[2], "prior:", m2_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = betaX, col = 'blue', lwd = 2) #True = green
+  abline(h = m2X, col = 'blue', lwd = 2) #True = green
   
-  plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
-          main = paste("MCMC", model_typeX, ": g prior:", gamma_prior),
+  plot.ts(m3_mcmc,  ylab = 'm3', ylim=c(0,m3_lim),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:", m3_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = gammaX, col = 'green', lwd = 2) #True = green
+  abline(h = m3X, col = 'green', lwd = 2) #True = green
   
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
@@ -944,28 +985,31 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
   #print(plot2)
   abline(h = true_r0, col = 'orange', lwd = 2)
   
-  #alpha mean
-  plot(seq_along(alpha_mean), alpha_mean,
+  #m1 mean
+  plot(seq_along(m1_mean), m1_mean,
        ylim=c(0, a_lim),
-       xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
+       xlab = 'Time', ylab =  mod_par_names[1],
+       main = paste(mod_par_names[1], "MCMC mean, True", mod_par_names[1], "=", m1X),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #print(plot2)
-  abline(h = alphaX, col = 'red', lwd = 2)
+  abline(h = m1X, col = 'red', lwd = 2)
   
-  #beta mean
-  plot(seq_along(beta_mean), beta_mean,
+  #m2 mean
+  plot(seq_along(m2_mean), m2_mean,
        ylim=c(0, b_lim),
-       xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
+       xlab = 'Time', ylab = 'm2',
+       main = paste(mod_par_names[2], "MCMC mean, True", mod_par_names[2], "=", m2X),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #print(plot2)
-  abline(h = betaX, col = 'blue', lwd = 2)
+  abline(h = m2X, col = 'blue', lwd = 2)
   
-  #gamma Mean
-  plot(seq_along(gamma_mean), gamma_mean,
-       xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
-       ylim=c(0, g_lim),
+  #m3 Mean
+  plot(seq_along(m3_mean), m3_mean,
+       xlab = 'Time', ylab = 'm3', 
+       main = paste(mod_par_names[3], "MCMC mean, True", mod_par_names[3], "=", m3X),
+       ylim=c(0, m3_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = gammaX, col = 'green', lwd = 2)
+  abline(h = m3X, col = 'green', lwd = 2)
   
   #iv. Param Histograms (Plots 9,11,12)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
@@ -975,179 +1019,154 @@ plot_mcmc_grid <- function(n, sim_data, mcmc_params, true_r0, total_time,
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
   
-  # #v. Beta vs gamma
-  # plot(beta_mcmc, gamma_mcmc,
-  #      xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
+  # #v. m2 vs m3
+  # plot(m2_mcmc, m3_mcmc,
+  #      xlab = 'm2', ylab = 'm3', main = 'm2 vs m3',
   #      cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
-  #Hist alpha 
-  hist(alpha_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'alpha', #ylab = 'Density', 
-       main = paste("alpha, True alpha = ", alphaX), 
+  #Hist m1 
+  hist(m1_mcmc, freq = FALSE, breaks = 100,
+       xlab = mod_par_names[1], #ylab = 'Density', 
+       main = paste(mod_par_names[1], ", True", mod_par_names[1], "=", m1X), 
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = alphaX, col = 'red', lwd = 2)
+  abline(v = m1X, col = 'red', lwd = 2)
   
-  #Hist Beta 
-  hist(beta_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'beta', #ylab = 'Density', 
-       main = paste("Beta, True beta = ", betaX), 
+  #Hist m2 
+  hist(m2_mcmc, freq = FALSE, breaks = 100,
+       xlab = mod_par_names[2], #ylab = 'Density', 
+       main = paste(mod_par_names[2], ", True", mod_par_names[2], "=", m2X), 
        xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = betaX, col = 'blue', lwd = 2)
+  abline(v = m2X, col = 'blue', lwd = 2)
   
-  #Hist Gamma 
-  hist(gamma_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'gamma', #ylab = 'Density', 
-       main = paste("Gamma, True gamma = ", gammaX),
-       xlim=c(0, g_lim),
+  #Hist m3 
+  hist(m3_mcmc, freq = FALSE, breaks = 100,
+       xlab = mod_par_names[3], #ylab = 'Density', 
+       main = paste(mod_par_names[3], ", True", mod_par_names[3], "=", m3X),
+       xlim=c(0, m3_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = gammaX, col = 'green', lwd = 2)
+  abline(v = m3X, col = 'green', lwd = 2)
   
   #Final Mean Stats
-  data_10_pc = 0.5*n #50%
-  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2) 
-  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
-  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
-  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
+  data_10_pc = 0.5*n_mcmc #50%
+  a_mcmc_mean = round(mean(m1_mcmc[n_mcmc - data_10_pc:n_mcmc]), 2) 
+  b_mcmc_mean = round(mean(m2_mcmc[n_mcmc - data_10_pc:n_mcmc]), 2)
+  g_mcmc_mean = round(mean(m3_mcmc[n_mcmc - data_10_pc:n_mcmc]), 2)
+  r0_mcmc_mean = round(mean(r0_mcmc[n_mcmc - data_10_pc:n_mcmc]), 2)
   
   #Joint distrbutions
   if (joint){
     
-    #v. r0 vs beta
-    plot(beta_mcmc, r0_mcmc,
-         xlab = 'beta', ylab = 'R0', main = 'Beta vs R0',
+    #v. r0 vs m2
+    plot(m2_mcmc, r0_mcmc,
+         xlab = mod_par_names[2], ylab = 'R0', main = paste(mod_par_names[2], 'vs R0'),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     
-    #v. alpha vs beta
-    plot(alpha_mcmc, beta_mcmc,
-         xlab = 'alpha', ylab = 'beta', main = 'alpha vs Beta',
+    #v. m1 vs m2
+    plot(m1_mcmc, m2_mcmc,
+         xlab = mod_par_names[1], ylab = mod_par_names[2], main = paste(mod_par_names[1], 'vs', mod_par_names[2]),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     
-    #v. alpha vs gamma
-    plot(alpha_mcmc, gamma_mcmc,
-         xlab = 'alpha', ylab = 'gamma', main = 'alpha vs gamma',
+    #v. m1 vs m3
+    plot(m1_mcmc, m3_mcmc,
+         xlab = mod_par_names[1], ylab = mod_par_names[3], main = paste(mod_par_names[1], 'vs', mod_par_names[3]),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
     
-    #v. beta vs gamma
-    plot(beta_mcmc, gamma_mcmc,
-         xlab = 'beta', ylab = 'gamma', main = 'Beta vs gamma',
+    #v. m2 vs m3
+    plot(m2_mcmc, m3_mcmc,
+         xlab = mod_par_names[2], ylab = mod_par_names[3], main = paste(mod_par_names[2], 'vs', mod_par_names[3]),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   }
   
-  #ALPHAS
-  #plot.new()
-  par(mfrow=c(3,1))
-  
-  #HIST ALPHA 
-  hist(alpha_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'alpha', #ylab = 'Density', 
-       main = paste("alpha, True alpha = ", alphaX), 
-       xlim=c(0, a_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = alphaX, col = 'red', lwd = 2)
-  
-  #ALPHA SSE
-  ind_b = which(beta_mcmc > 0)
-  alpha_sse = alpha_mcmc[ind_b]
-  
-  #Hist
-  hist(alpha_sse, freq = FALSE, breaks = 100,
-       xlab = 'alpha_sse', #ylab = 'Density', 
-       main = "alpha_sse", 
-       xlim=c(0, a_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = alphaX, col = 'red', lwd = 2)
-  
-  #ALPHA BASE
-  ind_b = which(beta_mcmc == 0)
-  
-  if (length(ind_b > 2)){
-    
-    alpha_base = alpha_mcmc[ind_b]
-    #Hist
-    hist(alpha_base, freq = FALSE, breaks = 100,
-         xlab = 'alpha_base', #ylab = 'Density', 
-         main = "alpha_base",
-         xlim=c(0, a_lim),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    abline(v = alphaX, col = 'red', lwd = 2)
-  }
-
-  
-  #Results
+  #*****************
+  #RJMCMC
   if (rjmcmc){
     
-    #Bayes Factor
-    # base_pc = (length(which(beta_mcmc == 0)))/length(beta_mcmc) #Check beta_mcmc
-    # bayes_factor = base_pc/(1-base_pc); bayes_factor = round(bayes_factor, 3)
+    #m1S
+    par(mfrow=c(3,1))
     
-    #Check
-    # print(paste0('seed_Count = ', seed_count))
-    # print(paste0('alphaX = ', alphaX))
-    # print(paste0('a_mcmc_mean = ', a_mcmc_mean)) 
-    # print(paste0('betaX = ', betaX))
-    # print(paste0('b_mcmc_mean = ', b_mcmc_mean))
-    # print(paste0('gammaX = ', gammaX))
-    # print(paste0('g_mcmc_mean = ', g_mcmc_mean))
-    # print(paste0('true_r0 = ', true_r0))
-    # print(paste0('accept_rate_a = ', round(mcmc_params[[5]],2)))
-    # print(paste0('a_rte_b = ', round(mcmc_params[[6]], 2)))
-    # 
-    # print(paste0('a_rte_g = ', round(mcmc_params[[7]],2)))
-    # print(paste0('a_rte_b_g = ', round(mcmc_params[[8]],2)))
-    # print(paste0('a_rte_rj0 = ', round(mcmc_params[[9]],2)))
-    # print(paste0('a_rte_rj1 = ', round(mcmc_params[[10]],2)))
-    # print(paste0('base_pc = ', base_pc))
-    # print(paste0('bayes_factor = ', bayes_factor))
-    # #print(paste0('total_time = ', total_time))
+    #HIST m1 
+    hist(m1_mcmc, freq = FALSE, breaks = 100,
+         xlab = mod_par_names[1], #ylab = 'Density', 
+         main = paste("m1, True m1 = ", m1X), 
+         xlim=c(0, a_lim),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    abline(v = m1X, col = 'red', lwd = 2)
     
-    #Results
+    #m1 SSE
+    ind_b = which(m2_mcmc > 0)
+    m1_sse = m1_mcmc[ind_b]
+    
+    #Hist
+    hist(m1_sse, freq = FALSE, breaks = 100,
+         xlab = 'm1_sse', #ylab = 'Density', 
+         main = "m1_sse", 
+         xlim=c(0, a_lim),
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+    abline(v = m1X, col = 'red', lwd = 2)
+    
+    #m1 BASE
+    ind_b = which(m2_mcmc == 0)
+    
+    if (length(ind_b > 2)){
+      
+      m1_base = m1_mcmc[ind_b]
+      #Hist
+      hist(m1_base, freq = FALSE, breaks = 100,
+           xlab = 'm1_base', #ylab = 'Density', 
+           main = "m1_base",
+           xlim=c(0, a_lim),
+           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+      abline(v = m1X, col = 'red', lwd = 2)
+    }
+    
+    #RESULTS DF
     df_results <- data.frame(
       rep = seed_count,
-      n_mcmc = n,
-      alpha = alphaX,
+      n_mcmc = n_mcmc,
+      m1 = m1X,
       a_mc = a_mcmc_mean,
-      beta = betaX,
+      m2 = m2X,
       b_mc = b_mcmc_mean,
-      gamma = gammaX,
+      m3 = m3X,
       g_mc = g_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_a = round(mcmc_params[[5]],2),
-      a_rte_b = round(mcmc_params[[6]], 2),
-      n_accept_b = mcmc_params[[15]],
-      a_rte_g = round(mcmc_params[[7]],2),
-      n_accept_g = mcmc_params[[16]],
-      a_rte_b_g = round(mcmc_params[[8]],2),
-      n_accept_b_g = mcmc_params[[17]],
+      accept_rate_m1 = round(mcmc_params[[5]],2),
+      a_rte_m2 = round(mcmc_params[[6]], 2),
+      n_accept_m2 = mcmc_params[[15]],
+      a_rte_m3 = round(mcmc_params[[7]],2),
+      n_accept_m3 = mcmc_params[[16]],
+      a_rte_m2_m3 = round(mcmc_params[[8]],2),
+      n_accept_2_3 = mcmc_params[[17]],
       n_accept_rj0 = mcmc_params[[11]],
       n_reject_rj0 = mcmc_params[[13]],
       a_rte_rj0 = round(mcmc_params[[9]],2),
       n_accept_rj1 = mcmc_params[[12]],
       n_reject_rj1 = mcmc_params[[14]],
       a_rte_rj1 = round(mcmc_params[[10]],2),
-      beta_pc0 = mcmc_params[[18]],
-      beta_pc_non_0 = 1- mcmc_params[[18]],
+      m2_pc0 = mcmc_params[[18]],
+      m2_pc_non_0 = 1- mcmc_params[[18]],
       bf = mcmc_params[[19]])
     #tot_time = total_time)
     
   } else {
     df_results <- data.frame(
       rep = seed_count,
-      n_mcmc = n,
-      alpha = alphaX,
-      a_mc = a_mcmc_mean,
-      beta = betaX,
-      b_mc = b_mcmc_mean,
-      gamma = gammaX,
-      g_mc = g_mcmc_mean,
+      n_mcmc = n_mcmc,
+      m1 = m1X,
+      m1_mc = a_mcmc_mean,
+      m2 = m2X,
+      m2_mc = b_mcmc_mean,
+      m3 = m3X,
+      m3_mc = g_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_a = round(mcmc_params[[5]],2),
-      a_rte_b = round(mcmc_params[[6]], 2),
-      a_rte_g = round(mcmc_params[[7]],2),
-      a_rte_b_g = round(mcmc_params[[8]],2),
+      accept_rate_m1 = round(mcmc_params[[5]],2),
+      a_rte_m2 = round(mcmc_params[[6]], 2),
+      a_rte_m3 = round(mcmc_params[[7]],2),
+      a_rte_m2_m3 = round(mcmc_params[[8]],2),
       tot_time = total_time)
   }
   
