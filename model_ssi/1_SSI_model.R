@@ -240,18 +240,20 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         data_aug = list(n_data, s_data)
         
         logl_new = LOG_LIKE_SSI(data_aug, a, b, c)
+        log_accept_prob = logl_new - log_like  #+ prior1 - prior
+        u_var = log(runif(1))
         
-        #PRINT LOG_LIKE
+        #PRINT LOG_LIKE + ACCEPT PROB
         if (i%%100 == 0){ #%% - Modulus
           print(paste0('loglike = ', log_like))
-          log_accept_prob = logl_new - log_like  #+ prior1 - prior
+          print(paste0('loglike new = ', logl_new))
           print(paste0('log_accept_prob new = ', log_accept_prob))
-          print(paste0(' log(runif(1)) = ',  log(runif(1))))
+          print(paste0(' log(runif(1)) = ',  u_var))
           print('**********')
         }
 
         #ACCEPTANCE STEP
-        if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+        if(!(is.na(log_accept_prob)) && u_var < log_accept_prob) {
           data <- data_aug
           log_like <- logl_new
           count_accept5 = count_accept5 + 1
