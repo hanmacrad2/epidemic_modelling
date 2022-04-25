@@ -8,9 +8,9 @@ num_days = 50
 shape_g = 6
 scale_g = 1
 #SSI data params
-aX = 0.7 #0.8 1.1 #Without ss event, ~r0.
-bX = 0.15 #0.1 #0.2
-cX = 8#10 #8
+aX = 0.8 #0.7 #0.8 1.1 #Without ss event, ~r0.
+bX = 0.1 #0.15 #0.1 #0.2
+cX = 10 #8#10 #8
 true_r0 = aX + bX*cX
 true_r0
 model_params = c(aX, bX, cX, true_r0)
@@ -111,12 +111,10 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   count_accept4 = 0; count_reject4 = 0;
   count_accept5 = 0; #DATA AUG
   
-  #MCMC chain
+  #MCMC chain #
   for(i in 2:n_mcmc) {
     
-    print(paste0('i mcmc = ', i))
-    
-    #******************************************************
+    #****************************************************** 
     #a
     a_dash <- a + rnorm(1, sd = sigma_a) 
     if(a_dash < 0){
@@ -166,7 +164,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     }
     
     #************************************************************************
-    #g
+    #c
     c_dash <- c + rnorm(1, sd = sigma_c) 
     if(c_dash < 1){
       c_dash = 2 - c_dash #Prior on c - gt 1
@@ -189,7 +187,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     }
     
     #*****************************************************
-    #g-b
+    #c-b
     c_dash <- c + rnorm(1, sd = sigma_bg) #Alter sigma_bg depending on acceptance rate.
     #Acc rate too big -> Make sigma bigger. Acc rate too small -> make sigma smaller
     if(c_dash < 1){ #If less then 1
@@ -223,6 +221,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     
     #************************************
     #DATA AUGMENTATION
+    #************************************
     if (DATA_AUG){
       
       #FOR EACH S_T
@@ -237,17 +236,21 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         
         #ACCEPTANCE PROBABILITY
         #DATA
-        #n_data = sim_data[[1]]; s_data = sim_data[[2]]
         s_data[t] = st_dash; n_data[t] = x_data[t] - st_dash;
         data_aug = list(n_data, s_data)
         
         logl_new = LOG_LIKE_SSI(data_aug, a, b, c)
-        #print(paste0('loglike = ', log_like))
-        log_accept_prob = logl_new - log_like  #+ prior1 - prior
-        #print(paste0('log_accept_prob new = ', log_accept_prob))
-        #print(paste0(' log(runif(1)) = ',  log(runif(1))))
-        #print('**********')
         
+        #PRINT LOG_LIKE
+        if (i%%100 == 0){ #%% - Modulus
+          print(paste0('loglike = ', log_like))
+          log_accept_prob = logl_new - log_like  #+ prior1 - prior
+          print(paste0('log_accept_prob new = ', log_accept_prob))
+          print(paste0(' log(runif(1)) = ',  log(runif(1))))
+          print('**********')
+        }
+
+        #ACCEPTANCE STEP
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           data <- data_aug
           log_like <- logl_new
@@ -277,7 +280,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
 
 #****************
 #DATA
-seed_count = 1 #seed_count = seed_count + 1
+seed_count = 2 #seed_count = seed_count + 1 #print(paste0('i mcmc = ', i))
 set.seed(seed_count)
 sim_data = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
 #PLOTS
@@ -299,7 +302,8 @@ model_typeX = 'SSI'; time_elap = 0
 
 #APPLY MCMC
 n_mcmc = 100000 #0 #5000
-mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior, gamma_priors, DATA_AUG = FALSE)
+mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
+                       sgamma_prior, gamma_priors, DATA_AUG = FALSE)
 #Plot
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
@@ -307,15 +311,18 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, m
 
 #**********************
 #DATA AUG
+n_mcmc = 5000
 mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior,
                        gamma_priors, DATA_AUG = TRUE)
 
 #Plot
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
+               data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
 #Compare data
 data_aug = mcmc_params[13]
 n2 = data_aug[[1]]
 data_aug[[2]]
+
