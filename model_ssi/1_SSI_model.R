@@ -226,20 +226,33 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
       
       #FOR EACH S_T
       for(t in 1:length(x_data)){
+        
+        #Here make a copy of 
+        data_dash = data 
+        #s_data called s_data_dash 
+        
         #PROPOSAL for s
         u = runif(1)
         if (u < 0.5) {
-          st_dash = s + 1
+          st_dash = data[[2]][t] + 1
         } else {
-          st_dash = s - 1 
+          st_dash = data[[2]][t] - 1 
         }
+        
         
         #ACCEPTANCE PROBABILITY
         #DATA
-        s_data[t] = st_dash; n_data[t] = x_data[t] - st_dash;
-        data_aug = list(n_data, s_data)
+        #s_data[t] = st_dash; n_data[t] = x_data[t] - st_dash;
+        #data_aug = list(n_data, s_data)
+        data_dash[[2]][t] = st_dash
+        data_dash[[1]][t] =  data[[1]][t] + data[[2]][t] - st_dash 
         
-        logl_new = LOG_LIKE_SSI(data_aug, a, b, c)
+        #CHECKS
+        if((data_dash[[2]][t] < 0) || (data_dash[[1]][t] < 0)){
+          next  
+        }
+        
+        logl_new = LOG_LIKE_SSI(data_dash, a, b, c)
         log_accept_prob = logl_new - log_like  #+ prior1 - prior
         u_var = log(runif(1))
         
@@ -254,9 +267,9 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
 
         #ACCEPTANCE STEP
         if(!(is.na(log_accept_prob)) && u_var < log_accept_prob) {
-          data <- data_aug
+          data <- data_dash
           log_like <- logl_new
-          count_accept5 = count_accept5 + 1
+          count_accept5 = count_accept5 + 1 #MAKE ACCEPT_RATE VECTOR OF LENGTH T. increase t_th count for every i
         }
       }
     }
