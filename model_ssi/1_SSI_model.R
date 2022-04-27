@@ -242,8 +242,8 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         #PRINT LOG_LIKE + ACCEPT PROB
         if (i%%100 == 0){ #%% - Modulus 
           nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
-          print(paste0('st:', data[[2]][t],  's_dash: = ', st_dash))
-          print(paste0('nt:', data[[1]][t],  's_dash: = ', nt_dash))
+          print(paste0('st: ', data[[2]][t],  ', s_dash: ', st_dash))
+          print(paste0('nt: ', data[[1]][t],  ', s_dash: ', nt_dash))
           print(paste0('loglike = ', log_like))
           print(paste0('loglike new = ', logl_new))
           print(paste0('log_accept_prob new = ', log_accept_prob))
@@ -324,6 +324,7 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count
 
 #DATA AUG OUPUT
 mat_da = mcmc_params_da[[13]]
+colSums(mat_da)
 
 #Compare data
 data_aug = mcmc_params[[13]]
