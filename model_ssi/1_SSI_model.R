@@ -75,9 +75,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   p(c) = exp(1) + 1 = 1 + exp(-c) = exp(c - 1)'
   
   #EXTRACT DATA + PARAMS
-  n_data = data[[1]]; s_data = data[[2]]
-  x_data = n_data + s_data
-  
+  time = length(data[[1]]);
   #SIGMA. Alter depending on acceptance rate
   sigma_a = sigma[1]; sigma_b = sigma[2]  #Acc rate too big -> Make sigma bigger. 
   sigma_c = sigma[3]; sigma_bg = sigma[4]; #Acc rate too small -> make sigma smaller
@@ -104,7 +102,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   count_accept3 = 0; count_reject3 = 0;
   count_accept4 = 0; count_reject4 = 0;
   count_accept5 = 0 
-  mat_count_da = matrix(0, n_mcmc, length(x_data)) #i x t
+  mat_count_da = matrix(0, n_mcmc, time) #i x t
   
   #******************************
   #MCMC CHAIN
@@ -221,7 +219,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     if (DATA_AUG){
       
       #FOR EACH S_T
-      for(t in 1:length(x_data)){
+      for(t in 1:time){
         
         #Copy of data (or update as necessary)
         data_dash = data 
@@ -279,7 +277,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   accept_rate2 = 100*count_accept2/(count_accept2 + count_reject2)
   accept_rate3 = 100*count_accept3/(count_accept3 + count_reject3)
   accept_rate4 = 100*count_accept4/(count_accept4 + count_reject4)
-  accept_rate5 = 100*count_accept5/((n_mcmc-1)*length(x_data)) #i x t
+  accept_rate5 = 100*count_accept5/((n_mcmc-1)*time) #i x t
   
   #Return a, acceptance rate
   return(list(a_vec, b_vec, c_vec, r0_vec,
