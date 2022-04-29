@@ -312,11 +312,12 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, m
 
 #********************************************
 #MCMC + DATA AUG
-n_mcmc = 10000 #5000
+n_mcmc = 100000 #5000
 mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior,
                        gamma_priors, DATA_AUG = TRUE)
 
 #Plot
+model_typeX = 'SSI'; time_elap = 0
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
                data_aug = TRUE,
