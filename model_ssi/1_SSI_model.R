@@ -260,9 +260,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         
         #ACCEPTANCE PROBABILITY
         data_dash[[2]][t] = st_dash #s_t = st_dash 
-        print(paste0('data_dash[[2]][t] = ', data_dash[[2]][t]))
         data_dash[[1]][t] =  data[[1]][t] + data[[2]][t] - st_dash #n_t = x_t - s_t
-        print(paste0('data_dash[[1]][t] = ', data_dash[[1]][t]))
         
         #CRITERIA FOR S_T & N_T  
         if((data_dash[[2]][t] < 0) || (data_dash[[1]][t] < 0)){
@@ -414,21 +412,55 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da3, true_r0, time_elap, seed_coun
                data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
+#****************************************************************#****************************************************************
 
 #****************************************************************
 #DATASET II
 #****************************************************************
 seed_count = 3 #seed_count = seed_count + 1 #print(paste0('i mcmc = ', i))
 set.seed(seed_count)
-sim_data = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
+sim_data3 = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
 
 #PLOTS
-par(mfrow=c(2,1))
-nt = sim_data[[1]]
-plot.ts(nt, ylab = 'Daily Infections count', main = 'Non Super-Spreaders' )
-st = sim_data[[2]]
-plot.ts(st, ylab = 'Daily Infections count', main = 'Super-Spreaders')
+par(mfrow=c(1,1))
+nt3 = sim_data3[[1]]
+plot.ts(nt3, ylab = 'Daily Infections count', main = 'Non Super-Spreaders' )
+st3 = sim_data3[[2]]
+plot.ts(st3, ylab = 'Daily Infections count', main = 'Super-Spreaders')
 
 #Total
-sim_dataX = nt + st
-plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
+sim_dataX3 = nt3 + st3
+plot.ts(sim_dataX3, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
+
+#****************************************************************
+# APPLY MCMC SSI MODEL + DATA AUG
+#***************************************************************
+n_mcmc = 100000 
+mcmc_params_da33 = MCMC_SSI(sim_data3, n_mcmc, sigma, model_params, gamma_prior,
+                           gamma_priors, DATA_AUG = TRUE)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; time_elap = 0
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da33, true_r0, time_elap, seed_count, model_type = model_typeX,
+               flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
+               data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
+
+#DATA AUG OUPUT
+mat_da3 = mcmc_params_da33[[13]]
+colSums(mat_da3)
+
+#DATA
+data_augmented3 = mcmc_params_da33[[14]]
+n_final3 = data_augmented3[[1]]
+n_final3
+s_final3 = data_augmented3[[2]]
+s_final3
+
+#n & s for all time 
+non_ss3 = mcmc_params_da33[[15]]
+non_ss3
+#colSums(non_ss)
+
+ss3 = mcmc_params_da33[[16]]
+ss3
