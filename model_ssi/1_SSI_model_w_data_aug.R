@@ -61,7 +61,7 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #loglike = LOG_LIKE_SSI(sim_data, aX, bX, cX)
 
 #****************************************************************
-#1. SSI MCMC + DATA AUGMENTATION OPTION
+#1. SSI MCMC    -     DATA AUGMENTATION OPTION
 #****************************************************************
 MCMC_SSI <- function(data, n_mcmc, sigma, model_params,
                      flag_gam_prior_on_b, gam_priors_on_b, x0 = 1, 
