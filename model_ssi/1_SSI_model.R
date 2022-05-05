@@ -18,8 +18,8 @@ model_params = c(aX, bX, cX, true_r0)
 
 #MCMC params 
 sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1
-sigma_c = 0.85*cX; sigma_bg = 1.5*cX
-sigma = c(sigma_a, sigma_b, sigma_c, sigma_bg)
+sigma_c = 0.85*cX; sigma_bc = 1.5*cX
+sigma = c(sigma_a, sigma_b, sigma_c, sigma_bc)
 gamma_prior = FALSE; gamma_priors = c(0,0)
 RJMCMCX = FALSE; alpha_transformX = FALSE
 time_elap = 0
@@ -61,17 +61,17 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #****************************************************************
 #1. SSI MCMC
 #****************************************************************
-MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam_priors_on_b,
-                     x0 = 1, prior = TRUE, a_transform = FALSE,
-                     DATA_AUG = TRUE,
-                     BC_TRANSFORM = FALSE) {#thinning_factor, burn_in
+MCMC_SSI <- function(data, n_mcmc, sigma, model_params,
+                     flag_gam_prior_on_b, gam_priors_on_b, x0 = 1, 
+                     prior = TRUE, DATA_AUG = TRUE, BC_TRANSFORM = FALSE) { #THINNING FACTOR, burn_in
   
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
-  w/ acceptance rates. Includes a transform, b-c transform' 
+  w/ acceptance rates.
+  INCLUDES; DATA AUGMENTATION, B-C transform' 
   print('MCMC SUPERSPREADER INDIVIDUALS')
   
   'Priors
-  p(a) = exp(1) = rate*exp(-rate*x) = 1*exp(-1*a) = exp(-a). log(exp(-a)) = - a
+  p(a) = exp(rate) = rate*exp(-rate*x) --> exp(1) = 1*exp(-1*a) = exp(-a). log(exp(-a)) = - a
   p(b) = exp(1) or p(b) = g(shape, scale), for e.g g(3, 2)
   p(c) = exp(1) + 1 = 1 + exp(-c) = exp(c - 1)'
   
@@ -79,7 +79,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   time = length(data[[1]]);
   #SIGMA. Alter depending on acceptance rate
   sigma_a = sigma[1]; sigma_b = sigma[2]  #Acc rate too big -> Make sigma bigger. 
-  sigma_c = sigma[3]; sigma_bg = sigma[4]; #Acc rate too small -> make sigma smaller
+  sigma_c = sigma[3]; sigma_bc = sigma[4]; #Acc rate too small -> make sigma smaller
   
   #**********************************************
   #INITIALISE PARAMS
@@ -88,7 +88,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   c_vec <- vector('numeric', n_mcmc); r0_vec <- vector('numeric', n_mcmc)
   log_like_vec <- vector('numeric', n_mcmc)
   
-  #Initialise 1st elements
+  #Initialise 1st elements of mcmc vectors 
   a_vec[1] <- model_params[1]; b_vec[1] <- model_params[2] 
   c_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
   log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1],  c_vec[1]) 
@@ -105,8 +105,8 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   count_accept5 = 0 
   mat_count_da = matrix(0, n_mcmc, time) #i x t
   b_count = 0; index_b_count = 2;
-  n_non_super_spreaders = matrix(0, n_mcmc, time)
-  s_super_spreaders = matrix(0, n_mcmc, time)
+  n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
+  s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   
   #******************************
   #MCMC CHAIN
@@ -144,7 +144,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     }
     #loglikelihood
     logl_new = LOG_LIKE_SSI(data, a, b_dash, c)
-    log_accept_prob = logl_new - log_like #logl_prev
+    log_accept_prob = logl_new - log_like
     
     #Priors
     if (flag_gam_prior_on_b){
@@ -161,14 +161,14 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
       b_count = b_count + 1
       
       #PRINT Beta values 
-      if (b_count < 10){ # i%%100 == 0 #Modulus 
-        print(paste0('count i: ', i))
-        print(paste0('b: ', b))
-        print(paste0('loglike = ', log_like))
-        print(paste0('log_accept_prob new = ', log_accept_prob))
-        print('**********')
-        index_b_count = i + 1
-      }
+      # if (b_count < 10){ # i%%100 == 0 #Modulus 
+      #   print(paste0('count i: ', i))
+      #   print(paste0('b: ', b))
+      #   print(paste0('loglike = ', log_like))
+      #   print(paste0('log_accept_prob new = ', log_accept_prob))
+      #   print('**********')
+      #   index_b_count = i + 1
+      # }
       
     } else {
       count_reject2 = count_reject2 + 1
@@ -209,7 +209,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
     #*****************************************************
     #b-c
     if(BC_TRANSFORM){
-      c_dash <- c + rnorm(1, sd = sigma_bg)
+      c_dash <- c + rnorm(1, sd = sigma_bc)
       if(c_dash < 1){
         c_dash = 2 - c_dash
       }
@@ -251,7 +251,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         #Copy of data (or update as necessary)
         data_dash = data 
         
-        #PROPOSAL for s
+        #STOCHASTIC PROPOSAL for s
         if (runif(1) < 0.5) {
           st_dash = data[[2]][t] + 1
         } else {
@@ -264,6 +264,10 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         
         #CRITERIA FOR S_T & N_T  
         if((data_dash[[2]][t] < 0) || (data_dash[[1]][t] < 0)){
+          
+          #Store
+          n_non_super_spreaders[i, t] = data[[1]][t]
+          s_super_spreaders[i, t] = data[[2]][t]
           next  
         }
         
@@ -271,7 +275,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
         log_accept_prob = logl_new - log_like  
         u_var = log(runif(1))
 
-        #ACCEPTANCE STEP
+        #METROPOLIS ACCEPTANCE STEP
         if(!(is.na(log_accept_prob)) && u_var < log_accept_prob) {
           
           #PRINT LOG_LIKE + ACCEPT PROB
@@ -319,14 +323,14 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, flag_gam_prior_on_b, gam
   return(list(a_vec, b_vec, c_vec, r0_vec,
               accept_rate1, accept_rate2, accept_rate3, accept_rate4,
               count_accept2, count_accept3, count_accept4, accept_rate5, 
-              mat_count_da, data, n_non_super_spreaders, #13, 14, 15, 16
+              data, mat_count_da, n_non_super_spreaders, #13, 14, 15, 16
               s_super_spreaders))
 }
 
 #****************************************************************
 #DATA
 #****************************************************************
-seed_count = 2 #seed_count = seed_count + 1 #print(paste0('i mcmc = ', i))
+seed_count = 2 
 set.seed(seed_count)
 sim_data = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
 
@@ -369,23 +373,18 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da3, true_r0, time_elap, seed_coun
                mod_par_names = c('a', 'b', 'c'))
 
 #DATA AUG OUPUT
-mat_da = mcmc_params_da3[[13]]
-colSums(mat_da)
-
-#DATA
-data_augmented = mcmc_params_da3[[14]]
+data_augmented = mcmc_params_da3[[13]]
 n_final = data_augmented[[1]]
-n_final
 s_final = data_augmented[[2]]
-s_final
 
-#n & s for all time 
-non_ss = mcmc_params_da3[[15]]
-non_ss
-#colSums(non_ss)
+#DATA AUG ACCEPTED COUNTS FOR i x t
+mat_da = mcmc_params_da3[[14]]
+colSums(mat_da3)
 
-ss = mcmc_params_da3[[16]]
-ss
+#N & S FOR ALL i x t 
+non_ss = mcmc_params_da[[15]]
+
+ss = mcmc_params_da[[16]]
 
 #**************************************
 #TESTING: MCMC SIZE
@@ -441,23 +440,23 @@ mcmc_params_da33 = MCMC_SSI(sim_data3, n_mcmc, sigma, model_params, gamma_prior,
 
 #PLOT RESULTS
 model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da33, true_r0, time_elap, seed_count, model_type = model_typeX,
+plot_mcmc_grid(n_mcmc, sim_dataX3, mcmc_params_da33, true_r0, time_elap, seed_count, model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
                data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
 #DATA AUG OUPUT
-mat_da3 = mcmc_params_da33[[13]]
-colSums(mat_da3)
-
-#DATA
-data_augmented3 = mcmc_params_da33[[14]]
+data_augmented3 = mcmc_params_da33[[13]]
 n_final3 = data_augmented3[[1]]
 n_final3
 s_final3 = data_augmented3[[2]]
 s_final3
 
-#n & s for all time 
+#DATA AUG ACCEPTED COUNTS FOR i x t
+mat_da3 = mcmc_params_da33[[14]]
+colSums(mat_da3)
+
+#N & S FOR ALL i x t 
 non_ss3 = mcmc_params_da33[[15]]
 non_ss3
 #colSums(non_ss)
