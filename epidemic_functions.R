@@ -397,6 +397,19 @@ log_like_ss_lse <- function(x, alphaX, betaX, gammaX){
   
 }
 
+#***************************************************************#####
+#GAMMA PRIOR ON BETA
+log_gamma_dist <- function(param, gamma_priors){
+  
+  #Params
+  shapeX = gamma_priors[1]
+  scaleX = gamma_priors[2]
+  
+  log_gamma_dist = (1/lgamma(shapeX)*shapeX*log(scaleX))*(shapeX - 1)*log(param)*(-param/shapeX)
+  
+  log_gamma_dist
+}
+
 ##############################
 #1. MCMC
 MCMC_SSE <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
@@ -680,7 +693,7 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
   
   #Priors
     if (flag_gam_prior_on_b) {
-    beta_prior = paste0('gamma(',  gam_priors_on_bX[1], ', ', gam_priors_on_bX[2], ')')
+    beta_prior = paste0('gamma(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
   } else {
     beta_prior = 'exp(1)'
   }
@@ -906,10 +919,11 @@ plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
 plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
                            seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
+                           data_aug = FALSE,
                            true_vals = c(0.8, 0.1, 10),
                            mod_par_names = c('alpha', 'beta', 'gamma')){
   #Plot
-  plot.new()
+  #plot.new()
   par(mfrow=c(4,4))
   
   #Extract params
@@ -943,7 +957,7 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   
   #Priors
   if (flag_gam_prior_on_b) {
-    m2_prior = paste0('m3(',  gam_priors_on_bX[1], ', ', gam_priors_on_bX[2], ')')
+    m2_prior = paste0('m3(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
   } else {
     m2_prior = 'exp(1)'
   }
@@ -1151,7 +1165,27 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
       bf = mcmc_params[[19]])
     #tot_time = total_time)
     
-  } else {
+  } else if (data_aug) {
+    
+    df_results <- data.frame(
+      rep = seed_count,
+      n_mcmc = n_mcmc,
+      m1 = m1X,
+      m1_mc = a_mcmc_mean,
+      m2 = m2X,
+      m2_mc = b_mcmc_mean,
+      m3 = m3X,
+      m3_mc = g_mcmc_mean,
+      R0 = true_r0, 
+      R0_mc = r0_mcmc_mean,
+      accept_rate_m1 = round(mcmc_params[[5]],2),
+      a_rte_m2 = round(mcmc_params[[6]], 2),
+      a_rte_m3 = round(mcmc_params[[7]],2),
+      a_rte_m2_m3 = round(mcmc_params[[8]],2),
+      a_rte_d_aug = round(mcmc_params[[12]],2))
+      #tot_time = total_time)
+    
+    } else {
     df_results <- data.frame(
       rep = seed_count,
       n_mcmc = n_mcmc,
