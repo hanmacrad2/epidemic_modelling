@@ -63,9 +63,9 @@ loglike
 #************************************************************************
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
-MCMC_SSI <- function(data, n_mcmc, sigma, model_params,
-                     flag_gam_prior_on_b, gam_priors_on_b, x0 = 1, 
-                     prior = TRUE, DATA_AUG = TRUE, BC_TRANSFORM = TRUE) { #THINNING FACTOR, burn_in
+MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1, 
+                     prior = TRUE,  flag_gam_prior_on_b = FALSE,
+                     DATA_AUG = TRUE, BC_TRANSFORM = TRUE) { #THINNING FACTOR, burn_in
   
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
   w/ acceptance rates.
@@ -150,7 +150,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params,
     
     #Priors
     if (flag_gam_prior_on_b){
-      log_accept_prob = log_accept_prob + log_gamma_dist(b_dash,gam_priors_on_b) - log_gamma_dist(b,gam_priors_on_b) 
+      log_accept_prob = log_accept_prob + dgamma(b_dash, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE) - dgamma(b, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE)
     } else {
       log_accept_prob = log_accept_prob - b_dash + b 
     }
@@ -438,6 +438,28 @@ plot_mcmc_grid(n_mcmc, sim_dataX2, mcmc_params_da2, true_r0, time_elap, seed_cou
                mod_par_names = c('a', 'b', 'c'))
 
 #**************************************#**************************************#**************************************
+
+#****************************************************************
+# APPLY MCMC SSI MODEL + GAMMA PRIOR
+#***************************************************************
+gamma_priors = c(10, 1/100)
+n_mcmc = 100000 #100000 
+mcmc_params_da2b = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
+                            flag_gam_prior_on_b = TRUE, DATA_AUG = FALSE)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; time_elap = 0
+plot_mcmc_grid(n_mcmc, sim_dataX2, mcmc_params_da2b, true_r0, time_elap, seed_count, model_type = model_typeX,
+               gam_priors_on_b = gamma_priors, flag_gam_prior_on_b = TRUE, 
+               rjmcmc = RJMCMCX, data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
+
+
+
+
+
+
+
 
 #****************************************************************
 #DATASET 4
