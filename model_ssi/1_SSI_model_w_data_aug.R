@@ -3,10 +3,11 @@
 #****************************************************************
 
 #SETUP
-setwd("~/GitHub/epidemic_modelling") 
+#setwd("~/GitHub/epidemic_modelling") 
 source("epidemic_functions.R") 
 
-#SIM DATA
+#PARAMETER INITIALISATION
+#PARMATERS FOR SIMULATING DATA
 num_days = 50
 shape_g = 6; scale_g = 1 #Infectious pressure (lambda) - gamma params
 
@@ -352,9 +353,8 @@ sim_dataX = non_ss + ss
 plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
 
 #****************************************************************
-#DATASET- CREATED MANUALLY 
+#DATASET- CREATED MANUALLY. For R0 = 1.8; a = 0.8, b = 0.1, c = 10
 #****************************************************************
-
 non_super_spreaders = c(2, 0,  0,  1,  0,  2,  2,  2,  3,  0,  3,  0,  0,  0,  1,  1,  1,  0,  1,  4,  2,  1,  0,  1,  0,  1,  0,
                         2,  2,  1,  0,  5,  7,  7,  7,  4,  6,  8,  6,  4, 11, 13,  3, 12, 23, 13, 18, 15, 25, 18)
 
@@ -372,7 +372,8 @@ mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
                          gamma_prior, gamma_priors, DATA_AUG = FALSE)
 #PLOT RESULTS
 model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, model_type = model_typeX,
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, model_params,
+               model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
                mod_par_names = c('a', 'b', 'c'))
 
@@ -385,9 +386,10 @@ mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior,
 
 #PLOT RESULTS
 model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_type = model_typeX,
-               flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
-               data_aug = TRUE,
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_params,
+               model_type = model_typeX,
+               flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors,
+               rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
 #**************************************#**************************************#**************************************
