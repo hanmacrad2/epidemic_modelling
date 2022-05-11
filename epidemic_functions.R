@@ -33,6 +33,13 @@ simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
   vec_infecteds
 }
 
+#Apply
+r0 = 1.8
+sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
+plot.ts(sim_data, ylab = 'Daily infection count',
+        main = paste('Base Model - Daily infections count. R0 = ', r0))
+
+
 #*******************************************************
 #II. SUPER-SPREADING EVENTS SIMULATION
 simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX) {
@@ -72,19 +79,19 @@ simulate_branching_ss = function(num_days, shape_gamma, scale_gamma, alphaX, bet
 # 
 # #********
 # # #*Implement
-# num_days = 50
-# #lambda params
-# shape_gamma = 6
-# scale_gamma = 1
-# #params
-# alphaX = 0.8 #Without ss event, ~r0.
-# betaX = 0.1
-# gammaX = 10
-# true_r0 = alphaX + betaX*gammaX
-# true_r0
-# #Epidemic data
-#sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
-#plot.ts(sim_data, ylab = 'Daily Infections', main = paste('Super - Spreading Events model - Daily Infections count, true R0 = ', true_r0))
+num_days = 50
+#lambda params
+shape_gamma = 6; scale_gamma = 1
+#Params
+alphaX = 0.8 #Without ss event, ~r0.
+betaX = 0.1; gammaX = 10
+true_r0 = alphaX + betaX*gammaX
+true_r0
+#Epidemic data
+sim_data = simulate_branching_ss(num_days, shape_gamma, scale_gamma, alphaX, betaX, gammaX)
+plot.ts(sim_data, ylab = 'Daily infection count',
+        main = paste('Super-Spreading Events Model - Daily Infections. R0 = ', true_r0)) #,
+                     #expression(alpha), ':', alphaX, 'b:', betaX, ':', gammaX))
 # par(mfrow = c(2,1))
 
 #*******************************************************
@@ -140,7 +147,7 @@ simulate_ss_poisson = function(num_days, shape_gamma, scale_gamma, alphaX, betaX
 
 #*******************************************************
 #III. SUPER-SRPEADING INDIVIDUALS (SUPER-SPREADERS) SIMULATION 
-simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
+simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX, bX, cX) {
   'Simulate an epidemic with Superspreading individuals'
   
   #Set up
@@ -159,7 +166,7 @@ simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX,
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum((total_infecteds[1:(t-1)] + ss_mult*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum((total_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     ss_infecteds[t] = rpois(1, bX*lambda_t)
     total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]
@@ -168,7 +175,9 @@ simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX,
   total_infecteds
 }
 
-simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult) {
+#*******************************************************
+#III B. SUPER-SRPEADING INDIVIDUALS (SUPER-SPREADERS) SIMULATION 
+simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX, cX) {
   'Simulate an epidemic with Superspreading individuals'
   
   #Set up
@@ -187,7 +196,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum((total_infecteds[1:(t-1)] + ss_mult*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum((total_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     ss_infecteds[t] = rpois(1, bX*lambda_t)
     total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]
@@ -205,7 +214,6 @@ get_total_x = function(data_list){
   x
 } 
 
-
 #*Implement
 num_days = 50
 #lambda params
@@ -214,9 +222,9 @@ scale_gamma = 1
 #params
 aX = 0.8 #1.1 #Without ss event, ~r0.
 bX = 0.1 #0.2
-ss_mult = 10 #8
+cX = 10 #8
 #Epidemic data
-#sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, ss_mult)
+#sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, cX)
 #plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
 
 ##############################################################################
@@ -651,276 +659,20 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   
 }
 
-################################################################################
-# GRID PLOT - SSE
-################################################################################
-
-#*******************************************************************************
-#SSE: FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING EVENTS MODEL
-plot_mcmc_grid_I <- function(n, sim_data, mcmc_params, true_r0, total_time,
-                                seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
-                             flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE){
-  #Plot
-  #plot.new()
-  par(mfrow=c(4,4))
-
-  #Extract params
-  alpha_mcmc = mcmc_params[1]; alpha_mcmc = unlist(alpha_mcmc)
-  beta_mcmc = mcmc_params[2]; beta_mcmc = unlist(beta_mcmc)
-  gamma_mcmc = mcmc_params[3]; gamma_mcmc = unlist(gamma_mcmc)
-  r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
-  
-  #Cumulative means + param sample limits
-  #r0
-  r0_mean = cumsum(r0_mcmc)/seq_along(r0_mcmc)
-  r0_lim = max(true_r0, max(r0_mcmc))
-  r0_lim2 = max(true_r0, r0_mean)
-  
-  #alpha
-  alpha_mean = cumsum(alpha_mcmc)/seq_along(alpha_mcmc)
-  a_lim =  max(alphaX, max(alpha_mcmc))
-  a_lim2 =  max(alphaX, alpha_mean)
-  
-  #beta
-  beta_mean = cumsum(beta_mcmc)/seq_along(beta_mcmc)
-  b_lim = max(betaX, max(beta_mcmc))
-  b_lim2 = max(betaX, beta_mean)
-  
-  #gamma
-  gamma_mean = cumsum(gamma_mcmc)/seq_along(gamma_mcmc)
-  g_lim =  max(gammaX, max(gamma_mcmc))
-  g_lim2 =  max(gammaX, gamma_mean) 
-  
-  #Priors
-    if (flag_gam_prior_on_b) {
-    beta_prior = paste0('gamma(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
-  } else {
-    beta_prior = 'exp(1)'
-  }
-  alpha_prior = 'exp(1)'
-  gamma_prior = '1 + exp(1)'
-
-  #***********
-  #* PLOTS *
-  
-  #i.Infections
-  plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, ' Day Infts, ', model_typeX, "Data, r0 = ", true_r0),
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  
-  #ii. MCMC Trace Plots 
-  plot.ts(alpha_mcmc, ylab = 'alpha', ylim=c(0, a_lim),
-          main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", alpha_prior),
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = alphaX, col = 'red', lwd = 2) #True = green
-  
-  plot.ts(beta_mcmc, ylab = 'beta', ylim=c(0, b_lim), 
-          main = paste("MCMC", model_typeX, ":", mod_par_names[2],  "prior:", beta_prior),
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = betaX, col = 'blue', lwd = 2) #True = green
-  
-  plot.ts(gamma_mcmc,  ylab = 'gamma', ylim=c(0,g_lim),
-          main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:", gamma_prior),
-          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = gammaX, col = 'green', lwd = 2) #True = green
-  
-  #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
-  
-  #iii. Cumulative mean plots
-  #r0 Mean
-  plot(seq_along(r0_mean), r0_mean,
-               ylim=c(0, r0_lim),
-               xlab = 'Time', ylab = 'R0', main = paste("R0 MCMC Mean, True R0 = ", true_r0),
-               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #print(plot2)
-  abline(h = true_r0, col = 'orange', lwd = 2)
-  
-  #alpha mean
-  plot(seq_along(alpha_mean), alpha_mean,
-               ylim=c(0, a_lim),
-               xlab = 'Time', ylab = 'alpha', main = paste("Alpha MCMC mean, True alpha = ",alphaX),
-               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #print(plot2)
-  abline(h = alphaX, col = 'red', lwd = 2)
-  
-  #beta mean
-  plot(seq_along(beta_mean), beta_mean,
-               ylim=c(0, b_lim),
-               xlab = 'Time', ylab = 'beta', main = paste("Beta MCMC mean, True beta = ",betaX),
-               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  #print(plot2)
-  abline(h = betaX, col = 'blue', lwd = 2)
-  
-  #gamma Mean
-  plot(seq_along(gamma_mean), gamma_mean,
-               xlab = 'Time', ylab = 'gamma', main = paste("Gamma MCMC mean, True gamma = ",gammaX),
-               ylim=c(0, g_lim),
-               cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = gammaX, col = 'green', lwd = 2)
-  
-  #iv. Param Histograms (Plots 9,11,12)
-  hist(r0_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'R0 total', #ylab = 'Density', 
-       main = paste('R0 total MCMC samples. Prior = ', prior),
-       xlim=c(0, r0_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = true_r0, col = 'orange', lwd = 2)
-  
-  # #v. Beta vs gamma
-  # plot(beta_mcmc, gamma_mcmc,
-  #      xlab = 'beta', ylab = 'gamma', main = 'Beta vs Gamma',
-  #      cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  
-  #Hist alpha 
-  hist(alpha_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'alpha', #ylab = 'Density', 
-       main = paste("alpha, True alpha = ", alphaX), 
-       xlim=c(0, a_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = alphaX, col = 'red', lwd = 2)
-  
-  #Hist Beta 
-  hist(beta_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'beta', #ylab = 'Density', 
-       main = paste("Beta, True beta = ", betaX), 
-       xlim=c(0, b_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = betaX, col = 'blue', lwd = 2)
-  
-  #Hist Gamma 
-  hist(gamma_mcmc, freq = FALSE, breaks = 100,
-       xlab = 'gamma', #ylab = 'Density', 
-       main = paste("Gamma, True gamma = ", gammaX),
-       xlim=c(0, g_lim),
-       cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = gammaX, col = 'green', lwd = 2)
-  
-  #Final Mean Stats
-  data_10_pc = 0.5*n #50%
-  a_mcmc_mean = round(mean(alpha_mcmc[n-data_10_pc:n]), 2) 
-  b_mcmc_mean = round(mean(beta_mcmc[n-data_10_pc:n]), 2)
-  g_mcmc_mean = round(mean(gamma_mcmc[n-data_10_pc:n]), 2)
-  r0_mcmc_mean = round(mean(r0_mcmc[n-data_10_pc:n]), 2)
-  
-  #Joint distrbutions
-  if (joint){
-    
-    #v. r0 vs beta
-    plot(beta_mcmc, r0_mcmc,
-         xlab = 'beta', ylab = 'R0', main = 'Beta vs R0',
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    
-    #v. alpha vs beta
-    plot(alpha_mcmc, beta_mcmc,
-         xlab = 'alpha', ylab = 'beta', main = 'alpha vs Beta',
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    
-    #v. alpha vs gamma
-    plot(alpha_mcmc, gamma_mcmc,
-         xlab = 'alpha', ylab = 'gamma', main = 'alpha vs gamma',
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    
-    #v. beta vs gamma
-    plot(beta_mcmc, gamma_mcmc,
-         xlab = 'beta', ylab = 'gamma', main = 'Beta vs gamma',
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  }
-  
-  
-  #Results
-  if (rjmcmc){
-    
-    #Bayes Factor
-    # base_pc = (length(which(beta_mcmc == 0)))/length(beta_mcmc) #Check beta_mcmc
-    # bayes_factor = base_pc/(1-base_pc); bayes_factor = round(bayes_factor, 3)
-    
-    #Check
-    # print(paste0('seed_Count = ', seed_count))
-    # print(paste0('alphaX = ', alphaX))
-    # print(paste0('a_mcmc_mean = ', a_mcmc_mean)) 
-    # print(paste0('betaX = ', betaX))
-    # print(paste0('b_mcmc_mean = ', b_mcmc_mean))
-    # print(paste0('gammaX = ', gammaX))
-    # print(paste0('g_mcmc_mean = ', g_mcmc_mean))
-    # print(paste0('true_r0 = ', true_r0))
-    # print(paste0('accept_rate_a = ', round(mcmc_params[[5]],2)))
-    # print(paste0('a_rte_b = ', round(mcmc_params[[6]], 2)))
-    # 
-    # print(paste0('a_rte_g = ', round(mcmc_params[[7]],2)))
-    # print(paste0('a_rte_b_g = ', round(mcmc_params[[8]],2)))
-    # print(paste0('a_rte_rj0 = ', round(mcmc_params[[9]],2)))
-    # print(paste0('a_rte_rj1 = ', round(mcmc_params[[10]],2)))
-    # print(paste0('base_pc = ', base_pc))
-    # print(paste0('bayes_factor = ', bayes_factor))
-    # #print(paste0('total_time = ', total_time))
-    
-    #Results
-    df_results <- data.frame(
-      rep = seed_count,
-      n_mcmc = n,
-      alpha = alphaX,
-      a_mc = a_mcmc_mean,
-      beta = betaX,
-      b_mc = b_mcmc_mean,
-      gamma = gammaX,
-      g_mc = g_mcmc_mean,
-      R0 = true_r0, 
-      R0_mc = r0_mcmc_mean,
-      accept_rate_a = round(mcmc_params[[5]],2),
-      a_rte_b = round(mcmc_params[[6]], 2),
-      n_accept_b = mcmc_params[[15]],
-      a_rte_g = round(mcmc_params[[7]],2),
-      n_accept_g = mcmc_params[[16]],
-      a_rte_b_g = round(mcmc_params[[8]],2),
-      n_accept_b_g = mcmc_params[[17]],
-      n_accept_rj0 = mcmc_params[[11]],
-      n_reject_rj0 = mcmc_params[[13]],
-      a_rte_rj0 = round(mcmc_params[[9]],2),
-      n_accept_rj1 = mcmc_params[[12]],
-      n_reject_rj1 = mcmc_params[[14]],
-      a_rte_rj1 = round(mcmc_params[[10]],2),
-      beta_pc0 = mcmc_params[[18]],
-      beta_pc_non_0 = 1- mcmc_params[[18]],
-      bf = mcmc_params[[19]])
-      #tot_time = total_time)
-    
-  } else {
-    df_results <- data.frame(
-      rep = seed_count,
-      n_mcmc = n,
-      alpha = alphaX,
-      a_mc = a_mcmc_mean,
-      beta = betaX,
-      b_mc = b_mcmc_mean,
-      gamma = gammaX,
-      g_mc = g_mcmc_mean,
-      R0 = true_r0, 
-      R0_mc = r0_mcmc_mean,
-      accept_rate_a = round(mcmc_params[[5]],2),
-      a_rte_b = round(mcmc_params[[6]], 2),
-      a_rte_g = round(mcmc_params[[7]],2),
-      a_rte_b_g = round(mcmc_params[[8]],2),
-      tot_time = total_time)
-  }
-  
-  print(df_results)
-  
-  
-  
-}
-
 #*##############################################
 #*******************************************
 #*
-#* #VERSION II = x3 params
+#* GRID PLOT SUPER-SPREADING MODELS:
+#* 
+#* FUNCTION TO PLOT 4x4 DASHBOARD OF MCMC RESULTS FOR SUPER SPREADING MODELs
 #* 
 #*******************************************
 #*##############################################
 plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
-                           seed_count, model_typeX = 'SSE', prior = TRUE, joint = TRUE,
+                           seed_count, model_params,
+                           model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
                            data_aug = FALSE,
-                           true_vals = c(0.8, 0.1, 10),
                            mod_par_names = c('alpha', 'beta', 'gamma')){
   #Plot
   #plot.new()
@@ -932,7 +684,7 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   m3_mcmc = mcmc_params[3]; m3_mcmc = unlist(m3_mcmc)
   r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
   #True vals
-  m1X = true_vals[1]; m2X = true_vals[2]; m3X = true_vals[3]; 
+  m1X = model_params[1]; m2X = model_params[2]; m3X = model_params[3]; 
   
   #Cumulative means + param sample limits
   #r0
