@@ -34,6 +34,9 @@ simulate_branching = function(num_days, r0, shape_gamma, scale_gamma) {
 }
 
 #Apply
+num_days = 50
+#lambda params
+shape_gamma = 6; scale_gamma = 1
 r0 = 1.8
 sim_data = simulate_branching(num_days, r0, shape_gamma, scale_gamma)
 plot.ts(sim_data, ylab = 'Daily infection count',
