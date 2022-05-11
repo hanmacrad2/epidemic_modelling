@@ -217,15 +217,15 @@ get_total_x = function(data_list){
 #*Implement
 num_days = 50
 #lambda params
-shape_gamma = 6
-scale_gamma = 1
+shape_gamma = 6; scale_gamma = 1
 #params
 aX = 0.8 #1.1 #Without ss event, ~r0.
-bX = 0.1 #0.2
-cX = 10 #8
+bX = 0.1; cX = 10 #8
+r02 = aX + bX*cX
 #Epidemic data
-#sim_data2 = simulation_super_spreaders(num_days, shape_gamma, scale_gamma, aX, bX, cX)
-#plot.ts(sim_data2, ylab = 'Daily Infections count', main = 'Super Spreaders Model - Daily Infections count')
+sim_data2 = simulation_super_spreaders_v0(num_days, shape_gamma, scale_gamma, aX, bX, cX)
+plot.ts(sim_data2, ylab = 'Daily infection count',
+        main = paste('Super Spreaders Model - Daily Infections. R0 = ', r02))
 
 ##############################################################################
 # MODELS
