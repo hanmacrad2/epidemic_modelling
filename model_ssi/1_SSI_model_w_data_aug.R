@@ -292,8 +292,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
       }
     }
     
-    #CHECK
-    #if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! ',log_like,' ', LOG_LIKE_SSI(data, a, b, c)))
+    #Loglikelihood Check (Passing - no error)
     if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
     
     #POPPULATE MODEL PARAMETERS W/ CURRENT VALUES
