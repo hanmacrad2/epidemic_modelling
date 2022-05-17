@@ -3,7 +3,7 @@
 #****************************************************************
 
 #SETUP
-#setwd("~/GitHub/epidemic_modelling") 
+setwd("~/GitHub/epidemic_modelling") 
 source("epidemic_functions.R") 
 
 #PARAMETER INITIALISATION
@@ -107,7 +107,6 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
   count_accept4 = 0; count_reject4 = 0;
   count_accept5 = 0 
   mat_count_da = matrix(0, n_mcmc, time) #i x t
-  b_count = 0; index_b_count = 2;
   n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   
@@ -161,29 +160,9 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
       b <- b_dash
       log_like = logl_new
       count_accept2 = count_accept2 + 1
-      b_count = b_count + 1
-      
-      #PRINT Beta values 
-      # if (b_count < 10){ # i%%100 == 0 #Modulus
-      #   print(paste0('count i: ', i))
-      #   print(paste0('b: ', b))
-      #   print(paste0('loglike = ', log_like))
-      #   print(paste0('log_accept_prob new = ', log_accept_prob))
-      #   print('**********')
-      #   index_b_count = i + 1
-      # }
       
     } else {
       count_reject2 = count_reject2 + 1
-    }
-    
-    #PRINT Beta + 1 value
-    if (i == index_b_count){ # i%%100 == 0 #Modulus 
-      print(paste0('count i: ', i))
-      print(paste0('b: ', b))
-      print(paste0('loglike = ', log_like))
-      print(paste0('log_accept_prob new = ', log_accept_prob))
-      print('**********')
     }
     
     #************************************************************************
@@ -217,7 +196,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
         c_dash = 2 - c_dash
       }
       #New b
-      b_new = ((a + b*c) - a)/c_dash
+      b_new = ((a + b*c) - a)/c_dash #b = (r0 - a)c
       
       if(b_new >= 0){ #Only accept values of b > 0
         
@@ -226,15 +205,16 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
         
         #Priors: c or Exp
         if (flag_gam_prior_on_b){
-          log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b)
+          log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
         } else {
-          log_accept_prob = log_accept_prob - b_new + b
+          log_accept_prob = log_accept_prob - b_new + b - c_dash + c
         }
         
         #Metropolis Step
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           b <- b_new
           c <- c_dash
+          log_like <- logl_new #WASN'T THERE 17/05/22
           count_accept4 = count_accept4 + 1
         } else {
           count_reject4 = count_reject4 + 1
@@ -244,7 +224,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
     }
     
     #************************************
-    #DATA AUGMENTATION
+    #DATA AUGMENTATION 
     #************************************
     if (DATA_AUG){
       
@@ -275,7 +255,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
           n_non_super_spreaders[i, t] = data[[1]][t]
           s_super_spreaders[i, t] = data[[2]][t]
           next  
-        }
+        } 
         
         logl_new = LOG_LIKE_SSI(data_dash, a, b, c)
         log_accept_prob = logl_new - log_like  
@@ -312,6 +292,10 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
       }
     }
     
+    #CHECK
+    #if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! ',log_like,' ', LOG_LIKE_SSI(data, a, b, c)))
+    if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
+    
     #POPPULATE MODEL PARAMETERS W/ CURRENT VALUES
     a_vec[i] <- a; b_vec[i] <- b
     c_vec[i] <- c; r0_vec[i] <- a + b*c
@@ -326,11 +310,14 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
   accept_rate5 = 100*count_accept5/((n_mcmc-1)*time) #i x t
   
   #Return a, acceptance rate
-  return(list(a_vec, b_vec, c_vec, r0_vec,
-              accept_rate1, accept_rate2, accept_rate3, accept_rate4,
-              count_accept2, count_accept3, count_accept4, accept_rate5, 
-              data, mat_count_da, n_non_super_spreaders, #13, 14, 15, 16
-              s_super_spreaders))
+  return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
+              accept_rate1 = accept_rate1, accept_rate2 = accept_rate2, 
+              accept_rate3 = accept_rate3, accept_rate4 = accept_rate4,
+              count_accept2 = count_accept2, count_accept3 = count_accept3, 
+              count_accept4 = count_accept4, accept_rate5 = accept_rate5, 
+              data = data, mat_count_da = mat_count_da, #13, 14
+              n_non_super_spreaders = n_non_super_spreaders, #15
+              s_super_spreaders = s_super_spreaders)) #16
 }
 
 
@@ -367,7 +354,7 @@ sim_data = list(non_super_spreaders, super_spreaders)
 #****************************************************************
 # APPLY MCMC SSI MODEL
 #****************************************************************
-n_mcmc = 100000 
+n_mcmc = 1000 #100000 
 mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
                          gamma_prior, gamma_priors, DATA_AUG = FALSE)
 #PLOT RESULTS
@@ -404,7 +391,8 @@ mcmc_params_da2 = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
 
 #PLOT RESULTS
 model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count, model_type = model_typeX,
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count, model_params,
+               model_type = model_typeX,
                gam_priors_on_b = gamma_priors, flag_gam_prior_on_b = TRUE, 
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
@@ -417,7 +405,8 @@ mcmc_params_da2b = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
 
 #PLOT RESULTS
 model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2b, true_r0, time_elap, seed_count, model_type = model_typeX,
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2b, true_r0, time_elap, seed_count, model_params,
+               model_type = model_typeX,
                gam_priors_on_b = gamma_priors, flag_gam_prior_on_b = TRUE, 
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
