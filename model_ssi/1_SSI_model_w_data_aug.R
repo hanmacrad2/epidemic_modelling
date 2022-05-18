@@ -50,8 +50,7 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
     lambda_t = sum((n[1:(t-1)] + cX*s[1:(t-1)])*rev(prob_infect[1:(t-1)]))
     
     #LOG-LIKELIHOOD 
-    logl = logl - lambda_t*(aX + bX) + n[t]*(log(aX) + log(lambda_t)) + s[t]*(log(bX) + log(lambda_t)) 
-    + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
+    logl = logl - lambda_t*(aX + bX) + n[t]*(log(aX) + log(lambda_t)) + s[t]*(log(bX) + log(lambda_t))  + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
   }
   
   logl
@@ -341,14 +340,14 @@ plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spread
 #****************************************************************
 #DATASET- CREATED MANUALLY. For R0 = 1.8; a = 0.8, b = 0.1, c = 10
 #****************************************************************
-non_super_spreaders = c(2, 0,  0,  1,  0,  2,  2,  2,  3,  0,  3,  0,  0,  0,  1,  1,  1,  0,  1,  4,  2,  1,  0,  1,  0,  1,  0,
-                        2,  2,  1,  0,  5,  7,  7,  7,  4,  6,  8,  6,  4, 11, 13,  3, 12, 23, 13, 18, 15, 25, 18)
-
-super_spreaders = c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                    0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 2, 1, 0, 4, 1, 1, 3, 2, 1, 4)
-
-sim_data = list(non_super_spreaders, super_spreaders)
+# non_super_spreaders = c(2, 0,  0,  1,  0,  2,  2,  2,  3,  0,  3,  0,  0,  0,  1,  1,  1,  0,  1,  4,  2,  1,  0,  1,  0,  1,  0,
+#                         2,  2,  1,  0,  5,  7,  7,  7,  4,  6,  8,  6,  4, 11, 13,  3, 12, 23, 13, 18, 15, 25, 18)
+# 
+# super_spreaders = c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+#                     0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 2, 1, 0, 4, 1, 1, 3, 2, 1, 4)
+# 
+# sim_data = list(non_super_spreaders, super_spreaders)
 
 #****************************************************************
 # APPLY MCMC SSI MODEL
