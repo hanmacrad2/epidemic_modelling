@@ -5,6 +5,7 @@
 #SETUP
 setwd("~/GitHub/epidemic_modelling") 
 source("epidemic_functions.R") 
+source("helper_functions.R") 
 
 #PARAMETER INITIALISATION
 #PARMATERS FOR SIMULATING DATA
@@ -357,11 +358,18 @@ plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spread
 #****************************************************************
 # APPLY MCMC SSI MODEL
 #****************************************************************
-n_mcmc = 1000 #100000 
+n_mcmc = 100000 
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
 mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
                          gamma_prior, gamma_priors, DATA_AUG = FALSE)
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+
 #PLOT RESULTS
-model_typeX = 'SSI'; time_elap = 0
+model_typeX = 'SSI'
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, model_params,
                model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors, rjmcmc = RJMCMCX,
@@ -371,11 +379,19 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, m
 # APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
 n_mcmc = 100000 
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
+
 mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior,
                           gamma_priors, DATA_AUG = TRUE)
 
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+
 #PLOT RESULTS
-model_typeX = 'SSI'; time_elap = 0
+model_typeX = 'SSI'; 
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_params,
                model_type = model_typeX,
                flag_gam_prior_on_b = gamma_prior, gam_priors_on_b = gamma_priors,
