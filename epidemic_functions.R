@@ -169,7 +169,7 @@ simulation_super_spreaders_v0 = function(num_days, shape_gamma, scale_gamma, aX,
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum((total_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum((nss_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     ss_infecteds[t] = rpois(1, bX*lambda_t)
     total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]
@@ -199,7 +199,7 @@ simulation_super_spreaders = function(num_days, shape_gamma, scale_gamma, aX, bX
   for (t in 2:num_days) {
     
     #Regular infecteds (tot_rate = lambda) fix notation
-    lambda_t = sum((total_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
+    lambda_t = sum((nss_infecteds[1:(t-1)] + cX*ss_infecteds[1:(t-1)])*rev(prob_infect[1:(t-1)])) #?Why is it the reversed probability - given the way prob_infect is written. Product of infecteds & their probablilty of infection along the gamma dist at that point in time
     nss_infecteds[t] = rpois(1, aX*lambda_t) #Assuming number of cases each day follows a poisson distribution. Causes jumps in data 
     ss_infecteds[t] = rpois(1, bX*lambda_t)
     total_infecteds[t] = nss_infecteds[t] + ss_infecteds[t]
@@ -662,7 +662,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   
 }
 
-#*##############################################
+#*##############################################=
 #*******************************************
 #*
 #* GRID PLOT SUPER-SPREADING MODELS:
@@ -676,7 +676,9 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
                            model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
                            data_aug = FALSE,
-                           mod_par_names = c('alpha', 'beta', 'gamma')){
+                           prior_rate_c = 0.1,
+                           mod_par_names = c('alpha', 'beta', 'gamma'),
+                           priors = list(m1_prior = 'exp(1)', m2_prior = 'exp(1)', m3_prior = 'exp(prior_rate_c)')){
   #Plot
   #plot.new()
   par(mfrow=c(4,4))
@@ -688,6 +690,13 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
   #True vals
   m1X = model_params[1]; m2X = model_params[2]; m3X = model_params[3]; 
+  
+  #Priors
+  priorsX$m3_prior = paste0('exp(', prior_rate_c, ')') #Set prior_c label to prior_rate_c
+  #Beta/b prior 
+  if (flag_gam_prior_on_b) {
+    m2_prior = paste0('m3(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
+  } 
   
   #Cumulative means + param sample limits
   #r0
@@ -710,15 +719,6 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   m3_lim =  max(m3X, max(m3_mcmc))
   m3_lim2 =  max(m3X, m3_mean) 
   
-  #Priors
-  if (flag_gam_prior_on_b) {
-    m2_prior = paste0('m3(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
-  } else {
-    m2_prior = 'exp(1)'
-  }
-  m1_prior = 'exp(1)'
-  m3_prior = '1 + exp(1)'
-  
   #***********
   #* Plots *
   
@@ -729,17 +729,17 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   
   #ii. MCMC Trace Plots 
   plot.ts(m1_mcmc, ylab = mod_par_names[1], ylim=c(0, a_lim),
-          main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", m1_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", priors$m1_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = m1X, col = 'red', lwd = 2) #True = green
   
   plot.ts(m2_mcmc, ylab = 'm2', ylim=c(0, b_lim), 
-          main = paste("MCMC", model_typeX, ":", mod_par_names[2], "prior:", m2_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[2], "prior:",  priors$m2_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = m2X, col = 'blue', lwd = 2) #True = green
   
   plot.ts(m3_mcmc,  ylab = 'm3', ylim=c(0,m3_lim),
-          main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:", m3_prior),
+          main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:",  priors$m3_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(h = m3X, col = 'green', lwd = 2) #True = green
   
