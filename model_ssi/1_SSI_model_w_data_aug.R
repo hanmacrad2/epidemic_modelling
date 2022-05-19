@@ -65,7 +65,8 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #************************************************************************
 MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1, 
                      prior = TRUE,  flag_gam_prior_on_b = FALSE,
-                     DATA_AUG = TRUE, BC_TRANSFORM = TRUE) { #THINNING FACTOR, burn_in
+                     DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                     prior_rate_c = 0.1) { #THINNING FACTOR, burn_in
   
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
   w/ acceptance rates.
@@ -73,7 +74,8 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
   print('MCMC SUPERSPREADER INDIVIDUALS')
   
   'Priors
-  p(a) = exp(rate) = rate*exp(-rate*x) --> exp(1) = 1*exp(-1*a) = exp(-a). log(exp(-a)) = - a
+  p(a) = exp(rate) = rate*exp(-rate*x). log(r*exp(-r*x)) = log(r) - rx
+      -> E.g exp(1) = 1*exp(-1*a) = exp(-a). log(exp(-a)) = - a
   p(b) = exp(1) or p(b) = g(shape, scale), for e.g g(3, 2)
   p(c) = exp(1) + 1 = 1 + exp(-c) = exp(c - 1)'
   
@@ -175,7 +177,8 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
     log_accept_prob = logl_new - log_like 
     #Priors
     if (prior){
-      log_accept_prob = log_accept_prob - c_dash + c
+      #log_accept_prob = log_accept_prob - c_dash + c
+      log_accept_prob = log_accept_prob - prior_rate_c*c_dash + prior_rate_c*c
     }
     
     #Metropolis Acceptance Step
@@ -203,10 +206,12 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
         log_accept_prob = logl_new - log_like
         
         #Priors: c or Exp
-        if (flag_gam_prior_on_b){
-          log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
+        if (flag_gam_prior_on_b){ log_accept_prob = log_accept_prob 
+          #log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
+        log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - prior_rate_c*c_dash + prior_rate_c*c
         } else {
-          log_accept_prob = log_accept_prob - b_new + b - c_dash + c
+          #log_accept_prob = log_accept_prob - b_new + b - c_dash + c
+          log_accept_prob = log_accept_prob - b_new + b - prior_rate_c*c_dash + prior_rate_c*c
         }
         
         #Metropolis Step
@@ -327,7 +332,7 @@ set.seed(seed_count)
 sim_data = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
 
 #PLOTS
-par(mfrow=c(1,1))
+par(mfrow=c(2,1))
 non_ss = sim_data[[1]]
 plot.ts(non_ss, ylab = 'Daily Infections count', main = 'Non Super-Spreaders' )
 ss = sim_data[[2]]
