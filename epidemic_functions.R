@@ -671,7 +671,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 #* 
 #*******************************************
 #*##############################################
-plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
+plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, time_elap,
                            seed_count, model_params,
                            model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
@@ -692,7 +692,7 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   m1X = model_params[1]; m2X = model_params[2]; m3X = model_params[3]; 
   
   #Priors
-  priorsX$m3_prior = paste0('exp(', prior_rate_c, ')') #Set prior_c label to prior_rate_c
+  priors$m3_prior = paste0('exp(', prior_rate_c, ')') #Set prior_c label to prior_rate_c
   #Beta/b prior 
   if (flag_gam_prior_on_b) {
     m2_prior = paste0('m3(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
@@ -723,8 +723,11 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   #* Plots *
   
   #i.Infections
+  if(!data_aug) inf_tite = paste0(seed_count, ', ', model_typeX, " Data, r0 = ", true_r0) # 'Day Infts, '
+  else inf_tite = paste0(seed_count, ', ', model_typeX, " Data, r0 = ", true_r0, ", + Data Aug")
+  
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, ' Day Infts, ', model_typeX, "Data, r0 = ", true_r0),
+          main = inf_tite, 
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots 
@@ -917,8 +920,8 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
       a_rte_rj1 = round(mcmc_params[[10]],2),
       m2_pc0 = mcmc_params[[18]],
       m2_pc_non_0 = 1- mcmc_params[[18]],
-      bf = mcmc_params[[19]])
-    #tot_time = total_time)
+      bf = mcmc_params[[19]],
+    tot_time = time_elap)
     
   } else if (data_aug) {
     
@@ -937,8 +940,8 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
       a_rte_m2 = round(mcmc_params[[6]], 2),
       a_rte_m3 = round(mcmc_params[[7]],2),
       a_rte_m2_m3 = round(mcmc_params[[8]],2),
-      a_rte_d_aug = round(mcmc_params[[12]],2))
-      #tot_time = total_time)
+      a_rte_d_aug = round(mcmc_params[[12]],2),
+      tot_time = time_elap)
     
     } else {
     df_results <- data.frame(
@@ -956,7 +959,7 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
       a_rte_m2 = round(mcmc_params[[6]], 2),
       a_rte_m3 = round(mcmc_params[[7]],2),
       a_rte_m2_m3 = round(mcmc_params[[8]],2),
-      tot_time = total_time)
+      tot_time = time_elap)
   }
   
   print(df_results)
