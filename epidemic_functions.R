@@ -674,8 +674,9 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
                            seed_count, model_params,
                            model_typeX = 'SSE', prior = TRUE, joint = TRUE,
-                           flag_gam_prior_on_b = FALSE, gam_priors_on_b = c(0,0), rjmcmc = FALSE,
-                           data_aug = FALSE,
+                           FLAG_G_PRIOR_B = FALSE, gam_priors_on_b = c(0,0),
+                           C_PRIOR_GAMMA = TRUE, c_prior = c(1,0),
+                           rjmcmc = FALSE, data_aug = FALSE,
                            mod_par_names = c('alpha', 'beta', 'gamma')){
   #Plot
   #plot.new()
@@ -711,20 +712,30 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   m3_lim2 =  max(m3X, m3_mean) 
   
   #Priors
-  if (flag_gam_prior_on_b) {
+  if (FLAG_G_PRIOR_B) {
     m2_prior = paste0('m3(',  gam_priors_on_b[1], ', ', gam_priors_on_b[2], ')')
   } else {
     m2_prior = 'exp(1)'
   }
+  
+  if (C_PRIOR_GAMMA) {
+    m3_prior = paste0('1 + Ga(',  c_prior[1], ', ', c_prior[2], ')')
+  } else {
+    m3_prior = paste0('1 + exp(',  c_prior[1], ')')
+  }
+  
   m1_prior = 'exp(1)'
-  m3_prior = '1 + exp(1)'
   
   #***********
   #* Plots *
   
   #i.Infections
+  if(!data_aug) inf_tite = paste0(seed_count, ', ', model_typeX, " Data, r0 = ", true_r0) # 'Day Infts, '
+  else inf_tite = paste0(seed_count, ', ', model_typeX, " Data, r0 = ", true_r0, ", + Data Aug")
+  
+  #i.Infections
   plot.ts(sim_data, xlab = 'Time', ylab = 'Daily Infections count',
-          main = paste(seed_count, ' Day Infts, ', model_typeX, "Data, r0 = ", true_r0),
+          main = inf_tite, 
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   
   #ii. MCMC Trace Plots 
