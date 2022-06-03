@@ -7,8 +7,7 @@ setwd("~/GitHub/epidemic_modelling")
 source("epidemic_functions.R") 
 source("helper_functions.R") 
 
-#PARAMETER INITIALISATION
-#PARMATERS FOR SIMULATING DATA
+#DATA SIMULATION PARAMS
 num_days = 50
 shape_g = 6; scale_g = 1 #Infectious pressure (lambda) - gamma params
 
@@ -16,23 +15,20 @@ shape_g = 6; scale_g = 1 #Infectious pressure (lambda) - gamma params
 aX = 0.8; bX = 0.1; cX = 10 
 true_r0 = aX + bX*cX
 true_r0
-model_params = c(aX, bX, cX, true_r0)
+model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
 
-#MCMC params 
+#MCMC PARAMS  
 #SIGMA
 sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
 sigma_c = 0.85*cX; sigma_bg = 1.5*cX
-sigma = c(sigma_a, sigma_b, sigma_c, sigma_bg)
-
-#PRIOR & OTHER BOOLEAN FLAGS
-gamma_prior = FALSE; gamma_priors = c(0,0)
-RJMCMCX = FALSE; alpha_transformX = FALSE
+sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
+             sigma_c = sigma_c, sigma_bg = sigma_bg) #Acc rate too small -> make sigma smaller
 time_elap = 0
 
 #****************************************************************
 #1. MODEL SSI - LOG LIKELIHOOD
 #****************************************************************
-LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
+LOG_LIKE_SSI <- function(sim_data, list_params = list(aX = aX, bX = bX, cX = cX)){
   
   #Data
   n = sim_data[[1]]; s = sim_data[[2]]
@@ -43,15 +39,18 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
   logl = 0
   
   #INFECTIOUSNESS  - Difference of 2 GAMMA distributions. Discretized 
-  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) -
+    pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
   for (t in 1:num_days) { #*1 or 2
     
     #INFECTIOUS PRESSURE - SUM OF ALL INDIVIDUALS INFECTIOUSNESS 
-    lambda_t = sum((n[1:(t-1)] + cX*s[1:(t-1)])*rev(prob_infect[1:(t-1)]))
+    lambda_t = sum((n[1:(t-1)] + list_params$cX*s[1:(t-1)])*rev(prob_infect[1:(t-1)]))
     
     #LOG-LIKELIHOOD 
-    logl = logl - lambda_t*(aX + bX) + n[t]*(log(aX) + log(lambda_t)) + s[t]*(log(bX) + log(lambda_t))  + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
+    logl = logl - lambda_t*(list_params$aX + list_params$bX) +
+      n[t]*(log(list_params$aX) + log(lambda_t)) +
+      s[t]*(log(list_params$bX) + log(lambda_t))  + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
   }
   
   logl
@@ -61,17 +60,56 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #loglike = LOG_LIKE_SSI(sim_data, aX, bX, cX)
 #loglike
 
+#****************************************************************
+# ADDITIONAL FUNCTIONS
+#****************************************************************
+get_bc_transform_map <- function(log_accept_prob, list_priors = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
+                     c_prior = c(10, 1)), 
+                    FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                    PRIOR = TRUE, B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE)){
+  
+  
+  #PARAMS
+  if (FLAGS_LIST$BC_TRANSFORM) {
+    #PRIORS
+    if ((FLAGS_LIST$B_PRIOR_GAMMA) && (FLAGS_LIST$C_PRIOR_GAMMA)) {
+      log_accept_prob = log_accept_prob 
+      + dgamma(b_new, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) -
+        dgamma(b, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) + 
+        dgamma(c_dash, shape = list_priors$c_prior[1], scale = list_priors$c_prior[1], log = TRUE) -
+        dgamma(c, shape = list_priors$c_prior[1], scale = list_priors$c_prior[2], log = TRUE)
+
+    } else if (FLAG_GA_PRIOR_C) {
+      log_accept_prob = log_accept_prob - b_new + b + dgamma(c_dash,
+                                                             shape = c_prior[1],
+                                                             scale = c_prior[2],
+                                                             log = TRUE) -
+        dgamma(c,
+               shape = c_prior[1],
+               scale = c_prior[2],
+               log = TRUE)
+    }
+    else {
+      #log_accept_prob = log_accept_prob - b_new + b - c_dash + c
+      log_accept_prob = log_accept_prob - b_new + b - c_prior[1] * c_dash + c_prior[1] *
+        c
+    }
+    
+  }
+}
+  
 #************************************************************************
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
 MCMC_SSI <- function(data,
                      mcmc_params = list(n_mcmc = n_mcmc, sigma = sigma, 
                                         model_params = model_params, x0 = 1), #THINNING FACTOR, burn_in  
-                     
                      list_priors = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
                                         c_prior = c(10, 1)),
-                     FLAGS_LIST = list(PRIOR = FALSE,
-                                       B_PRIOR_GAMMA = FALSE, GA_PRIOR_C = TRUE)) { 
+                     FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                       PRIOR = TRUE,
+                                       B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE)) { 
+  
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
   w/ acceptance rates.
   INCLUDES; DATA AUGMENTATION, B-C transform' 
@@ -85,9 +123,6 @@ MCMC_SSI <- function(data,
   
   #EXTRACT DATA + PARAMS
   time = length(data[[1]]);
-  #SIGMA. Alter depending on acceptance rate
-  sigma_a = sigma[1]; sigma_b = sigma[2]  #Acc rate too big -> Make sigma bigger. 
-  sigma_c = sigma[3]; sigma_bc = sigma[4]; #Acc rate too small -> make sigma smaller
   
   #**********************************************
   #INITIALISE PARAMS
@@ -96,21 +131,21 @@ MCMC_SSI <- function(data,
   c_vec <- vector('numeric', n_mcmc); r0_vec <- vector('numeric', n_mcmc)
   log_like_vec <- vector('numeric', n_mcmc)
   
-  #Initialise 1st elements of mcmc vectors 
-  a_vec[1] <- model_params[1]; b_vec[1] <- model_params[2] 
-  c_vec[1] <- model_params[3]; r0_vec[1] <- model_params[4];
+  #INITIALISE: MCMC[1] of MCMC VECTORS
+  a_vec[1] <- model_params$m1; b_vec[1] <-model_params$m2
+  c_vec[1] <- model_params$m3; r0_vec[1] <- model_params$m4;
   log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1],  c_vec[1]) 
   
-  #Initialise running parameters 
-  a = a_vec[1]; b =  b_vec[1]; 
-  c = c_vec[1]; log_like = log_like_vec[1]
+  #INITIALISE: RUNNING PARAMS
+  a = model_params$m1; b =  model_params$m2; 
+  c = model_params$m3; log_like = log_like_vec[1]
   
-  #Initialise Result vectors
-  count_accept1 = 0; 
-  count_accept2 = 0; count_reject2 = 0;
-  count_accept3 = 0; count_reject3 = 0;
-  count_accept4 = 0; count_reject4 = 0;
-  count_accept5 = 0 
+  #INITIALISE: ACCEPTANCE COUNTS 
+  list_accept_counts = list(n_accept1 = 0, n_accept2 = 0, n_accept3 = 0,
+                            n_accept4 = 0, n_accept5 = 0)
+  list_reject_counts = list(count_reject2 = 0, count_reject3 = 0,
+                            count_reject4 = 0)
+  
   mat_count_da = matrix(0, n_mcmc, time) #i x t
   n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
@@ -118,11 +153,11 @@ MCMC_SSI <- function(data,
   #******************************
   #MCMC CHAIN
   #******************************
-  for(i in 2:n_mcmc) {
+  for(i in 2: mcmc_params$n_mcmc) {
     
     #****************************************************** 
     #a
-    a_dash <- a + rnorm(1, sd = sigma_a) 
+    a_dash <- a + rnorm(1, sd = sigma$sigma_a) 
     if(a_dash < 0){
       a_dash = abs(a_dash)
     }
@@ -138,14 +173,14 @@ MCMC_SSI <- function(data,
     #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       a <- a_dash
-      count_accept1 = count_accept1 + 1
+      list_accept_counts$n_accept1 = list_accept_counts$n_accept1 + 1
       log_like = logl_new
     } 
     
     #************************************************************************
     #b 
     #Only if (b > 0){ WHY? Took it out
-    b_dash <- b + rnorm(1, sd = sigma_b) 
+    b_dash <- b + rnorm(1, sd = sigma$sigma_b) 
     if(b_dash < 0){
       b_dash = abs(b_dash)
     }
@@ -154,8 +189,10 @@ MCMC_SSI <- function(data,
     log_accept_prob = logl_new - log_like
     
     #Priors
-    if (FLAG_GA_PRIOR_B){
-      log_accept_prob = log_accept_prob + dgamma(b_dash, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE) - dgamma(b, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE)
+    if (FLAGS_LIST$B_PRIOR_GAMMA){
+      log_accept_prob = log_accept_prob +
+        dgamma(b_dash, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) -
+        dgamma(b, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE)
     } else {
       log_accept_prob = log_accept_prob - b_dash + b 
     }
@@ -164,42 +201,45 @@ MCMC_SSI <- function(data,
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       b <- b_dash
       log_like = logl_new
-      count_accept2 = count_accept2 + 1
+      list_accept_counts$n_accept2 = list_accept_counts$n_accept2 + 1
       
     } else {
-      count_reject2 = count_reject2 + 1
+      list_reject_counts$n_reject2 = list_reject_counts$n_reject2 + 1
     }
     
     #************************************************************************
     #c
-    c_dash <- c + rnorm(1, sd = sigma_c) 
+    c_dash <- c + rnorm(1, sd = sigma$sigma_c) 
     if(c_dash < 1){
       c_dash = 2 - c_dash #Prior on c: > 1
     }
     #Acceptance Probability
     logl_new = LOG_LIKE_SSI(data, a, b, c_dash)
     log_accept_prob = logl_new - log_like 
+    
     #Priors
-    if(C_PRIOR_GAMMA){
-      log_accept_prob = log_accept_prob + dgamma(c_dash, shape = c_prior[1], scale = c_prior[2], log = TRUE) -
-        dgamma(c, shape = c_prior[1], scale = c_prior[2], log = TRUE)
+    if(FLAGS_LIST$C_PRIOR_GAMMA){
+      log_accept_prob = log_accept_prob + dgamma(c_dash, shape = list_priors$c_prior[1], scale = list_priors$c_prior[1], log = TRUE) -
+        dgamma(c, shape = list_priors$c_prior[1], scale = list_priors$c_prior[2], log = TRUE)
     } else {
-      log_accept_prob = log_accept_prob - c_prior[1]*c_dash + c_prior[1]*c
+      log_accept_prob = log_accept_prob - list_priors$c_prior[1]*c_dash + list_priors$c_prior[1]*c
     }
     
     #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       c <- c_dash
       log_like <- logl_new
-      count_accept3 = count_accept3 + 1
+      list_accept_counts$n_accept3 =  list_accept_counts$n_accept3 + 1
     } else {
-      count_reject3 = count_reject3 + 1
+      list_reject_counts$n_reject3 = list_reject_counts$n_reject3 + 1
     }
     
     #*****************************************************
-    #b-c
-    if(BC_TRANSFORM){
-      c_dash <- c + rnorm(1, sd = sigma_bc)
+    #B-C TRANSFORM
+    if(FLAGS_LIST$BC_TRANSFORM){
+      
+      c_dash <- c + rnorm(1, sd = sigma$sigma_bc)
+      #Prior > 1
       if(c_dash < 1){
         c_dash = 2 - c_dash
       }
@@ -211,10 +251,13 @@ MCMC_SSI <- function(data,
         logl_new = LOG_LIKE_SSI(data, a, b_new, c_dash)
         log_accept_prob = logl_new - log_like
         
+        #PRIORS
+        if ()
         #Priors: c or Exp #***NEED TO INCLUDE COMBO OF GAMMA ON B & C
-        if (FLAG_G_PRIOR_B){ 
+        if (FLAGS_LIST$B_PRIOR_GAMMA){ 
         #log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
-        log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_prior[1]*c_dash + c_prior[1]*c
+        log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) -
+          log_gamma_dist(b, gam_priors_on_b) - c_prior[1]*c_dash + c_prior[1]*c
         } else if (FLAG_GA_PRIOR_C){
           log_accept_prob = log_accept_prob - b_new + b + dgamma(c_dash, shape = c_prior[1], scale = c_prior[2], log = TRUE) -
             dgamma(c, shape = c_prior[1], scale = c_prior[2], log = TRUE)
@@ -228,10 +271,10 @@ MCMC_SSI <- function(data,
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           b <- b_new
           c <- c_dash
-          log_like <- logl_new #WASN'T THERE 17/05/22
-          count_accept4 = count_accept4 + 1
+          log_like <- logl_new 
+          list_accept_counts$n_accept4 = list_accept_counts$n_accept4 + 1
         } else {
-          count_reject4 = count_reject4 + 1
+          list_reject_counts$n_reject4 = list_reject_counts$n_reject4 + 1
         }
       }
       
@@ -240,7 +283,7 @@ MCMC_SSI <- function(data,
     #************************************
     #DATA AUGMENTATION 
     #************************************
-    if (DATA_AUG){
+    if (FLAGS_LIST$DATA_AUG){
       
       if(i == 2){
         print('DATA AUG CHECK')
@@ -273,31 +316,15 @@ MCMC_SSI <- function(data,
         
         logl_new = LOG_LIKE_SSI(data_dash, a, b, c)
         log_accept_prob = logl_new - log_like  
-        u_var = log(runif(1))
         
         #METROPOLIS ACCEPTANCE STEP
-        if(!(is.na(log_accept_prob)) && u_var < log_accept_prob) {
-          
-          #PRINT LOG_LIKE + ACCEPT PROB
-          if (t == 1) {
-            if ((i == 1) || (i%%500 == 0)){ # i%%100 == 0 #Modulus 
-              print(paste0('i: ', i,  ', t: ', t))
-              nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
-              print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
-              print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
-              print(paste0('loglike = ', log_like))
-              print(paste0('loglike new = ', logl_new))
-              print(paste0('log_accept_prob new = ', log_accept_prob))
-              print(paste0(' log(runif(1)) = ', u_var))
-              print('**********')
-            }
-          }
+        if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           
           #ACCEPT
           data <- data_dash
           log_like <- logl_new
           mat_count_da[i, t] = mat_count_da[i, t] + 1
-          count_accept5 = count_accept5 + 1 #MAKE ACCEPT_RATE VECTOR OF LENGTH T. increase t_th count for every i=
+          count_accept5 = count_accept5 + 1
         }
         
         #Store
@@ -316,11 +343,11 @@ MCMC_SSI <- function(data,
   }
   
   #Final stats
-  accept_rate1 = 100*count_accept1/(n_mcmc-1)
-  accept_rate2 = 100*count_accept2/(count_accept2 + count_reject2)
-  accept_rate3 = 100*count_accept3/(count_accept3 + count_reject3)
-  accept_rate4 = 100*count_accept4/(count_accept4 + count_reject4)
-  accept_rate5 = 100*count_accept5/((n_mcmc-1)*time) #i x t
+  accept_rate1 = 100*list_accept_counts$n_accept1/(mcmc_params$n_mcmc-1)
+  accept_rate2 = 100*list_accept_counts$n_accept2/(list_accept_counts$n_accept2 + list_reject_counts$n_accept2)
+  accept_rate3 = 100*list_accept_counts$n_accept3/(list_accept_counts$n_accept3 + list_reject_counts$n_accept3)
+  accept_rate4 = 100*list_accept_counts$n_accept4/(list_accept_counts$n_accept4 + list_reject_counts$n_accept4)
+  accept_rate5 = 100*list_accept_counts$n_accept5/((mcmc_params$n_mcmc-1)*time) #i x t
   
   #Return a, acceptance rate
   return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
