@@ -1,5 +1,5 @@
 #Epidemic Modelling Functions
-
+library(coda)
 #Contains:
 #SIMULATION FUNCTIONS
 #MODEL LIKELIHOOD FUNCTIONS
@@ -595,7 +595,7 @@ MCMC_SSE <- function(data, n, sigma, model_params, gamma_prior, gamma_priors,
 
 #*******************************************************************************
 #R0: FUNCTION TO PLOT 1x4 DASHBOARD OF MCMC RESULTS FOR BASE MODEL
-plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, seed_count, model_type){
+plot_mcmc_results_r0 <- function(n, sim_data, mcmc_vecs, true_r0, time_elap, seed_count, model_type){
   
   #Plot Set up
   #par(mar=c(1,1,1,1))
@@ -603,7 +603,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   par(mfrow=c(2,2))
   
   #Extract r0
-  r0_mcmc = mcmc_params[1]
+  r0_mcmc = mcmc_vecs[1]
   r0_mcmc = unlist(r0_mcmc)
   
   #Cumulative means + param sample limits
@@ -655,7 +655,7 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
   df_results <- data.frame(
     R0 = true_r0, 
     R0_mc = r0_mcmc_mean,
-    accept_rate_r0 = round(mcmc_params[[2]],2),
+    accept_rate_r0 = round(mcmc_vecs[[2]],2),
     time_elap = round(time_elap,2)) 
   
   print(df_results)
@@ -671,24 +671,25 @@ plot_mcmc_results_r0 <- function(n, sim_data, mcmc_params, true_r0, time_elap, s
 #* 
 #*******************************************
 #*##############################################
-plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
+plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_vecs, true_r0, total_time,
                            seed_count, model_params,
                            model_typeX = 'SSE', prior = TRUE, joint = TRUE,
                            FLAG_G_PRIOR_B = FALSE, gam_priors_on_b = c(0,0),
                            C_PRIOR_GAMMA = TRUE, c_prior = c(1,0),
                            rjmcmc = FALSE, data_aug = FALSE,
                            mod_par_names = c('alpha', 'beta', 'gamma')){
-  #Plot
+  #PLOT
   #plot.new()
   par(mfrow=c(4,4))
   
+  
   #Extract params
-  m1_mcmc = mcmc_params[1]; m1_mcmc = unlist(m1_mcmc)
-  m2_mcmc = mcmc_params[2]; m2_mcmc = unlist(m2_mcmc)
-  m3_mcmc = mcmc_params[3]; m3_mcmc = unlist(m3_mcmc)
-  r0_mcmc = mcmc_params[4]; r0_mcmc = unlist(r0_mcmc)
+  m1_mcmc = mcmc_vecs[1]; m1_mcmc = unlist(m1_mcmc)
+  m2_mcmc = mcmc_vecs[2]; m2_mcmc = unlist(m2_mcmc)
+  m3_mcmc = mcmc_vecs[3]; m3_mcmc = unlist(m3_mcmc)
+  r0_mcmc = mcmc_vecs[4]; r0_mcmc = unlist(r0_mcmc)
   #True vals
-  m1X = model_params[1]; m2X = model_params[2]; m3X = model_params[3]; 
+  #model_params$m1[[1]] = model_params[1]; model_params$m2[[1]] = model_params[2]; model_params$m3[[1]] = model_params[3]; 
   
   #Cumulative means + param sample limits
   #r0
@@ -698,18 +699,21 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   
   #m1
   m1_mean = cumsum(m1_mcmc)/seq_along(m1_mcmc)
-  a_lim =  max(m1X, max(m1_mcmc))
-  a_lim2 =  max(m1X, m1_mean)
+  print('check')
+  print(model_params$m1[[1]][[1]])
+  print(max(m1_mcmc))
+  a_lim =  max(model_params$m1[[1]][[1]], max(m1_mcmc))
+  a_lim2 =  max(model_params$m1[[1]], m1_mean)
   
   #m2
   m2_mean = cumsum(m2_mcmc)/seq_along(m2_mcmc)
-  b_lim = max(m2X, max(m2_mcmc))
-  b_lim2 = max(m2X, m2_mean)
+  b_lim = max(model_params$m2[[1]], max(m2_mcmc))
+  b_lim2 = max(model_params$m2[[1]], m2_mean)
   
   #m3
   m3_mean = cumsum(m3_mcmc)/seq_along(m3_mcmc)
-  m3_lim =  max(m3X, max(m3_mcmc))
-  m3_lim2 =  max(m3X, m3_mean) 
+  m3_lim =  max(model_params$m3[[1]], max(m3_mcmc))
+  m3_lim2 =  max(model_params$m3[[1]], m3_mean) 
   
   #Priors
   if (FLAG_G_PRIOR_B) {
@@ -742,17 +746,17 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   plot.ts(m1_mcmc, ylab = mod_par_names[1], ylim=c(0, a_lim),
           main = paste("MCMC", model_typeX, ":", mod_par_names[1], "prior:", m1_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = m1X, col = 'red', lwd = 2) #True = green
+  abline(h = model_params$m1[[1]], col = 'red', lwd = 2) #True = green
   
   plot.ts(m2_mcmc, ylab = 'm2', ylim=c(0, b_lim), 
           main = paste("MCMC", model_typeX, ":", mod_par_names[2], "prior:", m2_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = m2X, col = 'blue', lwd = 2) #True = green
+  abline(h = model_params$m2[[1]], col = 'blue', lwd = 2) #True = green
   
   plot.ts(m3_mcmc,  ylab = 'm3', ylim=c(0,m3_lim),
           main = paste("MCMC", model_typeX, ":", mod_par_names[3], "prior:", m3_prior),
           cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = m3X, col = 'green', lwd = 2) #True = green
+  abline(h = model_params$m3[[1]], col = 'green', lwd = 2) #True = green
   
   #plot.ts(r0_mcmc,  ylab = 'r0', main = paste("MCMC SS Events, true r0 = ", r0_true))
   
@@ -769,27 +773,27 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   plot(seq_along(m1_mean), m1_mean,
        ylim=c(0, a_lim),
        xlab = 'Time', ylab =  mod_par_names[1],
-       main = paste(mod_par_names[1], "MCMC mean, True", mod_par_names[1], "=", m1X),
+       main = paste(mod_par_names[1], "MCMC mean, True", mod_par_names[1], "=", model_params$m1[[1]]),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #print(plot2)
-  abline(h = m1X, col = 'red', lwd = 2)
+  abline(h = model_params$m1[[1]], col = 'red', lwd = 2)
   
   #m2 mean
   plot(seq_along(m2_mean), m2_mean,
        ylim=c(0, b_lim),
        xlab = 'Time', ylab = 'm2',
-       main = paste(mod_par_names[2], "MCMC mean, True", mod_par_names[2], "=", m2X),
+       main = paste(mod_par_names[2], "MCMC mean, True", mod_par_names[2], "=", model_params$m2[[1]]),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   #print(plot2)
-  abline(h = m2X, col = 'blue', lwd = 2)
+  abline(h = model_params$m2[[1]], col = 'blue', lwd = 2)
   
   #m3 Mean
   plot(seq_along(m3_mean), m3_mean,
        xlab = 'Time', ylab = 'm3', 
-       main = paste(mod_par_names[3], "MCMC mean, True", mod_par_names[3], "=", m3X),
+       main = paste(mod_par_names[3], "MCMC mean, True", mod_par_names[3], "=", model_params$m3[[1]]),
        ylim=c(0, m3_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(h = m3X, col = 'green', lwd = 2)
+  abline(h = model_params$m3[[1]], col = 'green', lwd = 2)
   
   #iv. Param Histograms (Plots 9,11,12)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
@@ -807,26 +811,26 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
   #Hist m1 
   hist(m1_mcmc, freq = FALSE, breaks = 100,
        xlab = mod_par_names[1], #ylab = 'Density', 
-       main = paste(mod_par_names[1], ", True", mod_par_names[1], "=", m1X), 
+       main = paste(mod_par_names[1], ", True", mod_par_names[1], "=", model_params$m1[[1]]), 
        xlim=c(0, a_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = m1X, col = 'red', lwd = 2)
+  abline(v = model_params$m1[[1]], col = 'red', lwd = 2)
   
   #Hist m2 
   hist(m2_mcmc, freq = FALSE, breaks = 100,
        xlab = mod_par_names[2], #ylab = 'Density', 
-       main = paste(mod_par_names[2], ", True", mod_par_names[2], "=", m2X), 
+       main = paste(mod_par_names[2], ", True", mod_par_names[2], "=", model_params$m2[[1]]), 
        xlim=c(0, b_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = m2X, col = 'blue', lwd = 2)
+  abline(v = model_params$m2[[1]], col = 'blue', lwd = 2)
   
   #Hist m3 
   hist(m3_mcmc, freq = FALSE, breaks = 100,
        xlab = mod_par_names[3], #ylab = 'Density', 
-       main = paste(mod_par_names[3], ", True", mod_par_names[3], "=", m3X),
+       main = paste(mod_par_names[3], ", True", mod_par_names[3], "=", model_params$m3[[1]]),
        xlim=c(0, m3_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = m3X, col = 'green', lwd = 2)
+  abline(v = model_params$m3[[1]], col = 'green', lwd = 2)
   
   #Final Mean Stats
   data_10_pc = 0.5*n_mcmc #50%
@@ -841,22 +845,26 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
     #v. r0 vs m2
     plot(m2_mcmc, r0_mcmc,
          xlab = mod_par_names[2], ylab = 'R0', main = paste(mod_par_names[2], 'vs R0'),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5,
+         cex.main = 0.5)
     
     #v. m1 vs m2
     plot(m1_mcmc, m2_mcmc,
          xlab = mod_par_names[1], ylab = mod_par_names[2], main = paste(mod_par_names[1], 'vs', mod_par_names[2]),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5,
+         cex = 0.5)
     
     #v. m1 vs m3
     plot(m1_mcmc, m3_mcmc,
          xlab = mod_par_names[1], ylab = mod_par_names[3], main = paste(mod_par_names[1], 'vs', mod_par_names[3]),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5,
+         cex = 0.5)
     
     #v. m2 vs m3
     plot(m2_mcmc, m3_mcmc,
          xlab = mod_par_names[2], ylab = mod_par_names[3], main = paste(mod_par_names[2], 'vs', mod_par_names[3]),
-         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
+         cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5,
+         cex = 0.5)
   }
   
   #*****************
@@ -869,10 +877,10 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
     #HIST m1 
     hist(m1_mcmc, freq = FALSE, breaks = 100,
          xlab = mod_par_names[1], #ylab = 'Density', 
-         main = paste("m1, True m1 = ", m1X), 
+         main = paste("m1, True m1 = ", model_params$m1[[1]]), 
          xlim=c(0, a_lim),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    abline(v = m1X, col = 'red', lwd = 2)
+    abline(v = model_params$m1[[1]], col = 'red', lwd = 2)
     
     #m1 SSE
     ind_b = which(m2_mcmc > 0)
@@ -884,7 +892,7 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
          main = "m1_sse", 
          xlim=c(0, a_lim),
          cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-    abline(v = m1X, col = 'red', lwd = 2)
+    abline(v = model_params$m1[[1]], col = 'red', lwd = 2)
     
     #m1 BASE
     ind_b = which(m2_mcmc == 0)
@@ -898,37 +906,37 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
            main = "m1_base",
            xlim=c(0, a_lim),
            cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-      abline(v = m1X, col = 'red', lwd = 2)
+      abline(v = model_params$m1[[1]], col = 'red', lwd = 2)
     }
     
     #RESULTS DF
     df_results <- data.frame(
       rep = seed_count,
       n_mcmc = n_mcmc,
-      m1 = m1X,
+      m1 = model_params$m1[[1]],
       a_mc = a_mcmc_mean,
-      m2 = m2X,
+      m2 = model_params$m2[[1]],
       b_mc = b_mcmc_mean,
-      m3 = m3X,
+      m3 = model_params$m3[[1]],
       g_mc = g_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_m1 = round(mcmc_params[[5]],2),
-      a_rte_m2 = round(mcmc_params[[6]], 2),
-      n_accept_m2 = mcmc_params[[15]],
-      a_rte_m3 = round(mcmc_params[[7]],2),
-      n_accept_m3 = mcmc_params[[16]],
-      a_rte_m2_m3 = round(mcmc_params[[8]],2),
-      n_accept_2_3 = mcmc_params[[17]],
-      n_accept_rj0 = mcmc_params[[11]],
-      n_reject_rj0 = mcmc_params[[13]],
-      a_rte_rj0 = round(mcmc_params[[9]],2),
-      n_accept_rj1 = mcmc_params[[12]],
-      n_reject_rj1 = mcmc_params[[14]],
-      a_rte_rj1 = round(mcmc_params[[10]],2),
-      m2_pc0 = mcmc_params[[18]],
-      m2_pc_non_0 = 1- mcmc_params[[18]],
-      bf = mcmc_params[[19]])
+      accept_rate_m1 = round(mcmc_vecs[[5]],2),
+      a_rte_m2 = round(mcmc_vecs[[6]], 2),
+      n_accept_m2 = mcmc_vecs[[15]],
+      a_rte_m3 = round(mcmc_vecs[[7]],2),
+      n_accept_m3 = mcmc_vecs[[16]],
+      a_rte_m2_m3 = round(mcmc_vecs[[8]],2),
+      n_accept_2_3 = mcmc_vecs[[17]],
+      n_accept_rj0 = mcmc_vecs[[11]],
+      n_reject_rj0 = mcmc_vecs[[13]],
+      a_rte_rj0 = round(mcmc_vecs[[9]],2),
+      n_accept_rj1 = mcmc_vecs[[12]],
+      n_reject_rj1 = mcmc_vecs[[14]],
+      a_rte_rj1 = round(mcmc_vecs[[10]],2),
+      m2_pc0 = mcmc_vecs[[18]],
+      m2_pc_non_0 = 1- mcmc_vecs[[18]],
+      bf = mcmc_vecs[[19]])
     #tot_time = total_time)
     
   } else if (data_aug) {
@@ -936,37 +944,45 @@ plot_mcmc_grid <- function(n_mcmc, sim_data, mcmc_params, true_r0, total_time,
     df_results <- data.frame(
       rep = seed_count,
       n_mcmc = n_mcmc,
-      m1 = m1X,
+      m1 = model_params$m1[[1]],
       m1_mc = a_mcmc_mean,
-      m2 = m2X,
+      m2 = model_params$m2[[1]],
       m2_mc = b_mcmc_mean,
-      m3 = m3X,
+      m3 = model_params$m3[[1]],
       m3_mc = g_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_m1 = round(mcmc_params[[5]],2),
-      a_rte_m2 = round(mcmc_params[[6]], 2),
-      a_rte_m3 = round(mcmc_params[[7]],2),
-      a_rte_m2_m3 = round(mcmc_params[[8]],2),
-      a_rte_d_aug = round(mcmc_params[[12]],2))
-      #tot_time = total_time)
+      accept_rate_m1 = round(mcmc_vecs[[5]],2),
+      a_rte_m2 = round(mcmc_vecs[[6]], 2),
+      a_rte_m3 = round(mcmc_vecs[[7]],2),
+      a_rte_m2_m3 = round(mcmc_vecs[[8]],2),
+      a_rte_d_aug = round(mcmc_vecs[[12]],2),
+      a_es = effectiveSize(as.mcmc(a)),
+      b_es = effectiveSize(as.mcmc(b)),
+      c_es = effectiveSize(as.mcmc(c)),
+      d_es = effectiveSize(as.mcmc(d)),
+      tot_time = total_time)
     
     } else {
     df_results <- data.frame(
       rep = seed_count,
       n_mcmc = n_mcmc,
-      m1 = m1X,
+      m1 = model_params$m1[[1]],
       m1_mc = a_mcmc_mean,
-      m2 = m2X,
+      m2 = model_params$m2[[1]],
       m2_mc = b_mcmc_mean,
-      m3 = m3X,
+      m3 = model_params$m3[[1]],
       m3_mc = g_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_m1 = round(mcmc_params[[5]],2),
-      a_rte_m2 = round(mcmc_params[[6]], 2),
-      a_rte_m3 = round(mcmc_params[[7]],2),
-      a_rte_m2_m3 = round(mcmc_params[[8]],2),
+      accept_rate_m1 = round(mcmc_vecs[[5]],2),
+      a_rte_m2 = round(mcmc_vecs[[6]], 2),
+      a_rte_m3 = round(mcmc_vecs[[7]],2),
+      a_rte_m2_m3 = round(mcmc_vecs[[8]],2),
+      a_es = effectiveSize(as.mcmc(a)),
+      b_es = effectiveSize(as.mcmc(b)),
+      c_es = effectiveSize(as.mcmc(c)),
+      d_es = effectiveSize(as.mcmc(d)),
       tot_time = total_time)
   }
   
