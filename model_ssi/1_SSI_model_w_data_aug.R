@@ -64,11 +64,14 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #************************************************************************
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
-MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1, 
-                     prior = TRUE,  FLAG_G_PRIOR_B = FALSE,
-                     DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                     C_PRIOR_GAMMA = FALSE, c_prior = c(0.1,0)) { #THINNING FACTOR, burn_in  
-  
+MCMC_SSI <- function(data,
+                     mcmc_params = list(n_mcmc = n_mcmc, sigma = sigma, 
+                                        model_params = model_params, x0 = 1), #THINNING FACTOR, burn_in  
+                     
+                     list_priors = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
+                                        c_prior = c(10, 1)),
+                     FLAGS_LIST = list(PRIOR = FALSE,
+                                       B_PRIOR_GAMMA = FALSE, GA_PRIOR_C = TRUE)) { 
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
   w/ acceptance rates.
   INCLUDES; DATA AUGMENTATION, B-C transform' 
@@ -128,7 +131,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
     logl_new = LOG_LIKE_SSI(data, a_dash, b, c)
     log_accept_prob = logl_new - log_like  #+ prior1 - prior
     #Priors
-    if (prior){
+    if (FLAG_PRIOR){
       log_accept_prob = log_accept_prob - a_dash + a
     }
     
@@ -151,7 +154,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
     log_accept_prob = logl_new - log_like
     
     #Priors
-    if (FLAG_G_PRIOR_B){
+    if (FLAG_GA_PRIOR_B){
       log_accept_prob = log_accept_prob + dgamma(b_dash, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE) - dgamma(b, shape = gam_priors_on_b[1], scale = gam_priors_on_b[2], log = TRUE)
     } else {
       log_accept_prob = log_accept_prob - b_dash + b 
@@ -212,7 +215,7 @@ MCMC_SSI <- function(data, n_mcmc, sigma, model_params, gam_priors_on_b, x0 = 1,
         if (FLAG_G_PRIOR_B){ 
         #log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
         log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_prior[1]*c_dash + c_prior[1]*c
-        } else if (C_PRIOR_GAMMA){
+        } else if (FLAG_GA_PRIOR_C){
           log_accept_prob = log_accept_prob - b_new + b + dgamma(c_dash, shape = c_prior[1], scale = c_prior[2], log = TRUE) -
             dgamma(c, shape = c_prior[1], scale = c_prior[2], log = TRUE)
         }
@@ -405,7 +408,7 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count
                mod_par_names = c('a', 'b', 'c'))
 
 #**************************************#**************************************#**************************************
-#2. PRIOR NO.2
+#2. PRIORS; GAMMA PRIORS ON B & C
 
 #****************************************************************
 #* APPLY MCMC SSI MODEL + GAMMA(10,1) PRIOR ON C
@@ -433,7 +436,7 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, m
 #****************************************************************
 # APPLY MCMC SSI MODEL + DATA AUGMENTATION + GAMMA(10,1) PRIOR ON C
 #***************************************************************
-n_mcmc = 100000 #100000 #1000 #100000 
+n_mcmc = 100000 #1000 #100000 
 
 #START MCMC
 start_time = Sys.time()
@@ -453,22 +456,29 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
-# #****************************************************************
-# # APPLY MCMC SSI MODEL + GAMMA PRIOR
-# #***************************************************************
-# gamma_priors = c(10, 1/100)
-# n_mcmc = 100000 #100000 
-# mcmc_params_da2 = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
-#                            FLAG_G_PRIOR_B = TRUE, DATA_AUG = FALSE)
-# 
-# #PLOT RESULTS
-# model_typeX = 'SSI'; time_elap = 0
-# plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count, model_params,
-#                model_type = model_typeX,
-#                gam_priors_on_b = gamma_priors, FLAG_G_PRIOR_B = TRUE, 
-#                rjmcmc = RJMCMCX, data_aug = TRUE,
-#                mod_par_names = c('a', 'b', 'c'))
-# 
+#MCMC RUNS
+#TO DO
+#INCLUDE GAMMA PRIOR ON BETA (HUMP SHAPED)
+#INCLUDE PRIORS ON PLOT (HIST PLOT)
+#RUN WITH DIFFERENT STARTING VALUES :)
+
+#****************************************************************
+# APPLY MCMC SSI MODEL + GAMMA PRIOR
+#***************************************************************
+gamma_priors = c(10, 1/100)
+n_mcmc = 100000 #100000
+mcmc_params_da2 = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
+                           FLAG_G_PRIOR_B = TRUE, DATA_AUG = FALSE)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; time_elap = 0
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count, model_params,
+               model_type = model_typeX,
+               gam_priors_on_b = gamma_priors, FLAG_G_PRIOR_B = TRUE,
+               rjmcmc = RJMCMCX, data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
+
+
 # #****************************************************************
 # # APPLY MCMC SSI MODEL + GAMMA PRIOR DATA AUG
 # #***************************************************************
@@ -485,3 +495,13 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count
 
 #*************
 #*** CORRECT GAMMA PRIOR 
+
+#list
+MCMC_SSI <- function(data, n_mcmc, model_params, sigma, x0 = 1, 
+                     gam_priors_on_b = c(10, 1/100), c_prior = c(0.1, 0),
+                     FLAG_PRIOR = TRUE,  FLAG_GA_PRIOR_B = FALSE,  FLAG_GA_PRIOR_C = FALSE,
+                     FLAG_DATA_AUG = TRUE, FLAG_BC_TRANSFORM = TRUE)
+  
+FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+  PRIOR = TRUE, PRIOR_GAMMA_B = TRUE, PRIOR_GAMMA_C = TRUE)
+                  
