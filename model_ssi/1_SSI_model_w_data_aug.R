@@ -20,15 +20,17 @@ model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
 #MCMC PARAMS  
 #SIGMA
 sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
-sigma_c = 0.85*cX; sigma_bg = 1.5*cX
+sigma_c = 0.85*cX; sigma_bc = 1.5*cX
 sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
-             sigma_c = sigma_c, sigma_bg = sigma_bg) #Acc rate too small -> make sigma smaller
+             sigma_c = sigma_c, sigma_bc = sigma_bc) #Acc rate too small -> make sigma smaller
 time_elap = 0
+mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
+                   model_params = model_params, x0 = 1)
 
 #****************************************************************
 #1. MODEL SSI - LOG LIKELIHOOD
 #****************************************************************
-LOG_LIKE_SSI <- function(sim_data, list_params = list(aX = aX, bX = bX, cX = cX)){
+LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
   
   #Data
   n = sim_data[[1]]; s = sim_data[[2]]
@@ -39,18 +41,15 @@ LOG_LIKE_SSI <- function(sim_data, list_params = list(aX = aX, bX = bX, cX = cX)
   logl = 0
   
   #INFECTIOUSNESS  - Difference of 2 GAMMA distributions. Discretized 
-  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) -
-    pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
+  prob_infect = pgamma(c(1:num_days), shape = shape_gamma, scale = scale_gamma) - pgamma(c(0:(num_days-1)), shape = shape_gamma, scale = scale_gamma)
   
   for (t in 1:num_days) { #*1 or 2
     
     #INFECTIOUS PRESSURE - SUM OF ALL INDIVIDUALS INFECTIOUSNESS 
-    lambda_t = sum((n[1:(t-1)] + list_params$cX*s[1:(t-1)])*rev(prob_infect[1:(t-1)]))
+    lambda_t = sum((n[1:(t-1)] + cX*s[1:(t-1)])*rev(prob_infect[1:(t-1)]))
     
     #LOG-LIKELIHOOD 
-    logl = logl - lambda_t*(list_params$aX + list_params$bX) +
-      n[t]*(log(list_params$aX) + log(lambda_t)) +
-      s[t]*(log(list_params$bX) + log(lambda_t))  + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
+    logl = logl - lambda_t*(aX + bX) + n[t]*(log(aX) + log(lambda_t)) + s[t]*(log(bX) + log(lambda_t))  + 2*log(1) - lfactorial(n[t]) - lfactorial(s[t])
   }
   
   logl
@@ -60,51 +59,13 @@ LOG_LIKE_SSI <- function(sim_data, list_params = list(aX = aX, bX = bX, cX = cX)
 #loglike = LOG_LIKE_SSI(sim_data, aX, bX, cX)
 #loglike
 
-#****************************************************************
-# ADDITIONAL FUNCTIONS
-#****************************************************************
-get_bc_transform_map <- function(log_accept_prob, list_priors = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
-                     c_prior = c(10, 1)), 
-                    FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                    PRIOR = TRUE, B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE)){
-  
-  
-  #PARAMS
-  if (FLAGS_LIST$BC_TRANSFORM) {
-    #PRIORS
-    if ((FLAGS_LIST$B_PRIOR_GAMMA) && (FLAGS_LIST$C_PRIOR_GAMMA)) {
-      log_accept_prob = log_accept_prob 
-      + dgamma(b_new, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) -
-        dgamma(b, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) + 
-        dgamma(c_dash, shape = list_priors$c_prior[1], scale = list_priors$c_prior[1], log = TRUE) -
-        dgamma(c, shape = list_priors$c_prior[1], scale = list_priors$c_prior[2], log = TRUE)
-
-    } else if (FLAG_GA_PRIOR_C) {
-      log_accept_prob = log_accept_prob - b_new + b + dgamma(c_dash,
-                                                             shape = c_prior[1],
-                                                             scale = c_prior[2],
-                                                             log = TRUE) -
-        dgamma(c,
-               shape = c_prior[1],
-               scale = c_prior[2],
-               log = TRUE)
-    }
-    else {
-      #log_accept_prob = log_accept_prob - b_new + b - c_dash + c
-      log_accept_prob = log_accept_prob - b_new + b - c_prior[1] * c_dash + c_prior[1] *
-        c
-    }
-    
-  }
-}
-  
 #************************************************************************
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
 MCMC_SSI <- function(data,
-                     mcmc_params = list(n_mcmc = n_mcmc, sigma = sigma, 
+                     mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
                                         model_params = model_params, x0 = 1), #THINNING FACTOR, burn_in  
-                     list_priors = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
+                     priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100),
                                         c_prior = c(10, 1)),
                      FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                                        PRIOR = TRUE,
@@ -121,20 +82,19 @@ MCMC_SSI <- function(data,
   p(b) = exp(1) or p(b) = g(shape, scale), for e.g g(3, 2)
   p(c) = exp(1) + 1 = 1 + exp(-c) = exp(c - 1)'
   
-  #EXTRACT DATA + PARAMS
-  time = length(data[[1]]);
   
   #**********************************************
   #INITIALISE PARAMS
   #**********************************************
-  a_vec <- vector('numeric', n_mcmc); b_vec <- vector('numeric', n_mcmc)
-  c_vec <- vector('numeric', n_mcmc); r0_vec <- vector('numeric', n_mcmc)
-  log_like_vec <- vector('numeric', n_mcmc)
+  time = length(data[[1]]);
+  a_vec <- vector('numeric', mcmc_inputs$n_mcmc); b_vec <- vector('numeric', mcmc_inputs$n_mcmc)
+  c_vec <- vector('numeric', mcmc_inputs$n_mcmc); r0_vec <- vector('numeric', mcmc_inputs$n_mcmc)
+  log_like_vec <- vector('numeric', mcmc_inputs$n_mcmc)
   
   #INITIALISE: MCMC[1] of MCMC VECTORS
   a_vec[1] <- model_params$m1; b_vec[1] <-model_params$m2
-  c_vec[1] <- model_params$m3; r0_vec[1] <- model_params$m4;
-  log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1],  c_vec[1]) 
+  c_vec[1] <- model_params$m3; r0_vec[1] <- model_params$true_r0;
+  log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1], c_vec[1])
   
   #INITIALISE: RUNNING PARAMS
   a = model_params$m1; b =  model_params$m2; 
@@ -146,18 +106,18 @@ MCMC_SSI <- function(data,
   list_reject_counts = list(count_reject2 = 0, count_reject3 = 0,
                             count_reject4 = 0)
   
-  mat_count_da = matrix(0, n_mcmc, time) #i x t
-  n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
-  s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
+  mat_count_da = matrix(0, mcmc_inputs$n_mcmc, time) #i x t
+  n_non_super_spreaders = matrix(0, mcmc_inputs$n_mcmc, time) #USE THINNING FACTOR
+  s_super_spreaders = matrix(0, mcmc_inputs$n_mcmc, time) #USE THINNING FACTOR
   
   #******************************
   #MCMC CHAIN
   #******************************
-  for(i in 2: mcmc_params$n_mcmc) {
+  for(i in 2: mcmc_inputs$n_mcmc) {
     
     #****************************************************** 
     #a
-    a_dash <- a + rnorm(1, sd = sigma$sigma_a) 
+    a_dash <- a + rnorm(1, sd = mcmc_inputs$sigma$sigma_a) 
     if(a_dash < 0){
       a_dash = abs(a_dash)
     }
@@ -166,7 +126,7 @@ MCMC_SSI <- function(data,
     logl_new = LOG_LIKE_SSI(data, a_dash, b, c)
     log_accept_prob = logl_new - log_like  #+ prior1 - prior
     #Priors
-    if (FLAG_PRIOR){
+    if (FLAGS_LIST$PRIOR){
       log_accept_prob = log_accept_prob - a_dash + a
     }
     
@@ -180,7 +140,7 @@ MCMC_SSI <- function(data,
     #************************************************************************
     #b 
     #Only if (b > 0){ WHY? Took it out
-    b_dash <- b + rnorm(1, sd = sigma$sigma_b) 
+    b_dash <- b + rnorm(1, sd = mcmc_inputs$sigma$sigma_b) 
     if(b_dash < 0){
       b_dash = abs(b_dash)
     }
@@ -191,8 +151,8 @@ MCMC_SSI <- function(data,
     #Priors
     if (FLAGS_LIST$B_PRIOR_GAMMA){
       log_accept_prob = log_accept_prob +
-        dgamma(b_dash, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE) -
-        dgamma(b, shape = list_priors$b_prior[1], scale = list_priors$b_prior[2], log = TRUE)
+        dgamma(b_dash, shape = priors_list$b_prior[1], scale = priors_list$b_prior[2], log = TRUE) -
+        dgamma(b, shape = priors_list$b_prior[1], scale = priors_list$b_prior[2], log = TRUE)
     } else {
       log_accept_prob = log_accept_prob - b_dash + b 
     }
@@ -209,7 +169,7 @@ MCMC_SSI <- function(data,
     
     #************************************************************************
     #c
-    c_dash <- c + rnorm(1, sd = sigma$sigma_c) 
+    c_dash <- c + rnorm(1, sd = mcmc_inputs$sigma$sigma_c) 
     if(c_dash < 1){
       c_dash = 2 - c_dash #Prior on c: > 1
     }
@@ -219,10 +179,10 @@ MCMC_SSI <- function(data,
     
     #Priors
     if(FLAGS_LIST$C_PRIOR_GAMMA){
-      log_accept_prob = log_accept_prob + dgamma(c_dash, shape = list_priors$c_prior[1], scale = list_priors$c_prior[1], log = TRUE) -
-        dgamma(c, shape = list_priors$c_prior[1], scale = list_priors$c_prior[2], log = TRUE)
+      log_accept_prob = log_accept_prob + dgamma(c_dash, shape = priors_list$c_prior[1], scale = priors_list$c_prior[1], log = TRUE) -
+        dgamma(c, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE)
     } else {
-      log_accept_prob = log_accept_prob - list_priors$c_prior[1]*c_dash + list_priors$c_prior[1]*c
+      log_accept_prob = log_accept_prob - priors_list$c_prior[1]*c_dash + priors_list$c_prior[1]*c
     }
     
     #Metropolis Acceptance Step
@@ -238,7 +198,7 @@ MCMC_SSI <- function(data,
     #B-C TRANSFORM
     if(FLAGS_LIST$BC_TRANSFORM){
       
-      c_dash <- c + rnorm(1, sd = sigma$sigma_bc)
+      c_dash <- c + rnorm(1, sd = mcmc_inputs$sigma$sigma_bc)
       #Prior > 1
       if(c_dash < 1){
         c_dash = 2 - c_dash
@@ -252,32 +212,35 @@ MCMC_SSI <- function(data,
         log_accept_prob = logl_new - log_like
         
         #PRIORS
-        if ()
-        #Priors: c or Exp #***NEED TO INCLUDE COMBO OF GAMMA ON B & C
-        if (FLAGS_LIST$B_PRIOR_GAMMA){ 
-        #log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) - log_gamma_dist(b, gam_priors_on_b) - c_dash + c
-        log_accept_prob = log_accept_prob + log_gamma_dist(b_new, gam_priors_on_b) -
-          log_gamma_dist(b, gam_priors_on_b) - c_prior[1]*c_dash + c_prior[1]*c
-        } else if (FLAG_GA_PRIOR_C){
-          log_accept_prob = log_accept_prob - b_new + b + dgamma(c_dash, shape = c_prior[1], scale = c_prior[2], log = TRUE) -
-            dgamma(c, shape = c_prior[1], scale = c_prior[2], log = TRUE)
-        }
-        else {
-          #log_accept_prob = log_accept_prob - b_new + b - c_dash + c
-          log_accept_prob = log_accept_prob - b_new + b - c_prior[1]*c_dash + c_prior[1]*c
+        #b prior
+        if (FLAGS_LIST$B_PRIOR_GAMMA) {
+          tot_b_prior = dgamma(b_new, shape = priors_list$b_prior[1], scale = priors_list$b_prior[2], log = TRUE) -
+            dgamma(b, shape = priors_list$b_prior[1], scale = priors_list$b_prior[2], log = TRUE)
+        } else { 
+          tot_b_prior = - b_new + b #exp(1) piror
         }
         
+        #c prior
+        if (FLAGS_LIST$C_PRIOR_GAMMA) {
+          tot_c_prior = dgamma(c_dash, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE) -
+            dgamma(b, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE)
+        } else { 
+          tot_c_prior = priors_list$c_prior[1]*c_dash + priors_list$c_prior[1]*c 
+        }
+        
+        #LOG ACCEPT PROB
+        log_accept_prob = log_accept_prob + tot_b_prior + tot_c_prior 
+        
         #Metropolis Step
-        if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+        if (!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           b <- b_new
           c <- c_dash
-          log_like <- logl_new 
+          log_like <- logl_new
           list_accept_counts$n_accept4 = list_accept_counts$n_accept4 + 1
         } else {
           list_reject_counts$n_reject4 = list_reject_counts$n_reject4 + 1
         }
       }
-      
     }
     
     #************************************
@@ -324,7 +287,7 @@ MCMC_SSI <- function(data,
           data <- data_dash
           log_like <- logl_new
           mat_count_da[i, t] = mat_count_da[i, t] + 1
-          count_accept5 = count_accept5 + 1
+          list_accept_counts$n_accept5 = list_accept_counts$n_accept5 + 1
         }
         
         #Store
@@ -343,18 +306,15 @@ MCMC_SSI <- function(data,
   }
   
   #Final stats
-  accept_rate1 = 100*list_accept_counts$n_accept1/(mcmc_params$n_mcmc-1)
+  accept_rate1 = 100*list_accept_counts$n_accept1/(mcmc_inputs$n_mcmc-1)
   accept_rate2 = 100*list_accept_counts$n_accept2/(list_accept_counts$n_accept2 + list_reject_counts$n_accept2)
   accept_rate3 = 100*list_accept_counts$n_accept3/(list_accept_counts$n_accept3 + list_reject_counts$n_accept3)
   accept_rate4 = 100*list_accept_counts$n_accept4/(list_accept_counts$n_accept4 + list_reject_counts$n_accept4)
-  accept_rate5 = 100*list_accept_counts$n_accept5/((mcmc_params$n_mcmc-1)*time) #i x t
+  accept_rate5 = 100*list_accept_counts$n_accept5/((mcmc_inputs$n_mcmc-1)*time) #i x t
   
   #Return a, acceptance rate
   return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
-              accept_rate1 = accept_rate1, accept_rate2 = accept_rate2, 
-              accept_rate3 = accept_rate3, accept_rate4 = accept_rate4,
-              count_accept2 = count_accept2, count_accept3 = count_accept3, 
-              count_accept4 = count_accept4, accept_rate5 = accept_rate5, 
+              list_accept_counts, list_reject_counts, 
               data = data, mat_count_da = mat_count_da, #13, 14
               n_non_super_spreaders = n_non_super_spreaders, #15
               s_super_spreaders = s_super_spreaders)) #16
@@ -394,12 +354,12 @@ plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spread
 #****************************************************************
 # APPLY MCMC SSI MODEL
 #****************************************************************
-n_mcmc = 100000 
+n_mcmc = 1000 #100000
 
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
-mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
+mcmc_params = MCMC_SSI(sim_data, 
                        gamma_prior, gamma_priors, DATA_AUG = FALSE)
 end_time = Sys.time()
 time_elap = get_time(start_time, end_time)
@@ -414,23 +374,23 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params, true_r0, time_elap, seed_count, m
 #****************************************************************
 # APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
-n_mcmc = 100000 
+n_mcmc = 1000 #100000 
 
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
 
-mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params, gamma_prior,
-                          gamma_priors, DATA_AUG = TRUE)
+mcmc_params_da2 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
 
 end_time = Sys.time()
 time_elap = get_time(start_time, end_time)
 
 #PLOT RESULTS
 model_typeX = 'SSI'; 
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count, model_params,
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count,
+               model_params,
                model_type = model_typeX,
-               FLAG_G_PRIOR_B = gamma_prior, gam_priors_on_b = gamma_priors,
+               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
@@ -445,7 +405,7 @@ n_mcmc = 100000 #1000 #100000
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
-mcmc_params = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
+mcmc_params = MCMC_SSI(sim_data, mcmc_inputs$n_mcmc, sigma, model_params,
                        gamma_prior, gamma_priors, DATA_AUG = FALSE,
                        BC_TRANSFORM = TRUE, C_PRIOR_GAMMA = TRUE, c_prior = c(10,1))
 end_time = Sys.time()
@@ -468,7 +428,7 @@ n_mcmc = 100000 #1000 #100000
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
-mcmc_params_da = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,
+mcmc_params_da = MCMC_SSI(sim_data, mcmc_inputs$n_mcmc, sigma, model_params,
                        gamma_prior, gamma_priors, DATA_AUG = TRUE,
                        BC_TRANSFORM = TRUE, C_PRIOR_GAMMA = TRUE, c_prior = c(10,1))
 end_time = Sys.time()
@@ -485,50 +445,7 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da, true_r0, time_elap, seed_count
 
 #MCMC RUNS
 #TO DO
-#INCLUDE GAMMA PRIOR ON BETA (HUMP SHAPED)
-#INCLUDE PRIORS ON PLOT (HIST PLOT)
-#RUN WITH DIFFERENT STARTING VALUES :)
+#INCLUDE GAMMA PRIOR ON BETA (HUMP SHAPED) - DONE :D
+#INCLUDE PRIORS ON PLOT (HIST PLOT) **TO DO
+#RUN WITH DIFFERENT STARTING VALUES :) **TO DO
 
-#****************************************************************
-# APPLY MCMC SSI MODEL + GAMMA PRIOR
-#***************************************************************
-gamma_priors = c(10, 1/100)
-n_mcmc = 100000 #100000
-mcmc_params_da2 = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
-                           FLAG_G_PRIOR_B = TRUE, DATA_AUG = FALSE)
-
-#PLOT RESULTS
-model_typeX = 'SSI'; time_elap = 0
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count, model_params,
-               model_type = model_typeX,
-               gam_priors_on_b = gamma_priors, FLAG_G_PRIOR_B = TRUE,
-               rjmcmc = RJMCMCX, data_aug = TRUE,
-               mod_par_names = c('a', 'b', 'c'))
-
-
-# #****************************************************************
-# # APPLY MCMC SSI MODEL + GAMMA PRIOR DATA AUG
-# #***************************************************************
-# mcmc_params_da2b = MCMC_SSI(sim_data, n_mcmc, sigma, model_params,gamma_priors,
-#                             FLAG_G_PRIOR_B = TRUE, DATA_AUG = TRUE)
-# 
-# #PLOT RESULTS
-# model_typeX = 'SSI'; time_elap = 0
-# plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2b, true_r0, time_elap, seed_count, model_params,
-#                model_type = model_typeX,
-#                gam_priors_on_b = gamma_priors, FLAG_G_PRIOR_B = TRUE, 
-#                rjmcmc = RJMCMCX, data_aug = TRUE,
-#                mod_par_names = c('a', 'b', 'c'))
-
-#*************
-#*** CORRECT GAMMA PRIOR 
-
-#list
-MCMC_SSI <- function(data, n_mcmc, model_params, sigma, x0 = 1, 
-                     gam_priors_on_b = c(10, 1/100), c_prior = c(0.1, 0),
-                     FLAG_PRIOR = TRUE,  FLAG_GA_PRIOR_B = FALSE,  FLAG_GA_PRIOR_C = FALSE,
-                     FLAG_DATA_AUG = TRUE, FLAG_BC_TRANSFORM = TRUE)
-  
-FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-  PRIOR = TRUE, PRIOR_GAMMA_B = TRUE, PRIOR_GAMMA_C = TRUE)
-                  
