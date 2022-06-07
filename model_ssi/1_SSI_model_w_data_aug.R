@@ -104,8 +104,8 @@ MCMC_SSI <- function(data,
   c = model_params$m3; log_like = log_like_vec[1]
   
   #INITIALISE: ACCEPTANCE COUNTS 
-  list_accept_counts = list(n_accept1 = 0, n_accept2 = 0, n_accept3 = 0,
-                            n_accept4 = 0, n_accept5 = 0)
+  list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
+                            count_accept4 = 0, count_accept5 = 0)
   list_reject_counts = list(count_reject2 = 0, count_reject3 = 0,
                             count_reject4 = 0)
   
@@ -136,7 +136,7 @@ MCMC_SSI <- function(data,
     #Metropolis Acceptance Step
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       a <- a_dash
-      list_accept_counts$n_accept1 = list_accept_counts$n_accept1 + 1
+      list_accept_counts$count_accept1 = list_accept_counts$count_accept1 + 1
       log_like = logl_new
     } 
     
@@ -164,7 +164,7 @@ MCMC_SSI <- function(data,
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       b <- b_dash
       log_like = logl_new
-      list_accept_counts$n_accept2 = list_accept_counts$n_accept2 + 1
+      list_accept_counts$count_accept2 = list_accept_counts$count_accept2 + 1
       
     } else {
       list_reject_counts$n_reject2 = list_reject_counts$n_reject2 + 1
@@ -192,7 +192,7 @@ MCMC_SSI <- function(data,
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       c <- c_dash
       log_like <- logl_new
-      list_accept_counts$n_accept3 =  list_accept_counts$n_accept3 + 1
+      list_accept_counts$count_accept3 =  list_accept_counts$count_accept3 + 1
     } else {
       list_reject_counts$n_reject3 = list_reject_counts$n_reject3 + 1
     }
@@ -239,7 +239,7 @@ MCMC_SSI <- function(data,
           b <- b_transform
           c <- c_dash
           log_like <- logl_new
-          list_accept_counts$n_accept4 = list_accept_counts$n_accept4 + 1
+          list_accept_counts$count_accept4 = list_accept_counts$count_accept4 + 1
         } else {
           list_reject_counts$n_reject4 = list_reject_counts$n_reject4 + 1
         }
@@ -298,7 +298,7 @@ MCMC_SSI <- function(data,
           data <- data_dash
           log_like <- logl_new
           mat_count_da[i, t] = mat_count_da[i, t] + 1
-          list_accept_counts$n_accept5 = list_accept_counts$n_accept5 + 1
+          list_accept_counts$count_accept5 = list_accept_counts$count_accept5 + 1
         }
         
         #Store
@@ -317,18 +317,22 @@ MCMC_SSI <- function(data,
   }
   
   #Final stats
-  accept_rate1 = 100*list_accept_counts$n_accept1/(n_mcmc-1)
-  accept_rate2 = 100*list_accept_counts$n_accept2/(list_accept_counts$n_accept2 + list_reject_counts$n_accept2)
-  accept_rate3 = 100*list_accept_counts$n_accept3/(list_accept_counts$n_accept3 + list_reject_counts$n_accept3)
-  accept_rate4 = 100*list_accept_counts$n_accept4/(list_accept_counts$n_accept4 + list_reject_counts$n_accept4)
-  accept_rate5 = 100*list_accept_counts$n_accept5/((n_mcmc-1)*time) #i x t
+  accept_rate1 = 100*list_accept_counts$count_accept1/(n_mcmc-1)
+  accept_rate2 = 100*list_accept_counts$count_accept2/(list_accept_counts$count_accept2 + list_reject_counts$count_accept2)
+  accept_rate3 = 100*list_accept_counts$count_accept3/(list_accept_counts$count_accept3 + list_reject_counts$count_accept3)
+  accept_rate4 = 100*list_accept_counts$count_accept4/(list_accept_counts$count_accept4 + list_reject_counts$count_accept4)
+  accept_rate5 = 100*list_accept_counts$count_accept5/((n_mcmc-1)*time) #i x t
   
+  #Acceptance rates 
+  list_accept_rates = list(accept_rate1 = accept_rate1,
+                           accept_rate2 = accept_rate2, accept_rate3 = accept_rate3,
+                           accept_rate4 = accept_rate4, accept_rate5 = accept_rate5)
   #Return a, acceptance rate
   return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
-              list_accept_counts, list_reject_counts, 
+              list_accept_rates = list_accept_rates, 
               data = data, mat_count_da = mat_count_da, #13, 14
               n_non_super_spreaders = n_non_super_spreaders, #15
-              s_super_spreaders = s_super_spreaders)) #16
+              s_super_spreaders = s_super_spreaders)) #16 
 }
 
 
@@ -353,7 +357,7 @@ plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spread
 #****************************************************************
 # APPLY MCMC SSI MODEL   
 #***************************************************************
-n_mcmc = 100000 #100000 
+n_mcmc = 1000 #100000 #100000 
 mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
                    model_params = model_params, x0 = 1)
 
@@ -382,12 +386,10 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da1, true_r0, time_elap, seed_coun
 #****************************************************************
 # APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
-n_mcmc = 1000 #100000 
 
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
-
 mcmc_params_da2 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
 
 end_time = Sys.time()
