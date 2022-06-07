@@ -16,7 +16,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
                                               x0 = 1),
                            priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100), b_prior_exp = c(1,0),
                                               c_prior = c(10, 1), c_prior_exp = c(0.1,0)),
-                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                           FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                                              PRIOR = TRUE, JOINT = TRUE,
                                              B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
                                              RJMCMC = FALSE)) { 
@@ -171,7 +171,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   abline(v = mcmc_inputs$model_params$m3[[1]], col = 'green', lwd = 2)
   
   #Final Mean Stats
-  data_10_pc = 0.5*mcmc_inputs$mcmc_inputs$n_mcmc #50%
+  data_10_pc = 0.5*mcmc_inputs$n_mcmc #50%
   a_mcmc_mean = round(mean(m1_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2) 
   b_mcmc_mean = round(mean(m2_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
   c_mcmc_mean = round(mean(m3_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
@@ -250,7 +250,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
     #RESULTS DF
     df_results <- data.frame(
       rep = mcmc_inputs$seed_count,
-      mcmc_inputs$n_mcmc = mcmc_inputs$n_mcmc,
+      n_mcmc = mcmc_inputs$n_mcmc,
       m1 = mcmc_inputs$model_params$m1[[1]],
       a_mc = a_mcmc_mean,
       m2 = mcmc_inputs$model_params$m2[[1]],
@@ -281,7 +281,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
     
     df_results <- data.frame(
       rep = mcmc_inputs$seed_count,
-      mcmc_inputs$n_mcmc = mcmc_inputs$n_mcmc,
+      n_mcmc = mcmc_inputs$n_mcmc,
       m1 = mcmc_inputs$model_params$m1[[1]],
       m1_mc = a_mcmc_mean,
       m2 = mcmc_inputs$model_params$m2[[1]],
@@ -304,7 +304,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   } else {
     df_results <- data.frame(
       rep = mcmc_inputs$seed_count,
-      mcmc_inputs$n_mcmc = mcmc_inputs$n_mcmc,
+      n_mcmc = mcmc_inputs$n_mcmc,
       m1 = mcmc_inputs$model_params$m1[[1]],
       m1_mc = a_mcmc_mean,
       m2 = mcmc_inputs$model_params$m2[[1]],
@@ -313,14 +313,14 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
       m3_mc = c_mcmc_mean,
       R0 = true_r0, 
       R0_mc = r0_mcmc_mean,
-      accept_rate_m1 = round(mcmc_output[[5]],2),
-      a_rte_m2 = round(mcmc_output[[6]], 2),
-      a_rte_m3 = round(mcmc_output[[7]],2),
-      a_rte_m2_m3 = round(mcmc_output[[8]],2),
-      a_es = effectiveSize(as.mcmc(m1_mcmc)),
-      b_es = effectiveSize(as.mcmc(m2_mcmc)),
-      c_es = effectiveSize(as.mcmc(m3_mcmc)),
-      d_es = effectiveSize(as.mcmc(m4_mcmc)),
+      accept_rate_m1 = round(mcmc_output$list_accept_rates$accept_rate1, 2),
+      a_rte_m2 = round(mcmc_output$list_accept_rates$accept_rate2, 2),
+      a_rte_m3 = round(mcmc_output$list_accept_rates$accept_rate3, 2),
+      a_rte_m2_m3 = round(mcmc_output$list_accept_rates$accept_rate4, 2),
+      a_es = effectiveSize(as.mcmc(a)),
+      b_es = effectiveSize(as.mcmc(b)),
+      c_es = effectiveSize(as.mcmc(c)),
+      d_es = effectiveSize(as.mcmc(d)),
       tot_time = mcmc_inputs$total_time)
   }
   
