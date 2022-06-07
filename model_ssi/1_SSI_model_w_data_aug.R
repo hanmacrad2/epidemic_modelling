@@ -261,10 +261,10 @@ MCMC_SSI <- function(data,
         data_dash = data#*****
 
         #MAKE STARTING POINTS EXTREME; BEST WAY TO DO??
-        if(FLAG_NS_DATA_AUG){ 
+        if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
           data[[1]][t] = data[[1]][t] + data[[2]][t]
           data[[2]][t] = 0
-        } else if (FLAG_SS_DATA_AUG){
+        } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
           data[[2]][t] = data[[1]][t] + data[[2]][t]
           data[[1]][t] = 0
         }
@@ -351,16 +351,33 @@ sim_dataX = non_ss + ss
 plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
 
 #****************************************************************
-#DATASET- CREATED MANUALLY. For R0 = 1.8; a = 0.8, b = 0.1, c = 10
-#****************************************************************
-# non_super_spreaders = c(2, 0,  0,  1,  0,  2,  2,  2,  3,  0,  3,  0,  0,  0,  1,  1,  1,  0,  1,  4,  2,  1,  0,  1,  0,  1,  0,
-#                         2,  2,  1,  0,  5,  7,  7,  7,  4,  6,  8,  6,  4, 11, 13,  3, 12, 23, 13, 18, 15, 25, 18)
-# 
-# super_spreaders = c(1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#                     0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-#                     0, 2, 1, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 2, 1, 0, 4, 1, 1, 3, 2, 1, 4)
-# 
-# sim_data = list(non_super_spreaders, super_spreaders)
+# APPLY MCMC SSI MODEL   
+#***************************************************************
+n_mcmc = 100000 #100000 
+mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
+                   model_params = model_params, x0 = 1)
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
+
+mcmc_params_da1 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
+                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                                             PRIOR = TRUE,
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                             FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = FALSE))
+
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; 
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da1, true_r0, time_elap, seed_count,
+               model_params,
+               model_type = model_typeX,
+               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
+               rjmcmc = RJMCMCX, data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
 
 #****************************************************************
 # APPLY MCMC SSI MODEL + DATA AUGMENTATION  
@@ -379,6 +396,58 @@ time_elap = get_time(start_time, end_time)
 #PLOT RESULTS
 model_typeX = 'SSI'; 
 plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count,
+               model_params,
+               model_type = model_typeX,
+               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
+               rjmcmc = RJMCMCX, data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
+
+#****************************************************************
+# APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
+#***************************************************************
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
+
+mcmc_params_da3 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
+                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                                             PRIOR = TRUE,
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                             FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
+
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; 
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da3, true_r0, time_elap, seed_count,
+               model_params,
+               model_type = model_typeX,
+               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
+               rjmcmc = RJMCMCX, data_aug = TRUE,
+               mod_par_names = c('a', 'b', 'c'))
+
+#****************************************************************
+# APPLY MCMC SSI MODEL + SS EXTREME CASE
+#***************************************************************
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
+
+mcmc_params_da4 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
+                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                                             PRIOR = TRUE,
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                             FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = TRUE))
+
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+
+#PLOT RESULTS
+model_typeX = 'SSI'; 
+plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da4, true_r0, time_elap, seed_count,
                model_params,
                model_type = model_typeX,
                FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
