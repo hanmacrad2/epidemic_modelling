@@ -390,7 +390,6 @@ PLOT_MCMC_GRID(sim_dataX, mcmc_params_da1,
                                              B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
                                              RJMCMC = FALSE))
 
-
 #****************************************************************
 # II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
