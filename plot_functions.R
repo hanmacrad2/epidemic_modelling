@@ -136,7 +136,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   #iv. Param Histograms (Plots 9,11,12)
   hist(r0_mcmc, freq = FALSE, breaks = 100,
        xlab = 'R0 total', #ylab = 'Density', 
-       main = paste('R0 total MCMC samples. Prior = ', FLAGS_LIST$PRIOR),
+       main = paste('R0 total MCMC samples'),
        xlim=c(0, r0_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = true_r0, col = 'orange', lwd = 2)
@@ -172,10 +172,10 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   
   #Final Mean Stats
   data_10_pc = 0.5*mcmc_inputs$n_mcmc #50%
-  a_mcmc_mean = round(mean(m1_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2) 
-  b_mcmc_mean = round(mean(m2_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
-  c_mcmc_mean = round(mean(m3_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
-  r0_mcmc_mean = round(mean(r0_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
+  m1_mean_tail = round(mean(m1_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2) 
+  m2_mean_tail = round(mean(m2_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
+  m3_mean_tail = round(mean(m3_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
+  m4_mean_tail = round(mean(r0_mcmc[mcmc_inputs$n_mcmc - data_10_pc:mcmc_inputs$n_mcmc]), 2)
   
   #FLAGS_LIST$JOINT distrbutions
   if (FLAGS_LIST$JOINT){
@@ -283,23 +283,23 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
       rep = mcmc_inputs$seed_count,
       n_mcmc = mcmc_inputs$n_mcmc,
       m1 = mcmc_inputs$model_params$m1[[1]],
-      m1_mc = a_mcmc_mean,
+      m1_mc = m1_mean_tail,
       m2 = mcmc_inputs$model_params$m2[[1]],
-      m2_mc = b_mcmc_mean,
+      m2_mc = m2_mean_tail,
       m3 = mcmc_inputs$model_params$m3[[1]],
-      m3_mc = c_mcmc_mean,
+      m3_mc = m3_mean_tail,
       R0 = true_r0, 
-      R0_mc = r0_mcmc_mean,
+      R0_mc = m4_mean_tail,
       accept_rate_m1 = round(mcmc_output$list_accept_rates$accept_rate1, 2),
       a_rte_m2 = round(mcmc_output$list_accept_rates$accept_rate2, 2),
       a_rte_m3 = round(mcmc_output$list_accept_rates$accept_rate3, 2),
       a_rte_m2_m3 = round(mcmc_output$list_accept_rates$accept_rate4, 2),
       a_rte_d_aug = round(mcmc_output$list_accept_rates$accept_rate5, 2),
-      a_es = effectiveSize(as.mcmc(a)),
-      b_es = effectiveSize(as.mcmc(b)),
-      c_es = effectiveSize(as.mcmc(c)),
-      d_es = effectiveSize(as.mcmc(d)),
-      tot_time = mcmc_inputs$total_time)
+      a_es = effectiveSize(as.mcmc(m1_mcmc))[[1]],
+      b_es = effectiveSize(as.mcmc(m2_mcmc))[[1]],
+      c_es = effectiveSize(as.mcmc(m3_mcmc))[[1]],
+      d_es = effectiveSize(as.mcmc(r0_mcmc))[[1]],
+      time_elap = format(mcmc_output$time_elap, format = "%H:%M:%S")[1])
     
   } else {
     df_results <- data.frame(
