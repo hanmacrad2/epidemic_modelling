@@ -3,29 +3,31 @@
 #****************************************************************
 
 #SETUP
-setwd("~/GitHub/epidemic_modelling") 
-source("epidemic_functions.R") 
-source("helper_functions.R") 
-
-#DATA SIMULATION PARAMS
-num_days = 50
-shape_g = 6; scale_g = 1 #Infectious pressure (lambda) - gamma params
-
-#SSI specific (*TO DO: DESIGN OF EXPERIMENTS FOR PARAM COMBINATIONS)
-aX = 0.8; bX = 0.1; cX = 10 
-true_r0 = aX + bX*cX
-true_r0
-model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
-
-#MCMC PARAMS  
-#SIGMA
-sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
-sigma_c = 0.85*cX; sigma_bc = 1.5*cX
-sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
-             sigma_c = sigma_c, sigma_bc = sigma_bc) #Acc rate too small -> make sigma smaller
-time_elap = 0
-mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
-                   model_params = model_params, x0 = 1)
+# setwd("~/GitHub/epidemic_modelling") 
+# source("epidemic_functions.R") 
+# source("plot_functions.R") 
+# source("helper_functions.R") 
+# 
+# #DATA SIMULATION PARAMS
+# num_days = 50
+# shape_g = 6; scale_g = 1 #Infectious pressure (lambda) - gamma params
+# 
+# #SSI specific (*TO DO: DESIGN OF EXPERIMENTS FOR PARAM COMBINATIONS)
+# aX = 0.8; bX = 0.1; cX = 10 
+# true_r0 = aX + bX*cX
+# true_r0
+# model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
+# 
+# #MCMC PARAMS  
+# n_mcmc = 1000
+# #SIGMA
+# sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
+# sigma_c = 0.85*cX; sigma_bc = 1.5*cX
+# sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
+#              sigma_c = sigma_c, sigma_bc = sigma_bc) #Acc rate too small -> make sigma smaller
+# time_elap = 0
+# mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
+#                    model_params = model_params, x0 = 1, seed_count = 3)
 
 #****************************************************************
 #1. MODEL SSI - LOG LIKELIHOOD
@@ -56,9 +58,6 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
   logl
 }
 
-#APPLY
-#loglike = LOG_LIKE_SSI(sim_data, aX, bX, cX)
-#loglike
 
 #************************************************************************
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
@@ -76,7 +75,8 @@ MCMC_SSI <- function(data,
   'Returns MCMC samples of SSI model parameters (a, b, c, r0 = a + b*c) 
   w/ acceptance rates.
   INCLUDES; DATA AUGMENTATION, B-C transform' 
-  print('MCMC SUPERSPREADER INDIVIDUALS')
+  #print('MCMC SUPERSPREADER INDIVIDUALS')
+  #print(data[1])
   
   'Priors
   p(a) = exp(rate) = rate*exp(-rate*x). log(r*exp(-r*x)) = log(r) - rx
@@ -106,8 +106,22 @@ MCMC_SSI <- function(data,
   #INITIALISE: ACCEPTANCE COUNTS 
   list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
                             count_accept4 = 0, count_accept5 = 0)
-  list_reject_counts = list(count_reject2 = 0, count_reject3 = 0,
-                            count_reject4 = 0)
+  
+  print(FLAGS_LIST$FLAG_NS_DATA_AUG)
+  print(FLAGS_LIST$FLAG_SS_DATA_AUG)
+  
+  #DATA AUG
+  if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
+    data[[1]] = data[[1]] + data[[2]]
+    data[[2]] = rep(0, length(data[[2]]))
+    print(data[1])
+    print(data[2])
+  } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
+    data[[2]] = data[[1]] + data[[2]]
+    data[[1]] =rep(0, length(data[[1]]))
+    print(data[1])
+    print(data[2])
+  }
   
   mat_count_da = matrix(0, n_mcmc, time) #i x t
   n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
@@ -116,7 +130,7 @@ MCMC_SSI <- function(data,
   #******************************
   #MCMC CHAIN
   #******************************
-  for(i in 2: n_mcmc) {
+  for(i in 2:n_mcmc) {
     
     #****************************************************** 
     #a
@@ -140,9 +154,8 @@ MCMC_SSI <- function(data,
       log_like = logl_new
     } 
     
-    #************************************************************************
-    #b 
-    #Only if (b > 0){ ?
+    #************************************************************************ Only if (b > 0){ ?
+    #b  
     b_dash <- b + rnorm(1, sd = sigma$sigma_b) 
     if(b_dash < 0){
       b_dash = abs(b_dash)
@@ -165,10 +178,7 @@ MCMC_SSI <- function(data,
       b <- b_dash
       log_like = logl_new
       list_accept_counts$count_accept2 = list_accept_counts$count_accept2 + 1
-      
-    } else {
-      list_reject_counts$n_reject2 = list_reject_counts$n_reject2 + 1
-    }
+    } 
     
     #************************************************************************
     #c
@@ -193,8 +203,6 @@ MCMC_SSI <- function(data,
       c <- c_dash
       log_like <- logl_new
       list_accept_counts$count_accept3 =  list_accept_counts$count_accept3 + 1
-    } else {
-      list_reject_counts$n_reject3 = list_reject_counts$n_reject3 + 1
     }
     
     #*****************************************************
@@ -240,8 +248,6 @@ MCMC_SSI <- function(data,
           c <- c_dash
           log_like <- logl_new
           list_accept_counts$count_accept4 = list_accept_counts$count_accept4 + 1
-        } else {
-          list_reject_counts$n_reject4 = list_reject_counts$n_reject4 + 1
         }
       }
     }
@@ -258,16 +264,8 @@ MCMC_SSI <- function(data,
       for(t in 1:time){
         
         #Copy of data (or update as necessary)
-        data_dash = data#*****
-
-        #MAKE STARTING POINTS EXTREME; BEST WAY TO DO??
-        if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
-          data[[1]][t] = data[[1]][t] + data[[2]][t]
-          data[[2]][t] = 0
-        } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
-          data[[2]][t] = data[[1]][t] + data[[2]][t]
-          data[[1]][t] = 0
-        }
+        data_dash = data
+        
         #STOCHASTIC PROPOSAL for s
         if (runif(1) < 0.5) {
           st_dash = data[[2]][t] + 1
@@ -291,8 +289,38 @@ MCMC_SSI <- function(data,
         logl_new = LOG_LIKE_SSI(data_dash, a, b, c)
         log_accept_prob = logl_new - log_like  
         
+        #PRINT LOG_LIKE + ACCEPT PROB
+        if (t == 1) {
+          if ((i == 2) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
+            print(paste0('i: ', i,  ', t: ', t))
+            nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
+            print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
+            print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
+            print(paste0('loglike = ', log_like))
+            print(paste0('loglike new = ', logl_new))
+            print(paste0('log_accept_prob new = ', log_accept_prob))
+            #print(paste0(' log(runif(1)) = ', u_var))
+            print('**********')
+          }
+        }
+          
         #METROPOLIS ACCEPTANCE STEP
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
+          
+          #PRINT LOG_LIKE + ACCEPT PROB
+          if (t == 1) {
+            if ((i == 1) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
+              print(paste0('i: ', i,  ', t: ', t))
+              nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
+              print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
+              print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
+              print(paste0('loglike = ', log_like))
+              print(paste0('loglike new = ', logl_new))
+              print(paste0('log_accept_prob new = ', log_accept_prob))
+              #print(paste0(' log(runif(1)) = ', u_var))
+              print('**********')
+            }
+          }
           
           #ACCEPT
           data <- data_dash
@@ -308,25 +336,26 @@ MCMC_SSI <- function(data,
     }
     
     #Loglikelihood Check (Passing - no error)
-    if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
+    #if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
     
     #POPPULATE MODEL PARAMETERS W/ CURRENT VALUES
     a_vec[i] <- a; b_vec[i] <- b
     c_vec[i] <- c; r0_vec[i] <- a + b*c
     log_like_vec[i] <- log_like
-  }
+    }
   
   #Final stats
   accept_rate1 = 100*list_accept_counts$count_accept1/(n_mcmc-1)
-  accept_rate2 = 100*list_accept_counts$count_accept2/(list_accept_counts$count_accept2 + list_reject_counts$count_accept2)
-  accept_rate3 = 100*list_accept_counts$count_accept3/(list_accept_counts$count_accept3 + list_reject_counts$count_accept3)
-  accept_rate4 = 100*list_accept_counts$count_accept4/(list_accept_counts$count_accept4 + list_reject_counts$count_accept4)
+  accept_rate2 = 100*list_accept_counts$count_accept2/(n_mcmc-1) #(list_accept_counts$count_accept2 + list_reject_counts$count_accept2)
+  accept_rate3 = 100*list_accept_counts$count_accept3/(n_mcmc-1) 
+  accept_rate4 = 100*list_accept_counts$count_accept4/(n_mcmc-1)
   accept_rate5 = 100*list_accept_counts$count_accept5/((n_mcmc-1)*time) #i x t
   
   #Acceptance rates 
   list_accept_rates = list(accept_rate1 = accept_rate1,
                            accept_rate2 = accept_rate2, accept_rate3 = accept_rate3,
                            accept_rate4 = accept_rate4, accept_rate5 = accept_rate5)
+  print(list_accept_rates)
   #Return a, acceptance rate
   return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
               list_accept_rates = list_accept_rates, 
@@ -334,169 +363,4 @@ MCMC_SSI <- function(data,
               n_non_super_spreaders = n_non_super_spreaders, #15
               s_super_spreaders = s_super_spreaders)) #16 
 }
-
-
-#****************************************************************
-#DATASET - GENERATED USING SIMULATION FUNCTIONS
-#****************************************************************
-seed_count = 3 #seed_count = seed_count + 1 #print(paste0('i mcmc = ', i))
-set.seed(seed_count)
-sim_data = simulation_super_spreaders(num_days, shape_g, scale_g, aX, bX, cX)
-
-#PLOTS
-par(mfrow=c(2,1))
-non_ss = sim_data[[1]]
-plot.ts(non_ss, ylab = 'Daily Infections count', main = 'Non Super-Spreaders' )
-ss = sim_data[[2]]
-plot.ts(ss, ylab = 'Daily Infections count', main = 'Super-Spreaders')
-
-#Total
-sim_dataX = non_ss + ss
-plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
-
-#****************************************************************
-# APPLY MCMC SSI MODEL   
-#***************************************************************
-n_mcmc = 1000 #100000 #100000 
-mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
-                   model_params = model_params, x0 = 1)
-
-#START MCMC
-start_time = Sys.time()
-print(paste0('start_time:', start_time))
-
-mcmc_params_da1 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
-                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
-                                             PRIOR = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = FALSE))
-
-end_time = Sys.time()
-time_elap = get_time(start_time, end_time)
-
-#PLOT RESULTS
-model_typeX = 'SSI'; 
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da1, true_r0, time_elap, seed_count,
-               model_params,
-               model_type = model_typeX,
-               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
-               rjmcmc = RJMCMCX, data_aug = TRUE,
-               mod_par_names = c('a', 'b', 'c'))
-
-PLOT_MCMC_GRID(sim_dataX, mcmc_params_da1,
-                           mcmc_inputs = mcmc_inputs,
-                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
-                                             PRIOR = TRUE, JOINT = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             RJMCMC = FALSE))
-
-#****************************************************************
-# II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
-#***************************************************************
-
-#START MCMC
-start_time = Sys.time()
-print(paste0('start_time:', start_time))
-mcmc_params_da2 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
-
-end_time = Sys.time()
-time_elap = get_time(start_time, end_time)
-
-#PLOT RESULTS
-model_typeX = 'SSI'; 
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_count,
-               model_params,
-               model_type = model_typeX,
-               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
-               rjmcmc = RJMCMCX, data_aug = TRUE,
-               mod_par_names = c('a', 'b', 'c'))
-
-PLOT_MCMC_GRID(sim_dataX, mcmc_params_da2,
-               mcmc_inputs = mcmc_inputs,
-               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                                 PRIOR = TRUE, JOINT = TRUE,
-                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                 RJMCMC = FALSE))
-
-
-PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
-                           mcmc_inputs = list(n_mcmc = n_mcmc,
-                                              model_params = model_params,
-                                              mod_par_names = c('alpha', 'beta', 'gamma'),
-                                              sigma = sigma,
-                                              model_typeX = 'SSE',
-                                              total_time = 0, seed_count = 1,
-                                              x0 = 1),
-                           priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100), b_prior_exp = c(1,0),
-                                              c_prior = c(10, 1), c_prior_exp = c(0.1,0)),
-                           FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                                             PRIOR = TRUE, JOINT = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             RJMCMC = FALSE)) { 
-}
-
-#****************************************************************
-# III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
-#***************************************************************
-
-#START MCMC
-start_time = Sys.time()
-print(paste0('start_time:', start_time))
-
-mcmc_params_da3 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
-                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
-                                             PRIOR = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
-
-end_time = Sys.time()
-time_elap = get_time(start_time, end_time)
-
-#PLOT RESULTS
-model_typeX = 'SSI'; 
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da3, true_r0, time_elap, seed_count,
-               model_params,
-               model_type = model_typeX,
-               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
-               rjmcmc = RJMCMCX, data_aug = TRUE,
-               mod_par_names = c('a', 'b', 'c'))
-
-#****************************************************************
-# APPLY MCMC SSI MODEL + SS EXTREME CASE
-#***************************************************************
-
-#START MCMC
-start_time = Sys.time()
-print(paste0('start_time:', start_time))
-
-mcmc_params_da4 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
-                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
-                                             PRIOR = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = TRUE))
-
-end_time = Sys.time()
-time_elap = get_time(start_time, end_time)
-
-#PLOT RESULTS
-model_typeX = 'SSI'; 
-plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da4, true_r0, time_elap, seed_count,
-               model_params,
-               model_type = model_typeX,
-               FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
-               rjmcmc = RJMCMCX, data_aug = TRUE,
-               mod_par_names = c('a', 'b', 'c'))
-
-#**************************************#**************************************#**************************************
-#2. PRIORS; GAMMA PRIORS ON B & C
-
-#MCMC RUNS
-#TO DO
-#INCLUDE GAMMA PRIOR ON BETA (HUMP SHAPED) - DONE :D
-#RUN WITH DIFFERENT STARTING VALUES :) **TO DO
-# - +Gelmans
-#INCLUDE PRIORS ON PLOT (HIST PLOT) **TO DO
-
-
-#SSI; DIFFERENT STARTING POINTS
 
