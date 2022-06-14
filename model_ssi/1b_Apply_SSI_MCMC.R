@@ -50,7 +50,7 @@ sim_dataX = non_ss + ss
 plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
 
 #****************************************************************
-# I APPLY MCMC SSI MODEL   
+#I. APPLY MCMC SSI MODEL   
 #***************************************************************
 
 #START MCMC
@@ -93,7 +93,7 @@ PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da,
 #****************************************************************
 # III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
 #***************************************************************
-
+n_mcmc = 1000
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
@@ -137,7 +137,7 @@ mcmc_ssi_da3 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
                                              FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = TRUE))
 
 end_time = Sys.time()
-mcmc_ssi_d3$time_elap = time_elap
+mcmc_ssi_da3$time_elap = time_elap
 
 #PLOT RESULTS
 PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da3,
