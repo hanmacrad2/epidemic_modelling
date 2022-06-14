@@ -383,8 +383,16 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da1, true_r0, time_elap, seed_coun
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
+PLOT_MCMC_GRID(sim_dataX, mcmc_params_da1,
+                           mcmc_inputs = mcmc_inputs,
+                           FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                                             PRIOR = TRUE, JOINT = TRUE,
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                             RJMCMC = FALSE))
+
+
 #****************************************************************
-# APPLY MCMC SSI MODEL + DATA AUGMENTATION  
+# II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
 
 #START MCMC
@@ -404,8 +412,32 @@ plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da2, true_r0, time_elap, seed_coun
                rjmcmc = RJMCMCX, data_aug = TRUE,
                mod_par_names = c('a', 'b', 'c'))
 
+PLOT_MCMC_GRID(sim_dataX, mcmc_params_da2,
+               mcmc_inputs = mcmc_inputs,
+               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                 PRIOR = TRUE, JOINT = TRUE,
+                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                 RJMCMC = FALSE))
+
+
+PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
+                           mcmc_inputs = list(n_mcmc = n_mcmc,
+                                              model_params = model_params,
+                                              mod_par_names = c('alpha', 'beta', 'gamma'),
+                                              sigma = sigma,
+                                              model_typeX = 'SSE',
+                                              total_time = 0, seed_count = 1,
+                                              x0 = 1),
+                           priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100), b_prior_exp = c(1,0),
+                                              c_prior = c(10, 1), c_prior_exp = c(0.1,0)),
+                           FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                             PRIOR = TRUE, JOINT = TRUE,
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                                             RJMCMC = FALSE)) { 
+}
+
 #****************************************************************
-# APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
+# III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
 #***************************************************************
 
 #START MCMC
