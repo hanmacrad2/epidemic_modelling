@@ -20,7 +20,7 @@ true_r0
 model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
 
 #MCMC PARAMS  
-n_mcmc = 10000 #1000
+n_mcmc = 10 #10000 #1000
 #SIGMA
 sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
 sigma_c = 0.85*cX; sigma_bc = 1.5*cX
@@ -93,12 +93,26 @@ PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da,
 #****************************************************************
 # III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
 #***************************************************************
-n_mcmc = 1000
+
+#DATA PREP
+FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                  PRIOR = TRUE, JOINT = TRUE,
+                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                  FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE)
+
+sim_data2 = sim_data
+if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
+  sim_data2[[1]] = sim_data2[[1]] + sim_data2[[2]]
+  sim_data2[[2]] = rep(0, length(sim_data2[[2]]))
+  print(sim_data2[1])
+  print(sim_data2[2])
+}
+
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
 
-mcmc_ssi_da2 = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs,
+mcmc_ssi_da2 = MCMC_SSI(sim_data2, mcmc_inputs = mcmc_inputs,
                            FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                                              PRIOR = TRUE, JOINT = TRUE,
                                              B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
@@ -115,17 +129,22 @@ PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da2,
                                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE,
                                  FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
 
-# plot_mcmc_grid(n_mcmc, sim_dataX, mcmc_params_da3, true_r0, time_elap, seed_count,
-#                model_params,
-#                model_type = model_typeX,
-#                FLAG_G_PRIOR_B = TRUE, gam_priors_on_b = c(10, 1/100),
-#                rjmcmc = RJMCMCX, data_aug = TRUE,
-#                mod_par_names = c('a', 'b', 'c'))
-
 #****************************************************************
 # APPLY MCMC SSI MODEL + SS EXTREME CASE
 #***************************************************************
+#DATA PREP
+FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                  PRIOR = TRUE, JOINT = TRUE,
+                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
+                  FLAG_NS_DATA_AUG = FALSE, FLAG_SS_DATA_AUG = TRUE)
 
+sim_data3 = sim_data
+if(FLAGS_LIST$FLAG_SS_DATA_AUG){ 
+  sim_data3[[2]] = sim_data3[[1]] + sim_data3[[2]]
+  sim_data3[[1]] = rep(0, length(sim_data3[[1]]))
+  print(sim_data3[1])
+  print(sim_data3[2])
+}
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
