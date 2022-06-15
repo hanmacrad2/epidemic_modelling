@@ -291,37 +291,37 @@ MCMC_SSI <- function(data,
         log_accept_prob = logl_new - log_like  
         
         #PRINT LOG_LIKE + ACCEPT PROB
-        if (t == 1) {
-          if ((i == 2) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
-            print(paste0('i: ', i,  ', t: ', t))
-            nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
-            print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
-            print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
-            print(paste0('loglike = ', log_like))
-            print(paste0('loglike new = ', logl_new))
-            print(paste0('log_accept_prob new = ', log_accept_prob))
-            #print(paste0(' log(runif(1)) = ', u_var))
-            print('**********')
-          }
-        }
+        # if (t == 1) {
+        #   if ((i == 2) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
+        #     print(paste0('i: ', i,  ', t: ', t))
+        #     nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
+        #     print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
+        #     print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
+        #     print(paste0('loglike = ', log_like))
+        #     print(paste0('loglike new = ', logl_new))
+        #     print(paste0('log_accept_prob new = ', log_accept_prob))
+        #     #print(paste0(' log(runif(1)) = ', u_var))
+        #     print('**********')
+        #   }
+        # }
           
         #METROPOLIS ACCEPTANCE STEP
         if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
           
           #PRINT LOG_LIKE + ACCEPT PROB
-          if (t == 1) {
-            #if ((i == 1) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
-            print(paste0('i: ', i,  ', t: ', t))
-            nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
-            print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
-            print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
-            print(paste0('loglike = ', log_like))
-            print(paste0('loglike new = ', logl_new))
-            print(paste0('log_accept_prob new = ', log_accept_prob))
-            #print(paste0(' log(runif(1)) = ', u_var))
-            print('**********')
-            #}
-          }
+          # if (t == 1) {
+          #   #if ((i == 1) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
+          #   print(paste0('i: ', i,  ', t: ', t))
+          #   nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
+          #   print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
+          #   print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
+          #   print(paste0('loglike = ', log_like))
+          #   print(paste0('loglike new = ', logl_new))
+          #   print(paste0('log_accept_prob new = ', log_accept_prob))
+          #   #print(paste0(' log(runif(1)) = ', u_var))
+          #   print('**********')
+          #   #}
+          # }
           
           #ACCEPT
           data <- data_dash
