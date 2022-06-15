@@ -107,21 +107,21 @@ MCMC_SSI <- function(data,
   list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
                             count_accept4 = 0, count_accept5 = 0)
   
-  print(FLAGS_LIST$FLAG_NS_DATA_AUG)
-  print(FLAGS_LIST$FLAG_SS_DATA_AUG)
-  
-  #DATA AUG
-  if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
-    data[[1]] = data[[1]] + data[[2]]
-    data[[2]] = rep(0, length(data[[2]]))
-    print(data[1])
-    print(data[2])
-  } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
-    data[[2]] = data[[1]] + data[[2]]
-    data[[1]] =rep(0, length(data[[1]]))
-    print(data[1])
-    print(data[2])
-  }
+  # print(FLAGS_LIST$FLAG_NS_DATA_AUG)
+  # print(FLAGS_LIST$FLAG_SS_DATA_AUG)
+  # 
+  # #DATA AUG
+  # if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
+  #   data[[1]] = data[[1]] + data[[2]]
+  #   data[[2]] = rep(0, length(data[[2]]))
+  #   print(data[1])
+  #   print(data[2])
+  # } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
+  #   data[[2]] = data[[1]] + data[[2]]
+  #   data[[1]] =rep(0, length(data[[1]]))
+  #   print(data[1])
+  #   print(data[2])
+  # }
   
   mat_count_da = matrix(0, n_mcmc, time) #i x t
   n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
@@ -279,12 +279,13 @@ MCMC_SSI <- function(data,
         
         #CRITERIA FOR S_T & N_T  
         if((data_dash[[2]][t] < 0) || (data_dash[[1]][t] < 0)){
-          
+          #print(paste0(i, t, 'WARNING'))
           #Store
           n_non_super_spreaders[i, t] = data[[1]][t]
           s_super_spreaders[i, t] = data[[2]][t]
           next  
         } 
+        #print(paste0(i, t, 'WARNING - SHOULDNT MATCH'))
         
         logl_new = LOG_LIKE_SSI(data_dash, a, b, c)
         log_accept_prob = logl_new - log_like  
@@ -309,17 +310,17 @@ MCMC_SSI <- function(data,
           
           #PRINT LOG_LIKE + ACCEPT PROB
           if (t == 1) {
-            if ((i == 1) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
-              print(paste0('i: ', i,  ', t: ', t))
-              nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
-              print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
-              print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
-              print(paste0('loglike = ', log_like))
-              print(paste0('loglike new = ', logl_new))
-              print(paste0('log_accept_prob new = ', log_accept_prob))
-              #print(paste0(' log(runif(1)) = ', u_var))
-              print('**********')
-            }
+            #if ((i == 1) || (i%%50 == 0)){ # i%%100 == 0 #Modulus 
+            print(paste0('i: ', i,  ', t: ', t))
+            nt_dash =  data[[1]][t] + data[[2]][t] - st_dash
+            print(paste0('st: ', data[[2]][t],  ', st_dash: ', st_dash))
+            print(paste0('nt: ', data[[1]][t],  ', nt_dash: ', nt_dash))
+            print(paste0('loglike = ', log_like))
+            print(paste0('loglike new = ', logl_new))
+            print(paste0('log_accept_prob new = ', log_accept_prob))
+            #print(paste0(' log(runif(1)) = ', u_var))
+            print('**********')
+            #}
           }
           
           #ACCEPT
@@ -336,7 +337,7 @@ MCMC_SSI <- function(data,
     }
     
     #Loglikelihood Check (Passing - no error)
-    #if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
+    if (log_like!=LOG_LIKE_SSI(data, a, b, c)) print(paste0('ERROR! logl diff = ', log_like - LOG_LIKE_SSI(data, a, b, c)))
     
     #POPPULATE MODEL PARAMETERS W/ CURRENT VALUES
     a_vec[i] <- a; b_vec[i] <- b
