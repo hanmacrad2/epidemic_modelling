@@ -158,7 +158,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   #PRIOR PLOT
   if (FLAGS_LIST$PRIOR) {
     xseq = seq(0, 1.5, length.out = 500)
-    lines(xseq, dexp(xseq, prior_list$a_prior[1]),
+    lines(xseq, dexp(xseq, priors_list$a_prior[1]),
           type = 'l', lwd = 2, col = 'red')
   } else {
     m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
@@ -178,7 +178,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
     lines(xseq, dgamma(xseq, shape =  priors_list$b_prior[1], scale =  priors_list$b_prior[2]),
          type = 'l', lwd = 2, col = 'blue')
   } else {
-    m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
+    
   }
   
   #Hist m3 
@@ -193,9 +193,8 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   if (FLAGS_LIST$C_PRIOR_GAMMA) {
     xseq = seq(0, 35, length.out = 500)
     lines(xseq, dgamma(xseq, shape =  priors_list$c_prior[1], scale =  priors_list$c_prior[2]),
-          type = 'l', lwd = 2, col = 'blue')
+          type = 'l', lwd = 2, col = 'green')
   } else {
-    m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
   }
   
   #Final Mean Stats
