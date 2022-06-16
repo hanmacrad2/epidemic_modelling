@@ -1,5 +1,5 @@
 #****************************************************************
-#1. APPLY SSI MODEL MCMC + DATA AUGMENTATION
+#APPLY SSI MODEL MCMC + DATA AUGMENTATION
 #****************************************************************
 
 #SETUP 
@@ -21,15 +21,15 @@ true_r0
 model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
 
 #MCMC PARAMS  
-n_mcmc = 100000 #10000 #1000
+n_mcmc = 100000 #100 #10000 #100000 #10000 #1000
 #SIGMA
 sigma_a = 0.4*aX; sigma_b = 1.0*bX #0.1 #SHOULD SIGMA BE DEFINED MORE RIGOROUS
 sigma_c = 0.85*cX; sigma_bc = 1.5*cX
 sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
              sigma_c = sigma_c, sigma_bc = sigma_bc) #Acc rate too small -> make sigma smaller
 time_elap = 0
-mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
-                   model_params = model_params, x0 = 1, seed_count = seed_count)
+mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma,
+                   initial_pos = list(aX = 2, bX = 0.05, cX = 15))
 
 
 #****************************************************************
@@ -51,27 +51,31 @@ sim_dataX = non_ss + ss
 plot.ts(sim_dataX, ylab = 'Daily Infections count', main = 'Total - Super Spreaders Model, Daily Infections count')
 
 #****************************************************************
-#I. APPLY MCMC SSI MODEL   
+# I. APPLY MCMC SSI MODEL   
 #***************************************************************
 
 #START MCMC
 start_time = Sys.time()
 print(paste0('start_time:', start_time))
-mcmc_ssi_out = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
+mcmc_ssi = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
+
 end_time = Sys.time()
 time_elap = get_time(start_time, end_time)
-mcmc_ssi_out$time_elap = time_elap
+mcmc_ssi$time_elap = time_elap
 
 #PLOT RESULTS
-PLOT_MCMC_GRID(sim_data, mcmc_ssi_out,
-               mcmc_inputs = mcmc_inputs,
-               FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
-                                 PRIOR = TRUE, JOINT = TRUE,
-                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                 RJMCMC = FALSE))
+mcmc_plot_inputs = list(n_mcmc = n_mcmc, model_params = model_params, mod_par_names = c('a', 'b', 'c'),
+                        sigma = sigma, model_typeX = 'SSI', TYPEX = 'Individuals',
+                        seed_count = seed_count, x0 = 1)
+
+df_results_da = PLOT_MCMC_GRID(sim_data, mcmc_ssi,
+                               mcmc_plot_inputs = mcmc_plot_inputs,
+                               FLAGS_LIST = list(DATA_AUG = FALSE, BC_TRANSFORM = TRUE,
+                                                 PRIOR = TRUE,  JOINT = TRUE,
+                                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
 
 #****************************************************************
-# II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
+# II. APPLY MCMC SSI MODEL + DATA AUGMENTATION  
 #***************************************************************
 
 #START MCMC
@@ -89,13 +93,13 @@ mcmc_plot_inputs = list(n_mcmc = n_mcmc, model_params = model_params, mod_par_na
                         seed_count = seed_count, x0 = 1)
 
 df_results_da = PLOT_MCMC_GRID(sim_data, mcmc_ssi_da,
-                             mcmc_plot_inputs = mcmc_plot_inputs,
-                             FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                                               PRIOR = TRUE,  JOINT = TRUE,
-                                               B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
+                               mcmc_plot_inputs = mcmc_plot_inputs,
+                               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                                 PRIOR = TRUE,  JOINT = TRUE,
+                                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
 
 #****************************************************************
-# III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
+# III. APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
 #***************************************************************
 
 #DATA PREP
@@ -139,32 +143,8 @@ df_results2 = PLOT_MCMC_GRID(sim_data2, mcmc_ssi_da2,
                                  FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
 
 #****************************************************************
-# II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
-#***************************************************************
-
-#START MCMC
-start_time = Sys.time()
-print(paste0('start_time:', start_time))
-mcmc_ssi_da = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
-
-end_time = Sys.time()
-time_elap = get_time(start_time, end_time)
-mcmc_ssi_da$time_elap = time_elap
-
-#PLOT RESULTS
-mcmc_plot_inputs = list(n_mcmc = n_mcmc, model_params = model_params, mod_par_names = c('a', 'b', 'c'),
-                        sigma = sigma, model_typeX = 'SSI', TYPEX = 'Individuals',
-                        seed_count = seed_count, x0 = 1)
-
-df_results_da = PLOT_MCMC_GRID(sim_data, mcmc_ssi_da,
-                               mcmc_plot_inputs = mcmc_plot_inputs,
-                               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                                                 PRIOR = TRUE,  JOINT = TRUE,
-                                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
-
-#****************************************************************
 #*
-# APPLY MCMC SSI MODEL + SS EXTREME CASE
+# IV. APPLY MCMC SSI MODEL + SS EXTREME CASE
 #*
 #***************************************************************
 #DATA PREP
