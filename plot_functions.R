@@ -51,7 +51,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   
   #Priors
   if (FLAGS_LIST$B_PRIOR_GAMMA) {
-    m2_prior = paste0('m3(', priors_list$b_prior[1], ', ', priors_list$b_prior[2], ')')
+    m2_prior = paste0('Ga(', priors_list$b_prior[1], ', ', priors_list$b_prior[2], ')')
     
   } else {
     m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
@@ -99,6 +99,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   #ib. DATA - REGULAR SPREADING (row II)
   non_ss = sim_data[[1]]
   plot.ts(non_ss, ylab = 'Daily Infections count', main = 'Non Super-Spreading')
+  lines(mcmc_output$non_ss_mean, col = 'aquamarine', lwd = 2)
 
   #iii. Cumulative mean plots
   #r0 Mean
@@ -139,6 +140,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   #ROW 3
   ss = sim_data[[2]]
   plot.ts(ss, ylab = 'Daily Infections count', main = paste0('Super-Spreading', mcmc_plot_inputs$TYPEX))
+  lines(mcmc_output$ss_mean, col = 'orange', lwd = 2)
   
   #iv. HISTOGRAMS Param Histograms (Plots 9,11,12)
   
