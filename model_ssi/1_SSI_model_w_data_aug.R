@@ -63,8 +63,8 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
 MCMC_SSI <- function(data,
-                     mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
-                                        model_params = model_params, x0 = 1), #THINNING FACTOR, burn_in  
+                     mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma,
+                                        initial_pos = list(aX = 2, bX = 0.05, cX = 15)), #THINNING FACTOR, burn_in  
                      priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100), b_prior_exp = c(1,0),
                                         c_prior = c(10, 1), c_prior_exp = c(0.1,0)),
                      FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
@@ -94,22 +94,20 @@ MCMC_SSI <- function(data,
   c_vec <- vector('numeric', n_mcmc); r0_vec <- vector('numeric', n_mcmc)
   log_like_vec <- vector('numeric', n_mcmc)
   
-  #INITIALISE: MCMC[1] of MCMC VECTORS
-  a_vec[1] <- model_params$m1; b_vec[1] <-model_params$m2
-  c_vec[1] <- model_params$m3; r0_vec[1] <- model_params$true_r0;
+  #INITIALISE: MCMC[1] of MCMC VECTORS &  RUNNING PARAMS
+  a_vec[1] <- mcmc_inputs$initial_pos$aX;  a = a_vec[1]
+  b_vec[1] <- mcmc_inputs$initial_pos$bX; b = b_vec[1]
+  c_vec[1] <-mcmc_inputs$initial_pos$cX; 
+  r0_vec[1] <- 1;
   log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1], c_vec[1])
-  
-  #INITIALISE: RUNNING PARAMS
-  a = model_params$m1; b =  model_params$m2; 
-  c = model_params$m3; log_like = log_like_vec[1]
   
   #INITIALISE: ACCEPTANCE COUNTS 
   list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
                             count_accept4 = 0, count_accept5 = 0)
   
   mat_count_da = matrix(0, n_mcmc, time) #i x t
-  n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
-  s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
+  non_ss = matrix(0, n_mcmc, time) #USE THINNING FACTOR
+  ss = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   
   #******************************
   #MCMC CHAIN
@@ -186,7 +184,7 @@ MCMC_SSI <- function(data,
     if(!(is.na(log_accept_prob)) && log(runif(1)) < log_accept_prob) {
       c <- c_dash
       log_like <- logl_new
-      list_accept_counts$count_accept3 =  list_accept_counts$count_accept3 + 1
+      list_accept_counts$count_accept3 = list_accept_counts$count_accept3 + 1
     }
     
     #*****************************************************
@@ -265,8 +263,8 @@ MCMC_SSI <- function(data,
         if((data_dash[[2]][t] < 0) || (data_dash[[1]][t] < 0)){
           #print(paste0(i, t, 'WARNING'))
           #Store
-          n_non_super_spreaders[i, t] = data[[1]][t]
-          s_super_spreaders[i, t] = data[[2]][t]
+          non_ss[i, t] = data[[1]][t]
+          ss[i, t] = data[[2]][t]
           next  
         } 
         #print(paste0(i, t, 'WARNING - SHOULDNT MATCH'))
@@ -315,8 +313,8 @@ MCMC_SSI <- function(data,
         }
         
         #Store
-        n_non_super_spreaders[i, t] = data[[1]][t] #TAKE MEAN ACROSS MCMC DIMENSION (PLOT 0 > 50)
-        s_super_spreaders[i, t] = data[[2]][t]
+        non_ss[i, t] = data[[1]][t] #TAKE MEAN ACROSS MCMC DIMENSION (PLOT 0 > 50)
+        ss[i, t] = data[[2]][t]
       }
     }
     
@@ -328,6 +326,8 @@ MCMC_SSI <- function(data,
     c_vec[i] <- c; r0_vec[i] <- a + b*c
     log_like_vec[i] <- log_like
     }
+  
+  #NON-SS & SS OUTPUT
   
   #Final stats
   accept_rate1 = 100*list_accept_counts$count_accept1/(n_mcmc-1)
@@ -345,7 +345,8 @@ MCMC_SSI <- function(data,
   return(list(a_vec = a_vec, b_vec = b_vec, c_vec = c_vec, r0_vec = r0_vec,
               list_accept_rates = list_accept_rates, 
               data = data, mat_count_da = mat_count_da, #13, 14
-              n_non_super_spreaders = n_non_super_spreaders, #15
-              s_super_spreaders = s_super_spreaders)) #16 
+              non_ss = non_ss, ss = ss, #15, 16
+              non_ss_mean = colMeans(non_ss),
+              ss_mean = colMeans(ss))) #16 
 }
 
