@@ -107,22 +107,6 @@ MCMC_SSI <- function(data,
   list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
                             count_accept4 = 0, count_accept5 = 0)
   
-  # print(FLAGS_LIST$FLAG_NS_DATA_AUG)
-  # print(FLAGS_LIST$FLAG_SS_DATA_AUG)
-  # 
-  # #DATA AUG
-  # if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
-  #   data[[1]] = data[[1]] + data[[2]]
-  #   data[[2]] = rep(0, length(data[[2]]))
-  #   print(data[1])
-  #   print(data[2])
-  # } else if (FLAGS_LIST$FLAG_SS_DATA_AUG){
-  #   data[[2]] = data[[1]] + data[[2]]
-  #   data[[1]] =rep(0, length(data[[1]]))
-  #   print(data[1])
-  #   print(data[2])
-  # }
-  
   mat_count_da = matrix(0, n_mcmc, time) #i x t
   n_non_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
   s_super_spreaders = matrix(0, n_mcmc, time) #USE THINNING FACTOR
