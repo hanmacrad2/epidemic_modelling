@@ -52,6 +52,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   #Priors
   if (FLAGS_LIST$B_PRIOR_GAMMA) {
     m2_prior = paste0('m3(', priors_list$b_prior[1], ', ', priors_list$b_prior[2], ')')
+    
   } else {
     m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
   }
@@ -139,7 +140,7 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
   ss = sim_data[[2]]
   plot.ts(ss, ylab = 'Daily Infections count', main = paste0('Super-Spreading', mcmc_plot_inputs$TYPEX))
   
-  #iv. Param Histograms (Plots 9,11,12)
+  #iv. HISTOGRAMS Param Histograms (Plots 9,11,12)
   
   # #v. m2 vs m3
   # plot(m2_mcmc, m3_mcmc,
@@ -154,6 +155,15 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = mcmc_plot_inputs$model_params$m1[[1]], col = 'red', lwd = 2)
   
+  #PRIOR PLOT
+  if (FLAGS_LIST$PRIOR) {
+    xseq = seq(0, 1.5, length.out = 500)
+    lines(xseq, dexp(xseq, prior_list$a_prior[1]),
+          type = 'l', lwd = 2, col = 'red')
+  } else {
+    m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
+  }
+  
   #Hist m2 
   hist(m2_mcmc, freq = FALSE, breaks = 100,
        xlab = mcmc_plot_inputs$mod_par_names[2], #ylab = 'Density', 
@@ -162,13 +172,31 @@ PLOT_MCMC_GRID <- function(sim_data, mcmc_output,
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
   abline(v = mcmc_plot_inputs$model_params$m2[[1]], col = 'blue', lwd = 2)
   
+  #PRIOR PLOT
+  if (FLAGS_LIST$B_PRIOR_GAMMA) {
+    xseq = seq(0, 0.3, length.out = 500)
+    lines(xseq, dgamma(xseq, shape =  priors_list$b_prior[1], scale =  priors_list$b_prior[2]),
+         type = 'l', lwd = 2, col = 'blue')
+  } else {
+    m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
+  }
+  
   #Hist m3 
   hist(m3_mcmc, freq = FALSE, breaks = 100,
        xlab = mcmc_plot_inputs$mod_par_names[3], #ylab = 'Density', 
        main = paste(mcmc_plot_inputs$mod_par_names[3], ", True", mcmc_plot_inputs$mod_par_names[3], "=", mcmc_plot_inputs$model_params$m3[[1]]),
        xlim=c(0, m3_lim),
        cex.lab=1.5, cex.axis=1.5, cex.main=1.5, cex.sub=1.5)
-  abline(v = mcmc_plot_inputs$model_params$m3[[1]], col = 'green', lwd = 2)
+  abline(v = mcmc_plot_inputs$model_params$m3[[1]], col = 'green', lwd = 2)#
+  
+  #PRIOR PLOT
+  if (FLAGS_LIST$C_PRIOR_GAMMA) {
+    xseq = seq(0, 35, length.out = 500)
+    lines(xseq, dgamma(xseq, shape =  priors_list$c_prior[1], scale =  priors_list$c_prior[2]),
+          type = 'l', lwd = 2, col = 'blue')
+  } else {
+    m2_prior = paste0('exp(', priors_list$b_prior[1], ')')
+  }
   
   #Final Mean Stats
   data_10_pc = 0.5*mcmc_plot_inputs$n_mcmc #50%
