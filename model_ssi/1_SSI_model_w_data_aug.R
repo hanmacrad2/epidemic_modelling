@@ -218,7 +218,7 @@ MCMC_SSI <- function(data,
         #c prior
         if (FLAGS_LIST$C_PRIOR_GAMMA) {
           tot_c_prior = dgamma(c_dash, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE) -
-            dgamma(b, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE)
+            dgamma(c, shape = priors_list$c_prior[1], scale = priors_list$c_prior[2], log = TRUE)
         } else { 
           tot_c_prior = priors_list$c_prior_exp[1]*c_dash + priors_list$c_prior_exp[1]*c 
         }
@@ -315,7 +315,7 @@ MCMC_SSI <- function(data,
         }
         
         #Store
-        n_non_super_spreaders[i, t] = data[[1]][t]
+        n_non_super_spreaders[i, t] = data[[1]][t] #TAKE MEAN ACROSS MCMC DIMENSION (PLOT 0 > 50)
         s_super_spreaders[i, t] = data[[2]][t]
       }
     }
