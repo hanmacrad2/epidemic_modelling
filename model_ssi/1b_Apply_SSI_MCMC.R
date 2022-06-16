@@ -20,6 +20,8 @@ true_r0 = aX + bX*cX
 true_r0
 model_params = list(m1 = aX, m2 = bX, m3 = cX, true_r0 = true_r0)
 
+model_params = list(m1 = 2, m2 = 0.05, m3 = 15, true_r0 = 1)
+
 #MCMC PARAMS  
 n_mcmc = 100000 #100 #10000 #100000 #10000 #1000
 #SIGMA
@@ -28,8 +30,10 @@ sigma_c = 0.85*cX; sigma_bc = 1.5*cX
 sigma = list(sigma_a = sigma_a, sigma_b = sigma_b, #Acc rate too big -> Make sigma bigger. 
              sigma_c = sigma_c, sigma_bc = sigma_bc) #Acc rate too small -> make sigma smaller
 time_elap = 0
-mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma,
-                   initial_pos = list(aX = 2, bX = 0.05, cX = 15))
+mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
+                   model_params = model_params, x0 = 1)
+#mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma,
+#                   initial_pos = list(aX= 1, bX = 0.05, cX = 15))
 
 
 #****************************************************************
