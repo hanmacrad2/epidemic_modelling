@@ -63,8 +63,8 @@ LOG_LIKE_SSI <- function(sim_data, aX, bX, cX){
 #1. SSI MCMC                              (W/ DATA AUGMENTATION OPTION)
 #************************************************************************
 MCMC_SSI <- function(data,
-                     mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma,
-                                        initial_pos = list(aX = 2, bX = 0.05, cX = 15)), #THINNING FACTOR, burn_in  
+                     mcmc_inputs = list(n_mcmc = n_mcmc, sigma = sigma, 
+                                        model_params = model_params, x0 = 1), #THINNING FACTOR, burn_in  
                      priors_list = list(a_prior = c(1, 0), b_prior = c(10, 1/100), b_prior_exp = c(1,0),
                                         c_prior = c(10, 1), c_prior_exp = c(0.1,0)),
                      FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
@@ -94,12 +94,14 @@ MCMC_SSI <- function(data,
   c_vec <- vector('numeric', n_mcmc); r0_vec <- vector('numeric', n_mcmc)
   log_like_vec <- vector('numeric', n_mcmc)
   
-  #INITIALISE: MCMC[1] of MCMC VECTORS &  RUNNING PARAMS
-  a_vec[1] <- mcmc_inputs$initial_pos$aX;  a = a_vec[1]
-  b_vec[1] <- mcmc_inputs$initial_pos$bX; b = b_vec[1]
-  c_vec[1] <-mcmc_inputs$initial_pos$cX; c = c_vec[1]
-  r0_vec[1] <- 1;
+  #INITIALISE: MCMC[1] of MCMC VECTORS
+  a_vec[1] <- model_params$m1; b_vec[1] <-model_params$m2
+  c_vec[1] <- model_params$m3; r0_vec[1] <- model_params$true_r0;
   log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1], c_vec[1])
+  
+  #INITIALISE: RUNNING PARAMS
+  a = model_params$m1; b =  model_params$m2; 
+  c = model_params$m3; log_like = log_like_vec[1]
   
   #INITIALISE: ACCEPTANCE COUNTS 
   list_accept_counts = list(count_accept1 = 0, count_accept2 = 0, count_accept3 = 0,
@@ -346,7 +348,7 @@ MCMC_SSI <- function(data,
               list_accept_rates = list_accept_rates, 
               data = data, mat_count_da = mat_count_da, #13, 14
               non_ss = non_ss, ss = ss, #15, 16
-              non_ss_mean = colMeans(non_ss),
-              ss_mean = colMeans(ss))) #16 
+              non_ss_mean = noncolMeans(non_ss),
+              ss_mean = noncolMeans(ss))) #16 
 }
 
