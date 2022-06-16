@@ -84,12 +84,15 @@ time_elap = get_time(start_time, end_time)
 mcmc_ssi_da$time_elap = time_elap
 
 #PLOT RESULTS
-PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da,
-               mcmc_inputs = mcmc_inputs,
-               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
-                                 PRIOR = TRUE, JOINT = TRUE,
-                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                 RJMCMC = FALSE))
+mcmc_plot_inputs = list(n_mcmc = n_mcmc, model_params = model_params, mod_par_names = c('a', 'b', 'c'),
+                        sigma = sigma, model_typeX = 'SSI', TYPEX = 'Individuals',
+                        seed_count = seed_count, x0 = 1)
+
+df_results_da = PLOT_MCMC_GRID(sim_data, mcmc_ssi_da,
+                             mcmc_plot_inputs = mcmc_plot_inputs,
+                             FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                               PRIOR = TRUE,  JOINT = TRUE,
+                                               B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
 
 #****************************************************************
 # III APPLY MCMC SSI MODEL + NON-SS EXTREME CASE
@@ -98,11 +101,11 @@ PLOT_MCMC_GRID(sim_dataX, mcmc_ssi_da,
 #DATA PREP
 FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                   PRIOR = TRUE, JOINT = TRUE,
-                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                  FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE)
+                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE)
 
 sim_data2 = sim_data
-if(FLAGS_LIST$FLAG_NS_DATA_AUG){ 
+FLAG_NS_DATA_AUG = TRUE
+if(FLAG_NS_DATA_AUG){ 
   sim_data2[[1]] = sim_data2[[1]] + sim_data2[[2]]
   sim_data2[[2]] = rep(0, length(sim_data2[[2]]))
   print(sim_data2[1])
@@ -117,8 +120,7 @@ print(paste0('start_time:', start_time))
 mcmc_ssi_da2 = MCMC_SSI(sim_data2, mcmc_inputs = mcmc_inputs,
                            FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                                              PRIOR = TRUE, JOINT = TRUE,
-                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,
-                                             FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
+                                             B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE))
 end_time = Sys.time()
 time_elap = get_time(start_time, end_time)
 mcmc_ssi_da2$time_elap = time_elap
@@ -135,6 +137,30 @@ df_results2 = PLOT_MCMC_GRID(sim_data2, mcmc_ssi_da2,
                                  PRIOR = TRUE,  JOINT = TRUE,
                                  B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE,
                                  FLAG_NS_DATA_AUG = TRUE, FLAG_SS_DATA_AUG = FALSE))
+
+#****************************************************************
+# II APPLY MCMC SSI MODEL + DATA AUGMENTATION  
+#***************************************************************
+
+#START MCMC
+start_time = Sys.time()
+print(paste0('start_time:', start_time))
+mcmc_ssi_da = MCMC_SSI(sim_data, mcmc_inputs = mcmc_inputs)
+
+end_time = Sys.time()
+time_elap = get_time(start_time, end_time)
+mcmc_ssi_da$time_elap = time_elap
+
+#PLOT RESULTS
+mcmc_plot_inputs = list(n_mcmc = n_mcmc, model_params = model_params, mod_par_names = c('a', 'b', 'c'),
+                        sigma = sigma, model_typeX = 'SSI', TYPEX = 'Individuals',
+                        seed_count = seed_count, x0 = 1)
+
+df_results_da = PLOT_MCMC_GRID(sim_data, mcmc_ssi_da,
+                               mcmc_plot_inputs = mcmc_plot_inputs,
+                               FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
+                                                 PRIOR = TRUE,  JOINT = TRUE,
+                                                 B_PRIOR_GAMMA = TRUE, C_PRIOR_GAMMA = TRUE,  RJMCMC = FALSE))
 
 #****************************************************************
 #*
@@ -168,7 +194,7 @@ end_time = Sys.time()
 mcmc_ssi_da3$time_elap = time_elap
 
 #PLOT RESULTS
-df_results3 = PLOT_MCMC_GRID(sim_data3, mcmc_ssi_da2,
+df_results3b = PLOT_MCMC_GRID(sim_data3, mcmc_ssi_da3,
                              mcmc_plot_inputs = mcmc_plot_inputs,
                              FLAGS_LIST = list(DATA_AUG = TRUE, BC_TRANSFORM = TRUE,
                                                PRIOR = TRUE,  JOINT = TRUE,
