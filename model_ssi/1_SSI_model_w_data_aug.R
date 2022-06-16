@@ -97,7 +97,7 @@ MCMC_SSI <- function(data,
   #INITIALISE: MCMC[1] of MCMC VECTORS &  RUNNING PARAMS
   a_vec[1] <- mcmc_inputs$initial_pos$aX;  a = a_vec[1]
   b_vec[1] <- mcmc_inputs$initial_pos$bX; b = b_vec[1]
-  c_vec[1] <-mcmc_inputs$initial_pos$cX; 
+  c_vec[1] <-mcmc_inputs$initial_pos$cX; c = c_vec[1]
   r0_vec[1] <- 1;
   log_like_vec[1] <- LOG_LIKE_SSI(data, a_vec[1], b_vec[1], c_vec[1])
   
